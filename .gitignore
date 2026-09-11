@@ -1,0 +1,25 @@
+# secrets
+.env
+*.env
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# evals (paid runs, never committed)
+evals/runs/
+*.eval.log
+
+# local tooling
+.kiro/
+.review-channel/
+.claude/settings.local.json
+.DS_Store
+
+# claude code project config (personal)
+.claude/
