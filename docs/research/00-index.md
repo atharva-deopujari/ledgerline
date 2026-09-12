@@ -20,7 +20,7 @@ before it is treated as settled.
 | 08 | `08-server-process-docker.md` | Process model, room lifecycle, Dockerfile, compose | ~2500 |
 | 09 | `09-plan-engine.md` | Data model, day simulation, priority tiers, 10 test scenarios | ~3800 |
 | 10 | `10-state-and-tools.md` | Tool granularity, upsert/conflict semantics, prompt skeleton | ~4100 |
-| 11 | `11-testing-evals.md` | Test pyramid, text harness, judge rubric, regression story | ~3000 |
+| 11 | `11-testing-evals.md` | Test pyramid, text harness, judge rubric, regression evidence | ~3000 |
 
 ## Stack, one line each
 
@@ -28,7 +28,7 @@ before it is treated as settled.
 |---|---|---|---|
 | Voice framework | pipecat-ai **1.9.0**, Python **3.11** | LangGraph in the loop (barrier kills streaming and interruption) | 01 |
 | Transport | Daily via `DailyTransport`; room per call, `exp` about 1 h, `eject_at_room_exp=True`, rely on expiry not DELETE | fixed room (leaks state between calls) | 02, 08 |
-| STT | Deepgram **nova-3-general**, `smart_format`, `numerals`, `keyterm`; `language="en"` (try `en-IN`, not corroborated for Nova-3) | Speechmatics/AssemblyAI (slower), Flux (no smart_format) | 03 |
+| STT | Deepgram **nova-3-general**, `smart_format`, `numerals`, `keyterm`; `language="en-IN"` (spike 2026-09-11: accepted, same model as `en`, slightly cleaner segmentation; "forty-two hundred" transcribed as "4,200") | Speechmatics/AssemblyAI (slower), Flux (no smart_format) | 03 |
 | TTS | Cartesia **sonic-3.6** websocket, `model` set explicitly (default may be 3.5), voice Daniel or Skylar, `calm`, speed 0.95 | ElevenLabs Flash (no number normalisation on free), OpenAI TTS (HTTP, slow) | 04 |
 | TTS fallback | Deepgram Aura-2 behind an env var (`$200` credit, thousands of minutes) | | 04 |
 | LLM | **`gpt-5.6-luna`** exactly (bare `gpt-5.6` aliases to Sol, the expensive tier), reasoning effort **none**, verbosity low, no temperature | gpt-4.1-mini (2x price, fallback only) | 05 |
@@ -61,8 +61,8 @@ These came from source, not docs. Every pre-1.3 tutorial and most web summaries 
 - daily-js 0.92.2 UMD global is `window.Daily`, not `DailyIframe`.
 - Daily app-message is capped at **4 KB**. Ordering and reliability undocumented.
 - Daily `max_participants` is fine on free (default 200). Paid plan only gates raising it above 200. Earlier claim that it 400s on free was wrong.
-- **Daily requires a credit card at signup** to enable usage. 10,000 free minutes per month still apply. Earlier claim of no card was wrong. Deepgram, Cartesia, OpenAI need no card.
-- Daily changelog: a room can only be DELETEd once it has been expired for more than 24 h. So "delete room on disconnect" will likely fail. Use `exp` about 1 h plus `eject_at_room_exp=True` and let rooms self-clean. Confirm in spike.
+- **Daily requires a card on file for any WebRTC join.** Tested 2026-09-11: API key issued and REST room create/delete work without a card, but every join fails with `account-missing-payment-method`. Add the card at dashboard.daily.co billing; 10,000 free minutes per month still apply. Deepgram, Cartesia, OpenAI need no card.
+- Daily room DELETE: research quoted a changelog saying rooms can only be deleted 24 h after expiry. **Tested 2026-09-11 on our account: immediate `DELETE /v1/rooms/{name}` on a fresh room returned 200 `deleted: true`.** So deleting on disconnect works; keep `exp` about 1 h plus `eject_at_room_exp=True` as the safety net.
 - Runner default `--host localhost` breaks Docker port mapping. Bind `0.0.0.0`.
 - Pipecat's runner leaks Daily rooms for 4 h. Use a short `exp` (see DELETE caveat above).
 - `DailyRESTHelper.get_token(room_url, expiry_time=3600, owner=True)`. Param is `expiry_time`, not `expiry`.
@@ -79,16 +79,16 @@ These came from source, not docs. Every pre-1.3 tutorial and most web summaries 
 Resolution: **true**. Users state two facts in one breath. Serial means two LLM round trips. Idempotent upsert by `(kind, name)` makes parallel safe. Revisit if luna produces duplicate or contradictory parallel calls in the text harness.
 
 **C2. End-of-turn strategy.** 03 warns Smart Turn v3 has open bugs (short "yes" can hang up to 5 s, issues #3643/#3988) and prefers Silero + `SpeechTimeoutUserTurnStopStrategy(~1.1 s)`. 06 says Smart Turn v3.2 is the default and is the right tool for mid-number pauses.
-Resolution: **Smart Turn v3 with `SmartTurnParams.stop_secs` lowered from 3.0 to about 1.5**, plus an env flag `TURN_STRATEGY=smart|timeout` to switch. The "yes" hang hits our confirm-understanding step directly, so this is the first thing to measure in a real call. **VERIFY IN SPIKE.**
+Resolution: **Smart Turn v3, `stop_secs=1.5`**, env flag `TURN_STRATEGY=smart|timeout` kept. **Settled by spike 2026-09-11 (synthetic speech, three runs):** bare "yes" turn-end 0.46 s under Smart Turn vs 0.97 s under a 0.6 s timeout; the 5 s hang from the GitHub issues did not reproduce. Mid-number pause ("My EMI is, um, 4200") splits into two Deepgram finals 0.3 s apart under every strategy; under Smart Turn both reach the LLM before it speaks and the tool fires with 4200, under the timeout strategy the bot answered before the number arrived. `stop_secs=3.0` gained nothing and cost 0.4 s. Caveat: synthetic speech is cleaner than a person; one human call still needed.
 
 **C3. Cards frame class.** 01 recommends `RTVIServerMessageFrame` (rides the default RTVI processor). 02 says `DailyOutputTransportMessageUrgentFrame` and that RTVI is not worth it. 07 says `OutputTransportMessageUrgentFrame`.
-Resolution: all three end up in Daily `send_app_message`, all share the 4 KB cap. Use **`OutputTransportMessageUrgentFrame(message={...})`**, the generic base class (a `SystemFrame`, sent immediately, survives interruption, no dependency on RTVI or on Daily-specific subclasses). Leave `enable_rtvi` at its default and filter `rtvi-ai` messages in the browser. **VERIFY IN SPIKE** that the generic frame is accepted by `DailyTransport.output()` in 1.9.0; fall back to the Daily subclass if not.
+Resolution: all three end up in Daily `send_app_message`, all share the 4 KB cap. Use **`OutputTransportMessageUrgentFrame(message={...})`**, the generic base class. **Settled by spike 2026-09-11:** two tool calls, two messages received intact by the remote participant, zero lost, no Daily subclass needed. The same channel carries a steady stream of `label: "rtvi-ai"` messages, so the browser filter on that label is required.
 
 **C4. LLM service class.** 05 recommends `OpenAIResponsesLLMService` (newer, WS, auto reasoning none, `previous_response_id`, strict tools). 01 documents only `OpenAILLMService`.
-Resolution: **start with `OpenAIResponsesLLMService`**. Both consume the same `LLMContext` and `LLMContextAggregatorPair`, so the swap is one import. If the WS service misbehaves in the spike, fall back to `OpenAILLMService(settings=Settings(extra={"reasoning_effort": "none", "verbosity": "low"}))`. **VERIFY IN SPIKE.**
+Resolution: **`OpenAIResponsesLLMService`**. **Settled by spike 2026-09-11:** gpt-5.6-luna over `/v1/responses` with a Pipecat direct function called `record_number({"value": 4200})` from "my EMI is forty-two hundred"; first streamed event 0.70 s, total 1.19 s. No fallback needed. `OpenAILLMService` with `extra={"reasoning_effort": "none"}` remains the one-line fallback.
 
 **C5. Tool schema style.** 01 recommends direct functions (schema derived from signature + docstring). 10 wants strict mode and explicit enums on every tool.
-Resolution: **direct functions first**; enums via `Literal` types in the signature. If strict mode cannot be expressed through direct functions, switch that tool to an explicit `FunctionSchema`. **VERIFY IN SPIKE** whether direct functions emit `strict: true`.
+Resolution: **direct functions**, enums as plain `str` validated in the handler with a corrective result string on bad input. **Settled 2026-09-11 by Session B's live dry-run:** Pipecat 1.9.0's direct-function schema generator has no `Literal` branch, so enums cannot be expressed in the schema; and the first handler parameter must be annotated `Any`, because `get_type_hints` resolves annotations in module globals and a `FunctionCallParams` imported inside `build_tools` raises `NameError` at schema derivation. Responses API wiring with these schemas works; a 4-turn scenario cost $0.0026. **Spike 2026-09-11:** direct functions send `"strict": null`. Tool calls were still correct. Decision: keep handler-side validation, do not switch to explicit `FunctionSchema`.
 
 **C6. 4 KB app-message vs the plan timeline.** 09 produces a 30-row timeline. 02 caps each message at 4 KB.
 Resolution: cards are a **compact full snapshot** with short keys; the timeline card carries only rows that have an event (income or payment), not all 30 days, and amounts as integers of rupees. Guard `len(json.dumps(msg).encode()) < 4096` in code and log if exceeded. Escape hatch if it ever overflows: `setMeetingSessionData` (100 KB, room-wide, replays to a refreshing browser).
@@ -138,6 +138,20 @@ simulation over every day, not by inspection of event days. These two become the
 Also confirms the day-by-day simulation choice over monthly totals: both errors are exactly the kind a monthly
 total would hide.
 
+## Measured latency (spike 2026-09-11, synthetic speech)
+
+| Segment | Measured | HLD target |
+|---|---|---|
+| Deepgram final transcript after VAD stop | 0.23 to 0.34 s | 0.3 s |
+| Turn end, bare "yes", Smart Turn | 0.46 s | |
+| LLM first streamed event (Responses API, luna, reasoning none) | 0.70 s | 0.7 s |
+| Person stops speaking to first bot audio, no tool call | 1.82 s | 1.4 s |
+| Person stops speaking to first bot audio, one tool call | 2.65 s | |
+| Cartesia sonic-3.6 TTFB | 0.09 s | |
+| Deepgram Aura-2 TTFB | 0.30 s | |
+
+The tool round trip costs about 0.9 s. Watch it if the plan explanation feels slow; options are fewer, larger tool calls or speaking a short acknowledgement before the tool result.
+
 ## Pinned versions
 
 | Thing | Version | Source |
@@ -183,3 +197,10 @@ LOG_LEVEL           INFO
 ## Suggested spike before writing the real plan
 
 One throwaway `spike.py`, no cards, no engine: Daily room + Deepgram + luna via Responses service + Cartesia, one direct-function tool that records a number and echoes it back, one `OutputTransportMessageUrgentFrame` to a bare HTML page that logs `app-message`. Goal: confirm C2, C3, C4, C5, measure first-token latency, hear how "forty-two hundred" transcribes, check whether Nova-3 accepts `language="en-IN"`, and check whether DELETE room works right after the call or only after expiry. Budget: 2 hours, under 5 Cartesia minutes.
+
+## Prior art survey (2026-09-12)
+
+Six reports under `prior-art/`, ranked cross-report adoption list and corrections to the reports above in
+`prior-art/00-index.md`. Four earlier claims are superseded there: `bot-transcription` is deprecated for
+`bot-output`; Pipecat Evals now has persona simulation; the missing block must ride `system_instruction`, not
+context; no debt-advice source treats a late payment as a plan step.

@@ -70,7 +70,7 @@ Confirmed on cartesia.ai/pricing: **Free $0 — 20K credits/month, "~27 minutes 
 
 **Pro is $5/month** (or $48/year ≈ $4/mo, which is the "$4" figure you saw): 100K credits ≈ 133 min, 3 concurrent, commercial license, instant cloning, card required. Overages can be enabled so requests keep succeeding past the allotment.
 
-Verdict: 27 min is thin for a 30-day planner. A 4-minute session × 5 dev iterations a day burns the month in one afternoon. Recommend: build on Free, wire `TTS_PROVIDER=cartesia|deepgram|elevenlabs` so Deepgram's $200 credit is a one-line fallback, and buy one month of Pro ($5) the week you record the demo — it also removes the "non-commercial" ambiguity for a hiring release.
+Verdict: 27 min is thin for a 30-day planner. A 4-minute session × 5 dev iterations a day burns the month in one afternoon. Recommend: build on Free, wire `TTS_PROVIDER=cartesia|deepgram|elevenlabs` so Deepgram's $200 credit is a one-line fallback, and buy one month of Pro ($5) the week you record the demo — it also removes the "non-commercial" ambiguity for a public release.
 
 ### Text normalization for ₹ / Rs. / dates
 
