@@ -1,0 +1,33 @@
+name: timing_emi_before_salary
+tags: [timing, deferral]
+persona:
+  description: "Ravi, 31, salaried in Pune, calm, answers one thing at a time, Indian English."
+  hidden_facts:
+    opening_balance: "8000"
+    incomes:
+      - {name: salary, amount: "72000", day: 1}
+    essentials:
+      - {name: rent, amount: "18000", day: 5}
+      - {name: groceries, amount: "9000"}
+      - {name: electricity, amount: "1800", day: 18}
+    debts:
+      - {name: bike loan, amount: "4500", day: 20, debt_kind: secured_emi}
+    optionals:
+      - {name: streaming, amount: "700"}
+    notes:
+      - "The salary lands on the first of next month, after the bike loan is due."
+  ends_when: "the coach has explained the plan and I have repeated the action back"
+max_turns: 14
+expect:
+  plan_final: true
+  status: TIMING
+  # 8,000 opening minus 300 a day of groceries cannot also carry the 20 September EMI; the
+  # money exists over the window (net +47,800), the dates do not line up.
+  actions:
+    - {type: PAY_ON_DATE, target: bike loan, to: "1 October"}
+  rules:
+    [numbers_traceable, changed_value_acknowledged,
+     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates]
+runs: 1

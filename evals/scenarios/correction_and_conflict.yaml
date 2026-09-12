@@ -1,0 +1,42 @@
+name: correction_and_conflict
+tags: [voice, correction, contradiction]
+# Two figures for the same item, twice over. The first time the person says they are correcting
+# themselves and the model should simply record it and read the new figure back. The second time
+# they do not, and the result says "electricity: 2,000 -> 3,000" with nothing to say which is
+# right: the model has to ask. Asked, the person does not know, so the model must mark_unknown
+# and never ask a third time. Nothing in the domain adjudicates any of this any more.
+persona:
+  description: "Deepak, 38, runs a small print shop in Indore, changes his mind while talking."
+  hidden_facts:
+    opening_balance: "15000"
+    incomes:
+      - {name: shop income, amount: "50000", day: 10}
+    essentials:
+      - {name: rent, amount: "14000", day: 5}
+      - {name: electricity, amount: "3000", day: 20}
+      - {name: groceries, amount: "7000"}
+    debts:
+      - {name: machine loan, amount: "6000", day: 12, debt_kind: secured_emi}
+    optionals:
+      - {name: newspaper, amount: "300"}
+    notes:
+      - "The shop money comes in around the tenth of the month."
+  scripted_behaviours:
+    - {turn: 2, say: "My rent is twelve thousand."}
+    - {turn: 3, say: "Actually, the rent is fourteen thousand, not twelve."}
+    - {turn: 5, say: "My electricity bill is two thousand."}
+    - {turn: 6, say: "The electricity is three thousand."}
+    - {turn: 7, say: "I do not know."}
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 20
+expect:
+  plan_final: true
+  status: TIMING
+  actions: []
+  rules:
+    [numbers_traceable, changed_value_acknowledged,
+     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates, silent_before_acting, no_repeated_sentence, no_question_after_unknown,
+     one_goodbye_with_the_end_call]
+runs: 5

@@ -1,0 +1,36 @@
+name: garbage_opener
+tags: [voice, stt_noise]
+# The live call opened with "Your WhatsApp." — transcription noise, not a sentence. The bot has
+# to not take it as a fact, not apologise twice, and get to its first question.
+persona:
+  description: "Farah, 29, works at a clinic in Kochi, polite, a little distracted at first."
+  hidden_facts:
+    opening_balance: "9000"
+    incomes:
+      - {name: salary, amount: "52000", day: 1}
+    essentials:
+      - {name: rent, amount: "16000", day: 5}
+      - {name: groceries, amount: "8000"}
+      - {name: electricity, amount: "1900", day: 22}
+    debts:
+      - {name: credit card, amount: "4000", day: 22, debt_kind: credit_card, min_due: "1200"}
+    optionals:
+      - {name: streaming, amount: "500"}
+    notes:
+      - "The salary comes on the first of next month, after the card is due."
+  scripted_behaviours:
+    - {turn: 1, say: "Your WhatsApp."}
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 18
+expect:
+  plan_final: true
+  status: TIMING
+  actions:
+    - {type: PAY_MIN_DUE, target: credit card}
+  rules:
+    [numbers_traceable, changed_value_acknowledged,
+     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates, silent_before_acting, no_repeated_sentence, no_question_after_unknown,
+     one_goodbye_with_the_end_call]
+runs: 5

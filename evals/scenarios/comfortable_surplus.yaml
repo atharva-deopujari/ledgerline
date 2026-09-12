@@ -1,0 +1,29 @@
+name: comfortable_surplus
+tags: [surplus, happy_path]
+persona:
+  description: "Ravi, 31, salaried in Pune, calm, answers one thing at a time, Indian English."
+  hidden_facts:
+    opening_balance: "20000"
+    incomes:
+      - {name: salary, amount: "72000", day: 1}
+    essentials:
+      - {name: rent, amount: "18000", day: 5}
+      - {name: groceries, amount: "9000"}
+      - {name: electricity, amount: "1800", day: 18}
+    debts:
+      - {name: bike loan, amount: "4500", day: 20, debt_kind: secured_emi}
+    optionals:
+      - {name: streaming, amount: "700"}
+  ends_when: "the coach has explained the plan and I have said I understood it"
+max_turns: 14
+expect:
+  plan_final: true
+  status: OK
+  # 20,000 opening carries every dated item until the salary lands, so the plan proposes nothing.
+  actions: []
+  rules:
+    [numbers_traceable, changed_value_acknowledged,
+     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates]
+runs: 1

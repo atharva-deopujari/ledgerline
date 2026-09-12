@@ -1,0 +1,36 @@
+name: structural_shortfall_correction
+tags: [structural, correction, conflict]
+persona:
+  description: "Priya, 29, salaried in Nagpur, calm, answers one thing at a time, Indian English."
+  hidden_facts:
+    opening_balance: "1200"
+    incomes:
+      - {name: salary, amount: "45000", day: 1}
+    essentials:
+      - {name: rent, amount: "15500", day: 5}
+      - {name: groceries, amount: "6000"}
+      - {name: electricity, amount: "1400", day: 18}
+    debts:
+      - {name: credit card, amount: "3200", day: 12, debt_kind: credit_card, min_due: "3200"}
+      - {name: bike emi, amount: "8500", day: 20, debt_kind: secured_emi}
+      - {name: personal loan, amount: "12000", day: 25, debt_kind: unsecured_emi}
+    optionals:
+      - {name: streaming, amount: "1200"}
+    notes:
+      - "The first time you are asked about salary, say fifty thousand; you correct it later."
+  scripted_behaviours:
+    - turn: 4
+      say: "Sorry, actually my salary is 45,000, not 50,000."
+    - turn: 7
+      say: "The card minimum is twenty-three hundred."
+  ends_when: "the coach has explained the plan and I have repeated two actions back"
+max_turns: 18
+expect:
+  plan_final: true
+  status: STRUCTURAL
+  rules:
+    [numbers_traceable, changed_value_acknowledged,
+     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates]
+runs: 1

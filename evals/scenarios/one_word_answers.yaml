@@ -1,0 +1,38 @@
+name: one_word_answers
+tags: [voice, one_word]
+# Turn 16 of the live call: "Nothing." produced two mark_unknown calls and then four questions in
+# one breath, one of them "What's your monthly income?" right after recording there was none.
+# "September." is the other half of it — a month where a day was asked for.
+persona:
+  description: "Sanjay, 46, drives a cab in Nagpur, answers in single words, dislikes long calls."
+  hidden_facts:
+    opening_balance: "6000"
+    incomes:
+      - {name: fares, amount: "38000", day: 30}
+    essentials:
+      - {name: rent, amount: "9000", day: 5}
+      - {name: groceries, amount: "7000"}
+    debts:
+      - {name: phone emi, amount: "2000", day: 15, debt_kind: unsecured_emi}
+    optionals:
+      - {name: cable tv, amount: "400"}
+    notes:
+      - "The fares add up and I take them home at the end of the month."
+  scripted_behaviours:
+    - {turn: 4, say: "Nothing."}
+    - {turn: 5, say: "September."}
+    - {turn: 6, say: "Nothing."}
+    - {turn: 8, say: "Yes."}
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 18
+expect:
+  plan_final: true
+  status: TIMING
+  actions: []
+  rules:
+    [numbers_traceable, changed_value_acknowledged,
+     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates, silent_before_acting, no_repeated_sentence, no_question_after_unknown,
+     one_goodbye_with_the_end_call]
+runs: 5

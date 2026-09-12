@@ -1,0 +1,36 @@
+name: estimated_income_happy_path
+tags: [voice, certainty, happy_path]
+# The whole journey with nothing awkward in it except the income, which is a guess: "around
+# forty thousand" has to land as certainty estimated, not as a confirmed figure. Ends properly —
+# plan, agreement, one goodbye, end_call.
+persona:
+  description: "Anita, 41, freelances as a designer in Pune, warm, gives round figures."
+  hidden_facts:
+    opening_balance: "18000"
+    incomes:
+      - {name: client payments, amount: "40000", day: 20}
+    essentials:
+      - {name: rent, amount: "13000", day: 5}
+      - {name: groceries, amount: "6000"}
+      - {name: internet, amount: "1200", day: 8}
+    debts:
+      - {name: credit card, amount: "5000", day: 15, debt_kind: credit_card, min_due: "1500"}
+    optionals:
+      - {name: yoga class, amount: "900"}
+    notes:
+      - "The client payments are not certain; they usually land around the twentieth."
+  scripted_behaviours:
+    - {turn: 2, say: "It's around forty thousand, I think. Nothing is confirmed."}
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 18
+expect:
+  plan_final: true
+  status: TIMING
+  actions: []
+  rules:
+    [numbers_traceable, changed_value_acknowledged,
+     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates, silent_before_acting, no_repeated_sentence, no_question_after_unknown,
+     one_goodbye_with_the_end_call]
+runs: 5

@@ -1,0 +1,43 @@
+name: stt_implausible_amount
+tags: [voice, implausible]
+# The failure mode the cut created. Speech to text drops the "thousand" — "my rent is twelve
+# thousand" arrives as "rent is 12" — and nothing in code watches for it any more: the outlier
+# list, the outlier question and the confirmation state all went with the conflict machinery.
+# A coach who records twelve rupees of rent without blinking plans the person's whole month
+# around a number nobody said. Two of them in one call, an essential and the income, because
+# the income one also decides whether the plan is computable at all.
+persona:
+  description: "Farida, 33, runs a tiffin service in Bhopal, speaks quickly and trails off."
+  hidden_facts:
+    opening_balance: "9000"
+    incomes:
+      - {name: salary, amount: "45000", day: 1}
+    essentials:
+      - {name: rent, amount: "12000", day: 5}
+      - {name: groceries, amount: "8000"}
+    debts:
+      - {name: scooter emi, amount: "3400", day: 12, debt_kind: secured_emi}
+    optionals:
+      - {name: streaming, amount: "300"}
+    notes:
+      - "If the coach asks whether a figure is right, correct it to the real one in full words."
+  scripted_behaviours:
+    # The dropped thousand, twice. The persona corrects only when asked, so a coach that records
+    # the figure and moves on carries twelve rupees of rent to the end of the call.
+    - {turn: 2, say: "My rent is 12."}
+    - {turn: 3, say: "Twelve thousand, sorry. Twelve thousand rupees."}
+    - {turn: 4, say: "Salary forty-five."}
+    - {turn: 5, say: "Forty-five thousand a month."}
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 18
+expect:
+  plan_final: true
+  status: OK
+  actions: []
+  rules:
+    [numbers_traceable, changed_value_acknowledged, implausible_amount_confirmed,
+     one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates, silent_before_acting, no_repeated_sentence, no_question_after_unknown,
+     one_goodbye_with_the_end_call]
+runs: 5

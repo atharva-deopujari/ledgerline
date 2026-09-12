@@ -1,0 +1,30 @@
+name: timing_shortfall
+tags: [timing, deferral]
+persona:
+  description: "Anita, 27, salaried in Bengaluru, slightly anxious, answers one thing at a time."
+  hidden_facts:
+    opening_balance: "2000"
+    incomes:
+      - {name: salary, amount: "48000", day: 28}
+    essentials:
+      - {name: rent, amount: "16000", day: 5}
+      - {name: groceries, amount: "7000"}
+    debts:
+      - {name: credit card, amount: "9000", day: 12, debt_kind: credit_card, min_due: "900"}
+      - {name: personal loan, amount: "6500", day: 8, debt_kind: unsecured_emi}
+    optionals:
+      - {name: gym membership, amount: "1500"}
+      - {name: weekend trip, amount: "4000"}
+    notes:
+      - "The money is there over the month, it just arrives late; say so if the coach asks."
+  ends_when: "the coach has explained the plan and I have repeated two actions back"
+max_turns: 16
+expect:
+  plan_final: true
+  status: TIMING
+  rules:
+    [numbers_traceable, changed_value_acknowledged,
+     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates]
+runs: 1

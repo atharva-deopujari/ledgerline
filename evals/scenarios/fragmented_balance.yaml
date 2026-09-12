@@ -1,0 +1,38 @@
+name: fragmented_balance
+tags: [voice, fragments]
+# Shaped from the owner's third live call: "I have" / "20,000 in cash and" / "20,000 in bank
+# balance." arrived as three separate user turns because VAD cut on every pause. The list form
+# of `say` delivers them the same way here — consecutive user messages, one assistant reply.
+persona:
+  description: "Meera, 34, salaried in Hyderabad, thinks out loud and pauses mid-sentence."
+  hidden_facts:
+    opening_balance: "40000"
+    incomes:
+      - {name: salary, amount: "45000", day: 1}
+    essentials:
+      - {name: rent, amount: "11000", day: 18}
+      - {name: groceries, amount: "6000"}
+    debts:
+      - {name: credit card, amount: "3000", day: 20, debt_kind: credit_card, min_due: "1200"}
+    optionals:
+      - {name: gym, amount: "1500"}
+    notes:
+      - "The salary lands on the first of next month."
+  scripted_behaviours:
+    - turn: 1
+      say: ["I have", "20,000 in cash and", "20,000 in bank balance."]
+    - turn: 2
+      say: ["My rent is", "eleven thousand", "rupees, due on the eighteenth."]
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 18
+expect:
+  plan_final: true
+  status: OK
+  actions: []
+  rules:
+    [numbers_traceable, changed_value_acknowledged,
+     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
+     no_markdown, amounts_repeated,
+     no_iso_dates, silent_before_acting, no_repeated_sentence, no_question_after_unknown,
+     one_goodbye_with_the_end_call]
+runs: 5
