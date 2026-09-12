@@ -62,7 +62,7 @@ specifically.
 
 ## Official vendor agent guidance found
 
-Pipecat is the standout: it is the only vendor in this stack shipping a complete agent story.
+Pipecat is the standout: it is the only vendor in this stack shipping a complete agent toolchain.
 
 | Artifact | URL | Status |
 |---|---|---|

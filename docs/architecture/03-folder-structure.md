@@ -19,7 +19,7 @@ every verified fact from the research (pytest `pythonpath`, `addopts` markers, N
 - **No folder holds one file for ceremony.** No `infrastructure/`, `services/`, `workers/`. Folders are added when
   a second file needs them. This is the line between "senior" and "enterprise" for a 1,500-line service.
 - **Names a Pipecat developer expects:** `pipeline.py` builds the `PipelineWorker`, `session.py` runs one call,
-  `tools.py` holds function handlers, `engine.py` holds plan math, `policy.py` holds the priority tiers.
+  `agent/tools/` holds function handlers, `domain/engine/` holds plan math, `policy.py` holds the priority tiers.
 
 ## Recommended tree
 
@@ -27,7 +27,7 @@ every verified fact from the research (pytest `pythonpath`, `addopts` markers, N
 ledgerline/
 ├── README.md                     Docker setup, env table, exact command, exact URL, results, AI honesty section
 ├── JOURNAL.md                    hand-written decision journal, dated entries, root-level on purpose
-├── pyproject.toml                deps, dev group, pytest config, ruff, import-linter contracts
+├── pyproject.toml                deps, dev group, pytest config, ruff, import-linter contracts (4)
 ├── uv.lock                       committed; Docker installs with --locked
 ├── .python-version               3.11
 ├── .env.example                  every variable, commented, required vs optional
@@ -35,65 +35,74 @@ ledgerline/
 ├── Dockerfile                    stage 1 node:22 builds frontend; stage 2 python:3.11-slim + uv, NLTK prebaked
 ├── docker-compose.yml            ONE service, port 7860, env_file .env
 │
-├── ledgerline/                      the Python package. import root: `from ledgerline.domain.engine import build_plan`
-│   ├── __init__.py
-│   ├── config.py                 Settings(BaseSettings): keys, model ids, TTS_PROVIDER, TURN_STRATEGY, LOG_LEVEL
+├── ledgerline/                   the Python package. import root: `from ledgerline.domain.engine import build_plan`
+│   ├── config.py                 Settings(BaseSettings); TtsProvider, TurnStrategy, LlmApi enums
 │   ├── main.py                   builds the FastAPI app, lifespan, mounts frontend/dist. `uvicorn ledgerline.main:app`
 │   │
-│   ├── domain/                   PURE. no I/O, no Pipecat, no OpenAI. what unit tests own
-│   │   ├── __init__.py
-│   │   ├── models.py             FinancialState, Income, Debt, Essential, Optional, Unknown, Conflict, Understanding
-│   │   ├── state.py              upsert / remove / resolve_conflict / mark_unknown / missing() / readiness()
-│   │   ├── engine.py             build_plan(state, policy) -> PlanResult. day-by-day simulation, Decimal
-│   │   ├── policy.py             Policy: tier order, consequence text, allowed action types. the file you will change most often
-│   │   └── cards.py              (state, plan) -> CardsMessage. pure shaping, short keys, 4 KB guard. no transport
+│   ├── domain/                   PURE. no I/O, no Pipecat, no OpenAI. internal layers: cards -> engine -> state -> policy -> models. No conflict or outlier state: the model judges corrections (docs/process/cut-brief.md)
+│   │   ├── models.py             FinancialState and item models; enums PlanStatus, Phase, ActionType, RowKind, UnknownReason, OutcomeStatus
+│   │   ├── policy.py             Policy: TierKey enum, tier order, consequence and ask text, allowed action types
+│   │   ├── cards.py              (state, plan) -> CardsMessage; CardId and CardStatus enums; 4 KB guard. no transport
+│   │   ├── state/                the fact store. public API re-exported from __init__ (upsert, remove, mark_unknown, ...)
+│   │   │   ├── names.py          normalise_name, possessive_of, label_for, field_of, group_inr, resolve_day
+│   │   │   ├── items.py          upsert overwrites and reports Outcome.changes (old -> new, speakable); remove
+│   │   │   ├── unknowns.py       mark_unknown (UNKNOWN | NOT_APPLICABLE), missing_fields
+│   │   │   └── readiness.py      blockers() shared with the engine; readiness(): phase, blockers, missing_fields
+│   │   └── engine/               the plan maths. build_plan re-exported from __init__
+│   │       ├── events.py         state -> dated events, one builder per item kind, exclusions and warnings
+│   │       ├── simulate.py       day-by-day balance run
+│   │       ├── settle.py         ranked reserve, settle passes, fixed point over hopeless obligations
+│   │       ├── actions.py        defer, cut, pay-minimum, prune no-op optionals, ask-lender rows
+│   │       └── plan.py           build_plan as an ordered orchestration of the steps above; summary
 │   │
-│   ├── agent/                    talks to the LLM. imports domain only
-│   │   ├── __init__.py
-│   │   ├── tools.py              six direct-function handlers. call domain, push cards via injected callback, describe result
-│   │   ├── prompt.py             load prompts/<version>.md, build per-turn "still missing" block
-│   │   └── prompts/              v1.md, v2.md  (package data)
+│   ├── agent/                    talks to the LLM. imports domain only, never pipecat
+│   │   ├── prompt.py             load prompts/<version>.md, per-turn block (today, snapshot, missing, confirmations)
+│   │   ├── prompts/v1.md         the base prompt (package data)
+│   │   └── tools/                the seven direct-function handlers, re-exported (build_tools, ToolContext, describe)
+│   │       ├── context.py        ToolContext: state, cards version, replay guard, push
+│   │       ├── coercion.py       argument coercion and allowed-value validation
+│   │       ├── handlers.py       upsert_item, remove_item, resolve_conflict, mark_unknown, finalize_plan, record_understanding, end_call
+│   │       ├── describe.py       result strings, one function per outcome kind
+│   │       └── phrases.py        every result-string fragment and template as a named constant
 │   │
 │   ├── voice/                    touches Pipecat and Daily. imports agent + domain
-│   │   ├── __init__.py
 │   │   ├── pipeline.py           build_worker(state, settings) -> PipelineWorker. STT, LLM, TTS, VAD, aggregators, observers
-│   │   ├── session.py            run_session(room_url, token): join, greeting, disconnect, idle, card push, prompt refresh, cleanup
-│   │   ├── transport.py          make_daily_transport(), create_room(), create_token(). thin wrappers over DailyRESTHelper
-│   │   └── tracing.py            optional OTel setup behind ENABLE_TRACING
+│   │   ├── session.py            run_session(room_url, token): ordered steps; join, greeting, card push, prompt refresh, teardown
+│   │   ├── lifecycle.py          GoodbyeWatcher, JoinWatchdog, CallEnder, Teardown
+│   │   ├── recorder.py           per-call transcript to evals/runs; EndedBy, Role, LlmWarning enums
+│   │   └── transport.py          Daily room (private), tokens, transport; REST client bounded at 10 s
 │   │
 │   └── api/                      HTTP surface. imports voice
-│       ├── __init__.py
-│       ├── routes.py             POST /api/sessions -> {room_url, token}; GET /api/health
-│       └── sessions.py           in-memory registry of running session tasks, cancel on shutdown
+│       ├── routes.py             POST /api/sessions -> {room_url, token, session_id}; DELETE /api/sessions/{id}; GET /api/health
+│       └── sessions.py           SessionRegistry: single slot reserved before the first await, cancel awaits teardown
 │
 ├── frontend/                     React + Vite + TypeScript. built into the image, never served by Vite in prod
-│   ├── package.json  package-lock.json  vite.config.ts  tsconfig.json  index.html  .eslintrc.cjs
 │   └── src/
-│       ├── main.tsx              mount
-│       ├── App.tsx               layout: Header, Controls, CardBoard, PlanPanel, Transcript
-│       ├── api/session.ts        startSession(): POST /api/sessions
-│       ├── call/useDailyCall.ts  hook: createCallObject, join, attach bot audio, leave, onAppMessage
-│       ├── protocol/types.ts     Card, CardsMessage. mirrors ledgerline/domain/cards.py field for field
-│       ├── protocol/parse.ts     validate shape, drop label "rtvi-ai", reject stale v
-│       ├── state/cardsReducer.ts useReducer: replace snapshot, keep last v, final-plan mode
-│       ├── components/           Controls.tsx  CardBoard.tsx  Card.tsx  StatusBadge.tsx  PlanPanel.tsx  Transcript.tsx  ErrorBanner.tsx
-│       └── styles/               tokens.css  app.css
+│       ├── main.tsx  App.tsx
+│       ├── call/                 useDailyCall.ts (thin hook) over lifecycle.ts (CallLifecycle class), dailyEvents.ts (typed adapter),
+│       │                         types.ts, constants.ts, messages.ts, testDouble.ts
+│       ├── protocol/             types.ts (CONTRACT), parse.ts, markers.ts (untyped marker words, one definition each), sample.json
+│       ├── state/sessionReducer.ts
+│       ├── mock/                 install.ts, script.ts, snapshots.json (generated by scripts/dump_mock_snapshots.py)
+│       ├── components/           CardStack, FocusCard, CardRows, CardKv, StatusBadge, PlanPanel, PhaseStrip, Timeline,
+│       │                         MissingChips, QuestionHeadline, VoiceBar, ErrorBanner, format.ts
+│       └── styles/
 │
 ├── tests/                        free, offline, fast. `uv run pytest` runs exactly this
-│   ├── conftest.py               frozen today, sample states, fake card sink
-│   ├── domain/                   test_state.py  test_engine.py  test_policy.py  test_cards.py  fixtures/*.yaml
-│   ├── agent/                    test_tools.py  test_prompt.py
-│   ├── voice/                    test_pipeline_wiring.py  (build worker with fake keys, assert processor order)
-│   ├── api/                      test_routes.py  (TestClient, Daily REST mocked)
-│   └── e2e/                      test_journey.py  (Playwright, marker e2e, fake mic, injected app-message)
+│   ├── conftest.py
+│   ├── domain/                   state/ (mirrors the package), test_engine.py, test_cards.py, test_policy.py, fixtures/
+│   ├── agent/                    test_tools.py, test_describe.py, test_prompt.py, test_integration_domain.py
+│   ├── voice/  api/
+│   └── e2e/                      Playwright, marker e2e
 │
 ├── evals/                        paid, non-deterministic, opt-in
-│   ├── harness.py  sim_user.py  checks.py  judge.py  report.py
-│   ├── scenarios/*.yaml  cassettes/*.json  SMOKE.md
-│   └── runs/                     gitignored
+│   ├── harness.py  sim_user.py  checks.py  spoken_numbers.py  provenance.py
+│   ├── scenarios/*.yaml
+│   └── runs/                     recorded calls, real and simulated
 │
-└── docs/
-    ├── research/  architecture/  reference/  eval-results/
+├── scripts/                      dump_mock_snapshots.py
+├── spike/                        throwaway measurement scripts; drive.py is a headless second participant
+└── docs/                         README.md (reading order)  research/  architecture/  reference/  process/
 ```
 
 ## Dependency contract

@@ -29,23 +29,23 @@ FastAPI ──creates room, token──▶ Daily room ◀── bot audio ──
 pipeline: Daily in → Deepgram STT → user agg → luna → Cartesia TTS → Daily out → assistant agg
                                               │ tool calls
                                               ▼
-                                    agent/tools.py ──mutate──▶ domain/state.py
+                                    agent/tools/  ──mutate──▶ domain/state/ 
                                               ▲                     │ build_plan()
                                               │ result string       ▼
-                                              └── totals ◀── domain/engine.py ──▶ domain/cards.py ──▶ urgent frame
+                                              └── totals ◀── domain/engine/  ──▶ domain/cards.py ──▶ urgent frame
 ```
 
-Layers and the only allowed import direction: `domain` ← `agent` ← `voice` ← `api`. Enforced by import-linter.
+Layers and the only allowed import direction: `domain` ← `agent` ← `voice` ← `api`. Inside `domain`: `models` ← `policy` ← `state` ← `engine` ← `cards`. Both enforced by import-linter (four contracts).
 
 | Module | Owns | May import |
 |---|---|---|
 | `ledgerline/config.py` | typed Settings from env, validated at boot | pydantic-settings |
 | `ledgerline/domain/models.py` | `FinancialState` and item models | pydantic |
-| `ledgerline/domain/state.py` | upsert, remove, conflict, unknown, missing, readiness | models |
-| `ledgerline/domain/engine.py` | `build_plan`, day simulation, classify, actions | models, policy |
+| `ledgerline/domain/state/` | upsert (overwrite, report changes), remove, mark_unknown, missing_fields, readiness (package; `names`, `items`, `unknowns`, `readiness`). Correction vs contradiction is the model's call, carried as an instruction in the tool result | models |
+| `ledgerline/domain/engine/` | `build_plan`, day simulation, reserve and settle, actions (package; `events`, `simulate`, `settle`, `actions`, `plan`) | models, policy, state |
 | `ledgerline/domain/policy.py` | tier order, consequences, allowed actions | nothing |
-| `ledgerline/domain/cards.py` | state + plan to `CardsMessage`, 4 KB guard | models |
-| `ledgerline/agent/tools.py` | six handlers, result strings | domain |
+| `ledgerline/domain/cards.py` | state + plan to `CardsMessage`, 4 KB guard | models, state (for `group_inr`, so cards and spoken figures group rupees identically) |
+| `ledgerline/agent/tools/` | six handlers, coercion, result strings as compact facts with result-carried instructions (package; `context`, `coercion`, `handlers`, `describe`, `phrases`) | domain |
 | `ledgerline/agent/prompt.py` | base prompt loader, per-turn missing block | domain |
 | `ledgerline/voice/pipeline.py` | services, aggregators, observers, `PipelineWorker` | agent, domain, pipecat |
 | `ledgerline/voice/session.py` | one call: join, greet, card push, prompt refresh, disconnect, idle | pipeline, agent, pipecat |
@@ -206,7 +206,7 @@ failure with before and after pass rates.
 | 2 Tools + harness | `agent/`, text harness driving luna | scripted conversation with correction and conflict ends in a finalized plan | 6 |
 | 3 Voice + cards | `voice/`, `domain/cards.py`, `api/`, React frontend | the one journey works by voice, cards update on correction | 9 |
 | 4 Docker + docs | two-stage Dockerfile, compose, .env.example, README, import-linter | fresh clone, one command, works at localhost:7860 | 3 |
-| 5 Eval suite | scenarios, sim user, judge, report, one failure story | eval report in docs with before and after | 8 |
+| 5 Eval suite | scenarios, sim user, judge, report, one failure with fix and evidence | eval report in docs with before and after | 8 |
 | 6 Polish | demo video, what works / does not / next | released | 4 |
 
 ## 11. Decisions, approved 2026-09-11
