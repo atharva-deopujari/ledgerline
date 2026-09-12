@@ -1,0 +1,776 @@
+{
+  "scenario": "voice-c7b7330199f6",
+  "source": "voice",
+  "session_id": "c7b7330199f6",
+  "prompt_version": "v1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-12",
+  "turns": [
+    {
+      "role": "user",
+      "text": "Hello. What's up?"
+    },
+    {
+      "role": "assistant",
+      "text": "Hi, I\u2019m here to help you make a clear plan for the next 30 days. How much money do you have right now, counting cash and your bank balance?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:33:02.462876+00:00",
+        "first_token": 1.24,
+        "first_audio": 1.526
+      }
+    },
+    {
+      "role": "user",
+      "text": "Have around"
+    },
+    {
+      "role": "user",
+      "text": "60,000 in my bank account."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, around sixty thousand rupees in your bank account today.",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "bank account",
+            "is_correction": false,
+            "amount": 60000
+          },
+          "result": "created opening balance. in 0, out 0."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "bank account",
+            "is_correction": false,
+            "amount": 60000
+          },
+          "result": "created opening balance. in 0, out 0."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:33:18.602180+00:00",
+        "first_token": 2.899,
+        "first_audio": 3.538
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "What income do you expect between the twelfth of September and the eleventh of October?",
+      "tool_calls": [],
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "I think I'll get my salary at that"
+    },
+    {
+      "role": "user",
+      "text": "the end of this month, which is, like,"
+    },
+    {
+      "role": "user",
+      "text": "how much? 40,000."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, you expect forty thousand rupees in salary at the end of September.",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "salary",
+            "is_correction": false,
+            "amount": 40000,
+            "day_of_month": 30,
+            "certainty": "estimated"
+          },
+          "result": "created salary. in 40,000, out 0."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "salary",
+            "is_correction": false,
+            "amount": 40000,
+            "day_of_month": 30,
+            "certainty": "estimated"
+          },
+          "result": "created salary. in 40,000, out 0."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:33:40.323531+00:00",
+        "first_token": 6.704,
+        "first_audio": 7.267
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "What essential bills or repayments will you need to cover before the eleventh of October?",
+      "tool_calls": [],
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "I think I have to"
+    },
+    {
+      "role": "user",
+      "text": "give my rent, which is, like, around 20,000."
+    },
+    {
+      "role": "user",
+      "text": "And"
+    },
+    {
+      "role": "user",
+      "text": "yeah. That check."
+    },
+    {
+      "role": "user",
+      "text": "No. No."
+    },
+    {
+      "role": "user",
+      "text": "Yeah. That check."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, around twenty thousand rupees for rent.",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "is_correction": false,
+            "amount": 20000,
+            "day_of_month": null,
+            "spread": false,
+            "survival": true
+          },
+          "result": "created rent. in 40,000, out 20,000."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "is_correction": false,
+            "amount": 20000,
+            "day_of_month": null,
+            "spread": false,
+            "survival": true
+          },
+          "result": "created rent. in 40,000, out 20,000."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:34:11.042567+00:00",
+        "first_token": 2.307,
+        "first_audio": 2.978
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "When is your rent due?",
+      "tool_calls": [],
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "Actually,"
+    },
+    {
+      "role": "user",
+      "text": "wait."
+    },
+    {
+      "role": "user",
+      "text": "Actually, my income is"
+    },
+    {
+      "role": "user",
+      "text": "30,000."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, you\u2019re correcting your salary to thirty thousand rupees at the end of September.",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "salary",
+            "is_correction": true,
+            "amount": 30000,
+            "day_of_month": 30,
+            "certainty": "estimated"
+          },
+          "result": "updated salary. in 30,000, out 20,000."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "salary",
+            "is_correction": true,
+            "amount": 30000,
+            "day_of_month": 30,
+            "certainty": "estimated"
+          },
+          "result": "updated salary. in 30,000, out 20,000."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:34:25.161530+00:00",
+        "first_token": 2.718,
+        "first_audio": 3.203
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "When is your rent due?",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "salary",
+            "is_correction": true,
+            "amount": 30000,
+            "day_of_month": 30,
+            "certainty": "estimated"
+          },
+          "result": "updated salary. in 30,000, out 20,000."
+        }
+      ],
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "End of this month."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, your twenty-thousand-rupee rent is due at the end of September.",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "is_correction": false,
+            "amount": 20000,
+            "day_of_month": 30,
+            "spread": false,
+            "survival": true
+          },
+          "result": "updated rent. in 30,000, out 20,000."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "is_correction": false,
+            "amount": 20000,
+            "day_of_month": 30,
+            "spread": false,
+            "survival": true
+          },
+          "result": "updated rent. in 30,000, out 20,000."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:34:38.662048+00:00",
+        "first_token": 1.301,
+        "first_audio": 1.895
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "What other essential costs, such as food, utilities, or medicine, will you have in this period?",
+      "tool_calls": [],
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "In utilities,"
+    },
+    {
+      "role": "user",
+      "text": "like"
+    },
+    {
+      "role": "user",
+      "text": "5,000."
+    },
+    {
+      "role": "user",
+      "text": "Food is"
+    },
+    {
+      "role": "user",
+      "text": "like,"
+    },
+    {
+      "role": "user",
+      "text": "2,000."
+    },
+    {
+      "role": "user",
+      "text": "2 to 3000"
+    },
+    {
+      "role": "user",
+      "text": "and traveling is, like, 1,000."
+    },
+    {
+      "role": "assistant",
+      "text": "You estimate utilities at five thousand rupees, food at two to three thousand, and travel at one thousand. Which food amount should I use: two thousand or three thousand?",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "utilities",
+            "is_correction": false,
+            "amount": 5000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": true
+          },
+          "result": "created utilities. in 30,000, out 25,000."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "utilities",
+            "is_correction": false,
+            "amount": 5000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": true
+          },
+          "result": "created utilities. in 30,000, out 25,000."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:35:09.722300+00:00",
+        "first_token": 6.461,
+        "first_audio": 6.765
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "utilities",
+            "is_correction": false,
+            "amount": 5000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": true
+          },
+          "result": "created utilities. in 30,000, out 25,000."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "food",
+            "is_correction": false,
+            "amount": 2000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": true
+          },
+          "result": "created food. in 30,000, out 27,000."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "food",
+            "is_correction": false,
+            "amount": 2000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": true
+          },
+          "result": "created food. in 30,000, out 27,000."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "travel",
+            "is_correction": false,
+            "amount": 1000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": false
+          },
+          "result": "created travel. in 30,000, out 28,000."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "travel",
+            "is_correction": false,
+            "amount": 1000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": false
+          },
+          "result": "created travel. in 30,000, out 28,000."
+        }
+      ],
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "2,000."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, food is two thousand rupees. What other essential costs will you have in this period?",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "food",
+            "is_correction": true,
+            "amount": 2000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": true
+          },
+          "result": "unchanged food. in 30,000, out 28,000."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "food",
+            "is_correction": true,
+            "amount": 2000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": true
+          },
+          "result": "unchanged food. in 30,000, out 28,000."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:35:29.883120+00:00",
+        "first_token": 2.16,
+        "first_audio": 2.341
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "Do you have any debts or repayments due before the eleventh of October?",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "food",
+            "is_correction": true,
+            "amount": 2000,
+            "day_of_month": null,
+            "spread": true,
+            "survival": true
+          },
+          "result": "unchanged food. in 30,000, out 28,000."
+        }
+      ],
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "No. That's right."
+    },
+    {
+      "role": "assistant",
+      "text": "What optional spending, such as subscriptions, shopping, or eating out, do you want included?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:35:40.422193+00:00",
+        "first_token": 1.645,
+        "first_audio": 1.975
+      }
+    },
+    {
+      "role": "user",
+      "text": "No. Nothing. That's it. I've told everything."
+    },
+    {
+      "role": "assistant",
+      "text": "You\u2019ve covered everything, with no debts or optional spending. Does the plan work for you as it is, or would you like to change anything?",
+      "tool_calls": [
+        {
+          "name": "finalize_plan",
+          "args": {},
+          "result": "plan final. surplus 62,000. in 30,000, out 28,000."
+        },
+        {
+          "name": "finalize_plan",
+          "args": {},
+          "result": "plan final. surplus 62,000. in 30,000, out 28,000."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:35:52.101643+00:00",
+        "first_token": 1.29,
+        "first_audio": 1.61
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "Your plan leaves a surplus of sixty-two thousand rupees. First, keep twenty thousand rupees aside for rent due at the end of September, so that payment is covered; does that work for you?",
+      "tool_calls": [
+        {
+          "name": "finalize_plan",
+          "args": {},
+          "result": "plan final. surplus 62,000. in 30,000, out 28,000."
+        }
+      ],
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "What is the"
+    },
+    {
+      "role": "assistant",
+      "text": "Your plan leaves a surplus of sixty-two thousand rupees after thirty thousand rupees of salary and twenty-eight thousand rupees of essentials. The two key actions are to set aside twenty thousand rupees for rent at the end of September and keep the remaining essential spending within eight thousand rupees. Does that work for you, or would you change anything?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:36:03.742854+00:00",
+        "first_token": 1.483,
+        "first_audio": 1.833
+      }
+    },
+    {
+      "role": "user",
+      "text": "what is the plan?"
+    },
+    {
+      "role": "assistant",
+      "text": "You\u2019ll start with sixty thousand rupees, receive an estimated thirty thousand rupees salary at the end of September, and cover twenty thousand rupees rent, five thousand rupees utilities, two thousand rupees food, and one thousand rupees travel. That leaves a surplus of sixty-two thousand rupees. The first action is to keep twenty thousand rupees ready for rent at the end of September, because it\u2019s your largest essential payment. The second is to keep five thousand rupees aside for utilities, while limiting food to two thousand rupees and travel to one thousand rupees. Does that work for you, or would you change anything?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:36:05.984673+00:00",
+        "first_token": 1.092,
+        "first_audio": 1.67
+      }
+    },
+    {
+      "role": "user",
+      "text": "Yeah. It works for me."
+    },
+    {
+      "role": "assistant",
+      "text": "Great, you\u2019ll keep twenty thousand rupees ready for rent and set aside five thousand rupees for utilities, while keeping food at two thousand rupees and travel at one thousand rupees.",
+      "tool_calls": [
+        {
+          "name": "record_understanding",
+          "args": {
+            "confirmed": true,
+            "restated_actions": [
+              "Keep twenty thousand rupees ready for rent",
+              "Set aside five thousand rupees for utilities",
+              "Keep food at two thousand rupees and travel at one thousand rupees"
+            ]
+          },
+          "result": "understood. in 30,000, out 28,000."
+        },
+        {
+          "name": "record_understanding",
+          "args": {
+            "confirmed": true,
+            "restated_actions": [
+              "Keep twenty thousand rupees ready for rent",
+              "Set aside five thousand rupees for utilities",
+              "Keep food at two thousand rupees and travel at one thousand rupees"
+            ]
+          },
+          "result": "understood. in 30,000, out 28,000."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:36:47.422486+00:00",
+        "first_token": 1.486,
+        "first_audio": 2.289
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "Thanks for your time. Take care.",
+      "tool_calls": [
+        {
+          "name": "record_understanding",
+          "args": {
+            "confirmed": true,
+            "restated_actions": [
+              "Keep twenty thousand rupees ready for rent",
+              "Set aside five thousand rupees for utilities",
+              "Keep food at two thousand rupees and travel at one thousand rupees"
+            ]
+          },
+          "result": "understood. in 30,000, out 28,000."
+        }
+      ],
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "Yeah. Thank you."
+    },
+    {
+      "role": "assistant",
+      "text": "You\u2019re welcome. Goodbye.",
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": {
+            "reason": "user thanked and ended the call"
+          },
+          "result": "say one short goodbye sentence, then stop"
+        },
+        {
+          "name": "end_call",
+          "args": {
+            "reason": "user thanked and ended the call"
+          },
+          "result": "say one short goodbye sentence, then stop"
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:37:09.861173+00:00",
+        "first_token": 1.045,
+        "first_audio": 1.166
+      }
+    },
+    {
+      "role": "assistant",
+      "text": "Goodbye.",
+      "tool_calls": [],
+      "timings": {}
+    }
+  ],
+  "state": {
+    "today": "2026-09-12",
+    "horizon_days": 30,
+    "opening_balance": "60000.00",
+    "opening_balance_turn": 3,
+    "opening_balance_confirmed": true,
+    "incomes": [
+      {
+        "name": "salary",
+        "confirmed": true,
+        "source_turn": 9,
+        "notes": "",
+        "amount": "30000.00",
+        "date": "2026-09-30",
+        "latest_date": null,
+        "certainty": "estimated"
+      }
+    ],
+    "debts": [],
+    "essentials": [
+      {
+        "name": "rent",
+        "confirmed": true,
+        "source_turn": 10,
+        "notes": "",
+        "amount": "20000.00",
+        "due_date": "2026-09-30",
+        "spread": false,
+        "survival": true
+      },
+      {
+        "name": "utilities",
+        "confirmed": true,
+        "source_turn": 14,
+        "notes": "",
+        "amount": "5000.00",
+        "due_date": null,
+        "spread": true,
+        "survival": true
+      },
+      {
+        "name": "food",
+        "confirmed": true,
+        "source_turn": 14,
+        "notes": "",
+        "amount": "2000.00",
+        "due_date": null,
+        "spread": true,
+        "survival": true
+      },
+      {
+        "name": "travel",
+        "confirmed": true,
+        "source_turn": 14,
+        "notes": "",
+        "amount": "1000.00",
+        "due_date": null,
+        "spread": true,
+        "survival": false
+      }
+    ],
+    "optionals": [],
+    "unknowns": [],
+    "conflicts": [],
+    "understanding": {
+      "confirmed": true,
+      "restated_actions": [
+        "Keep twenty thousand rupees ready for rent",
+        "Set aside five thousand rupees for utilities",
+        "Keep food at two thousand rupees and travel at one thousand rupees"
+      ],
+      "gaps": []
+    },
+    "plan_final": true,
+    "call_ended": true,
+    "turn": 21
+  },
+  "plan_final": true,
+  "cards_versions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "ended_by": "bot",
+  "llm_warnings": {
+    "previous_response_not_found": 5,
+    "drain_failed": 2
+  }
+}

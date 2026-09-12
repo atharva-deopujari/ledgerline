@@ -1,0 +1,112 @@
+{
+  "scenario": "voice-e2799935cc6a",
+  "source": "voice",
+  "session_id": "e2799935cc6a",
+  "prompt_version": "v1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-11",
+  "turns": [
+    {
+      "role": "user",
+      "text": "My EMIs"
+    },
+    {
+      "role": "assistant",
+      "text": "What is the rupee amount of one EMI, and what day of the month is it due?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:07:14.595817+00:00",
+        "first_token": 2.411,
+        "first_audio": 2.981
+      }
+    },
+    {
+      "role": "user",
+      "text": "4200."
+    },
+    {
+      "role": "user",
+      "text": "Yes."
+    },
+    {
+      "role": "assistant",
+      "text": "What is the amount of the EMI in rupees?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:07:21.916729+00:00",
+        "first_token": 1.232,
+        "first_audio": 1.766
+      }
+    },
+    {
+      "role": "user",
+      "text": "My salary is 45 rupees."
+    },
+    {
+      "role": "assistant",
+      "text": "You said your salary is 45 rupees. Did you mean 45,000 rupees?",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "salary",
+            "is_correction": false,
+            "amount": 45,
+            "day_of_month": null
+          },
+          "result": "created salary. Salary came through as 45. Did you mean 45,000?."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "salary",
+            "is_correction": false,
+            "amount": 45,
+            "day_of_month": null
+          },
+          "result": "created salary. Salary came through as 45. Did you mean 45,000?."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:07:27.715735+00:00",
+        "first_token": 2.085,
+        "first_audio": 2.48
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-11",
+    "horizon_days": 30,
+    "opening_balance": null,
+    "incomes": [
+      {
+        "name": "salary",
+        "confirmed": false,
+        "source_turn": 3,
+        "notes": "",
+        "amount": "45.00",
+        "date": null,
+        "latest_date": null,
+        "certainty": "confirmed"
+      }
+    ],
+    "debts": [],
+    "essentials": [],
+    "optionals": [],
+    "unknowns": [],
+    "conflicts": [],
+    "understanding": null,
+    "plan_final": false,
+    "turn": 3
+  },
+  "plan_final": false,
+  "cards_versions": [
+    1
+  ],
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  }
+}

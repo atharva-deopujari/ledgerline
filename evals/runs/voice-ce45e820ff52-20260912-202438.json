@@ -1,0 +1,128 @@
+{
+  "scenario": "voice-ce45e820ff52",
+  "source": "voice",
+  "session_id": "ce45e820ff52",
+  "prompt_version": "v1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-12",
+  "turns": [
+    {
+      "role": "user",
+      "text": "I have",
+      "finalisations": [
+        "I have"
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "0 rupees recorded so far. How much money do you have right now, counting cash and your bank balance?",
+      "tool_calls": [],
+      "event_order": [
+        "message"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:54:18.643355+00:00",
+        "first_token": 1.21,
+        "first_audio": 1.578
+      }
+    },
+    {
+      "role": "user",
+      "text": "20,000 in cash and",
+      "finalisations": [
+        "20,000 in cash and"
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "",
+      "tool_calls": [
+        {
+          "id": "call_HZKDgJMUk8AJgwmNtY6WEEPK",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "cash",
+            "is_correction": false,
+            "amount": 20000
+          },
+          "result": "created opening balance 20,000. in 0, out 0."
+        }
+      ],
+      "event_order": [
+        "function_call"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:54:21.010403+00:00",
+        "first_audio": 1.521
+      }
+    },
+    {
+      "role": "user",
+      "text": "20,000 in bank balance.",
+      "finalisations": [
+        "20,000 in bank balance."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "20,000 rupees in bank balance recorded. What income will you receive between today and the eleventh of October?",
+      "tool_calls": [
+        {
+          "id": "call_aDNMuCOm2r5yHw8HTR7y1ITK",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "bank balance",
+            "is_correction": false,
+            "amount": 20000
+          },
+          "result": "unchanged opening balance. in 0, out 0."
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:54:24.549026+00:00",
+        "first_token": 3.957,
+        "first_audio": 2.337
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-12",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "opening_balance_turn": 0,
+    "opening_balance_confirmed": true,
+    "incomes": [],
+    "debts": [],
+    "essentials": [],
+    "optionals": [],
+    "unknowns": [],
+    "conflicts": [],
+    "outliers": [],
+    "understanding": null,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 2
+  },
+  "plan_final": false,
+  "cards_versions": [
+    1,
+    2
+  ],
+  "ended_by": "client",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  }
+}

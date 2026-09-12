@@ -1,0 +1,549 @@
+{
+ "scenario": "stt_implausible_amount",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, and I\u2019ll help you plan the next 30 days; how much money is in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "There are nine thousand rupees in my account."
+  },
+  {
+   "role": "assistant",
+   "text": "You have nine thousand rupees in your account today. What income do you expect between now and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account",
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 9,000; say this back, then ask\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent is 12."
+  },
+  {
+   "role": "assistant",
+   "text": "You said your rent is twelve rupees; is that correct?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 12,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded rent 12; rent looks small, confirm it before moving on\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Twelve thousand, sorry. Twelve thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Is your rent twelve thousand rupees, rather than twelve rupees?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 12000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "rent: 12 -> 12,000; confirm which is right before moving on\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Salary forty-five."
+  },
+  {
+   "role": "assistant",
+   "text": "You said your salary is forty-five rupees; is that correct?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "amount": 45,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "recorded salary 45; salary looks small, confirm it before moving on\nunsolvable, something is left unpaid\nin 0, out 8,800, lowest 200 on 2 October\nsurplus 200\nunpaid total 3,200\nprovisional: salary\nmissing: salary date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Forty-five thousand a month."
+  },
+  {
+   "role": "assistant",
+   "text": "Is your monthly salary forty-five thousand rupees, rather than forty-five rupees?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "amount": 45000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "salary: 45 -> 45,000; confirm which is right before moving on\nunsolvable, something is left unpaid\nin 0, out 8,800, lowest 200 on 2 October\nsurplus 200\nunpaid total 3,200\nprovisional: salary\nmissing: salary date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, forty-five thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "What day of the month does your salary arrive?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "amount": 45000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "unchanged salary\nunsolvable, something is left unpaid\nin 0, out 8,800, lowest 200 on 2 October\nsurplus 200\nunpaid total 3,200\nprovisional: salary\nmissing: salary date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "On the first day of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Your salary is forty-five thousand rupees on the first of each month. What day is your rent due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "amount": 45000,
+      "day_of_month": 1,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "recorded salary date 1 Oct; say this back, then ask\nin 45,000, out 12,000, lowest 1,000 on 30 September\nsurplus 42,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent is due on the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "Your rent is twelve thousand rupees, due on the fifth of each month. What other essential expenses do you have before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 12000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded rent due date 5 Oct; say this back, then ask\nin 45,000, out 12,000, lowest 9,000 on 11 September\nsurplus 42,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Groceries, about eight thousand rupees spread over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Your groceries are about eight thousand rupees spread over the month. Do you have any debts or repayments due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "amount": 8000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded groceries 8,000; say this back, then ask\nin 45,000, out 20,000, lowest 3,666.60 on 30 September\nsurplus 34,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The scooter EMI is three thousand four hundred rupees, due on the twelfth."
+  },
+  {
+   "role": "assistant",
+   "text": "Your scooter EMI is three thousand four hundred rupees, due on the twelfth. Are there any other debts or repayments due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "scooter EMI",
+      "amount": 3400,
+      "day_of_month": 12,
+      "debt_kind": "secured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded scooter emi 3,400 due 12 Sep; say this back, then ask\nin 45,000, out 23,400, lowest 266.60 on 30 September\nsurplus 30,600"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No, there aren\u2019t any others."
+  },
+  {
+   "role": "assistant",
+   "text": "You have no other debts or repayments due before the tenth of October. Do you have any optional spending you want included?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "other debts or repayments",
+      "not_applicable": true
+     },
+     "result": "'other debts or repayments' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:other repayments",
+      "not_applicable": true
+     },
+     "result": "'debt:other repayments' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:other.amount",
+      "not_applicable": true
+     },
+     "result": "none: other amount\nin 45,000, out 23,400, lowest 266.60 on 30 September\nsurplus 30,600"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I could skip streaming, which is three hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your streaming costs three hundred rupees, and you could skip it. Would you like to hear the 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "streaming",
+      "amount": 300,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": null,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded streaming 300; say this back, then ask\nin 45,000, out 23,700, lowest 66.60 on 30 September\nsurplus 30,300"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, please."
+  },
+  {
+   "role": "assistant",
+   "text": "First, keep at least twelve thousand rupees ready for rent due on the fifth; if it isn\u2019t paid, you may face the consequences of missing rent. Would you like to go over the second action?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final\nin 45,000, out 23,700, lowest 66.60 on 30 September\nsurplus 30,300"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, please."
+  },
+  {
+   "role": "assistant",
+   "text": "Second, keep three thousand four hundred rupees ready for the scooter EMI due on the twelfth; if it isn\u2019t paid, you may face the consequences of missing the repayment. Does that and what happens if you skip either action make sense?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, it makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true
+     },
+     "result": "understood, say one goodbye and call end_call in this reply"
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood and agreed"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "9000.00",
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "amount": "45000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "scooter emi",
+    "notes": "",
+    "kind": "secured_emi",
+    "amount_due": "3400.00",
+    "min_due": null,
+    "due_date": "2026-09-12",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "amount": "12000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "groceries",
+    "notes": "",
+    "amount": "8000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming",
+    "notes": "",
+    "amount": "300.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "debt:other.amount",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 16
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15
+ ],
+ "usage": {
+  "input_tokens": 92625,
+  "output_tokens": 1497
+ }
+}

@@ -1,0 +1,321 @@
+{
+ "scenario": "garbage_opener",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, here to help you plan the next 30 days; how much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Your WhatsApp."
+  },
+  {
+   "role": "assistant",
+   "text": "I don\u2019t have WhatsApp; how much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have 9000 rupees in the account right now."
+  },
+  {
+   "role": "assistant",
+   "text": "Nine thousand rupees. What income do you expect between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account balance",
+      "is_correction": false,
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created opening balance 9,000. in 0, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I expect my salary of 52000 rupees on the first of next month."
+  },
+  {
+   "role": "assistant",
+   "text": "Fifty-two thousand rupees on the first of October. What regular payments or necessary costs will you have before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "is_correction": false,
+      "amount": 52000,
+      "day_of_month": 1,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "created salary 52,000. in 52,000, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I need to pay 16000 rupees for rent by the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "Sixteen thousand rupees for rent by the fifth of October. What other necessary cost or payment is due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "is_correction": false,
+      "amount": 16000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created rent 16,000. in 52,000, out 16,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I need about 8000 rupees for groceries over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Eight thousand rupees for groceries spread across the month. What optional spending do you want included before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "is_correction": false,
+      "amount": 8000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created groceries 8,000. in 52,000, out 24,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I could skip my 500-rupee streaming subscription."
+  },
+  {
+   "role": "assistant",
+   "text": "Five hundred rupees for streaming, which you can skip. Is there anything else you want included, or should I prepare the 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "streaming subscription",
+      "is_correction": false,
+      "amount": 500,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created streaming subscription 500. in 52,000, out 24,500."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Please prepare the plan."
+  },
+  {
+   "role": "assistant",
+   "text": "Thirty-six thousand five hundred rupees is the surplus, and the lowest balance is three thousand three hundred thirty-three rupees and twenty paise on the thirtieth of September. First, keep sixteen thousand rupees available for rent by the fifth of October; skipping it could put your housing at risk\u2014does that action and its consequence make sense?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final. surplus 36,500. lowest 3,333.20 on 30 September. in 52,000, out 24,500."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, that makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true,
+      "restated_actions": null
+     },
+     "result": "understood, say one goodbye and call end_call in this reply. in 52,000, out 24,500."
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood and call complete"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "9000.00",
+  "opening_balance_turn": 2,
+  "opening_balance_confirmed": true,
+  "incomes": [
+   {
+    "name": "salary",
+    "confirmed": true,
+    "source_turn": 3,
+    "notes": "",
+    "amount": "52000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [],
+  "essentials": [
+   {
+    "name": "rent",
+    "confirmed": true,
+    "source_turn": 4,
+    "notes": "",
+    "amount": "16000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": false
+   },
+   {
+    "name": "groceries",
+    "confirmed": true,
+    "source_turn": 5,
+    "notes": "",
+    "amount": "8000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming subscription",
+    "confirmed": true,
+    "source_turn": 6,
+    "notes": "",
+    "amount": "500.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [],
+  "conflicts": [],
+  "outliers": [],
+  "understanding": {
+   "confirmed": true,
+   "restated_actions": [],
+   "gaps": []
+  },
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 9
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8
+ ],
+ "usage": {
+  "input_tokens": 38306,
+  "output_tokens": 854
+ }
+}

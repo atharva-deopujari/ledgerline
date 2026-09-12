@@ -1,0 +1,270 @@
+{
+ "scenario": "one_word_answers",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline; how much money is in your account today, in rupees?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Six thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "You have six thousand rupees in your account today. What income will arrive between now and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account today",
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 6,000; say this back, then ask\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "None."
+  },
+  {
+   "role": "assistant",
+   "text": "There\u2019s no income expected before the tenth of October. What essential costs, such as housing, food, utilities, or medicine, will you need to pay?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "income",
+      "not_applicable": true
+     },
+     "result": "none: income\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent, nine thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your rent is nine thousand rupees, leaving three thousand rupees unpaid within this window. When is the rent due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded rent 9,000; say this back, then ask\nunsolvable, something is left unpaid\nin 0, out 6,000, lowest 0 on 30 September\nsurplus 0\nunpaid total 3,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted that the rent has no stated due date. Are there any other essential costs?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:rent.day_of_month",
+      "not_applicable": true
+     },
+     "result": "'essential:rent.day_of_month' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:rent.due_date",
+      "not_applicable": true
+     },
+     "result": "none: rent due date\nunsolvable, something is left unpaid\nin 0, out 6,000, lowest 0 on 30 September\nsurplus 0\nunpaid total 3,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "September."
+  },
+  {
+   "role": "assistant",
+   "text": "Your rent is due in September, and three thousand rupees will remain unpaid from your current balance. Are there any other essential costs?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 9000,
+      "day_of_month": 30,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded rent due date 30 Sep; say this back, then ask\nunsolvable, something is left unpaid\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nunpaid total 9,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "Would you like to hear the 30-day plan now?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "On the thirtieth of September, you\u2019ll be three thousand rupees short for rent; the first action is to ask the provider for a few more days or to split the bill, because otherwise food or power could go and reconnection may cost more. Would you like to take that action?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final\nunsolvable, something is left unpaid\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nunpaid total 9,000\nOn 30 September you are 3,000 short for rent. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands\nSkip this and the food or the power goes, and getting reconnected costs more than the bill did.\nunpaid rent 9,000 due 30 September"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true
+     },
+     "result": "understood, say one goodbye and call end_call in this reply"
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan agreed"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "6000.00",
+  "incomes": [],
+  "debts": [],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "amount": "9000.00",
+    "due_date": "2026-09-30",
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [],
+  "unknowns": [
+   {
+    "field": "income",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 9
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8
+ ],
+ "usage": {
+  "input_tokens": 36323,
+  "output_tokens": 641
+ }
+}

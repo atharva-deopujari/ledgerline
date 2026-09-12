@@ -1,0 +1,498 @@
+{
+ "scenario": "one_word_answers",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline. How much money is in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Six thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "You have six thousand rupees in your account today. What income do you expect before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "opening balance",
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 6,000; say this back, then ask\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "None."
+  },
+  {
+   "role": "assistant",
+   "text": "You expect no income before the tenth of October. When would that income arrive?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "income",
+      "amount": 0,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "recorded income 0; say this back, then ask\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: income\nmissing: income date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Day thirty."
+  },
+  {
+   "role": "assistant",
+   "text": "No income is due on the thirtieth of September. What essential bills do you need to pay before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "income",
+      "amount": 0,
+      "day_of_month": 30,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "recorded income date 30 Sep; say this back, then ask\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "You have no essential bills before the tenth of October. Do you have any debts or repayments due?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential",
+      "not_applicable": true
+     },
+     "result": "'essential' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:none",
+      "not_applicable": true
+     },
+     "result": "'essential:none' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "essential expenses",
+      "amount": 0,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded essential expenses 0; say this back, then ask\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "September."
+  },
+  {
+   "role": "assistant",
+   "text": "You have a September repayment. What date is it due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "September repayment",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "a new debt needs debt_kind: september repayment. Call upsert_item again with debt_kind set to one of: secured_emi, unsecured_emi, credit_card, informal."
+    },
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "September repayment",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": "unsecured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded september repayment\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: september repayment\nmissing: september repayment due date, september repayment amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "You don\u2019t know the repayment\u2019s due date. How much is the September repayment?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:September repayment.day_of_month",
+      "not_applicable": true
+     },
+     "result": "'debt:September repayment.day_of_month' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:September repayment.due_date",
+      "not_applicable": true
+     },
+     "result": "none: September repayment due date\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: september repayment\nmissing: september repayment due date, september repayment amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Two thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your September repayment is two thousand rupees, and you don\u2019t know its due date. Do you have any optional spending before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "September repayment",
+      "amount": 2000,
+      "day_of_month": null,
+      "debt_kind": "unsecured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded september repayment 2,000; say this back, then ask\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: september repayment\nmissing: september repayment due date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "You have optional spending before the tenth of October. How much will that be?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "optional spending",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded optional spending\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: september repayment, optional spending\nmissing: september repayment due date, optional spending amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Four hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your optional spending is four hundred rupees, leaving five thousand six hundred rupees at the lowest point on the tenth of October. Do you agree to hear the thirty-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "optional spending",
+      "amount": 400,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded optional spending 400; say this back, then ask\nin 0, out 400, lowest 5,600 on 10 October\nsurplus 5,600\nprovisional: september repayment\nmissing: september repayment due date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "What date is the September repayment due?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "blocked: september repayment due date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Day fifteen."
+  },
+  {
+   "role": "assistant",
+   "text": "Your two-thousand-rupee repayment is due on the fifteenth of September. The first action is to pay it by then; if you skip it, the repayment remains unpaid. Does that and what happens if you skip it make sense?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "September repayment",
+      "amount": 2000,
+      "day_of_month": 15,
+      "debt_kind": "unsecured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded september repayment due date 15 Sep; say this back, then ask\nin 0, out 2,400, lowest 3,600 on 10 October\nsurplus 3,600"
+    },
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final\nin 0, out 2,400, lowest 3,600 on 10 October\nsurplus 3,600"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, it does."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true
+     },
+     "result": "understood, say one goodbye and call end_call in this reply"
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood and agreed"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "6000.00",
+  "incomes": [
+   {
+    "name": "income",
+    "notes": "",
+    "amount": "0.00",
+    "date": "2026-09-30",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "september repayment",
+    "notes": "",
+    "kind": "unsecured_emi",
+    "amount_due": "2000.00",
+    "min_due": null,
+    "due_date": "2026-09-15",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "essential expenses",
+    "notes": "",
+    "amount": "0.00",
+    "due_date": null,
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "optional spending",
+    "notes": "",
+    "amount": "400.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "debt:September repayment.due_date",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 13
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13
+ ],
+ "usage": {
+  "input_tokens": 80815,
+  "output_tokens": 1287
+ }
+}

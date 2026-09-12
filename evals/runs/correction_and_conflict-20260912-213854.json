@@ -1,0 +1,551 @@
+{
+ "scenario": "correction_and_conflict",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, and I\u2019ll help you plan the next 30 days; how much money is in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "There\u2019s fifteen thousand rupees in the account right now."
+  },
+  {
+   "role": "assistant",
+   "text": "You have fifteen thousand rupees in the account today. What income do you expect before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account",
+      "amount": 15000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 15,000; say this back, then ask\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent is twelve thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "Your rent is twelve thousand rupees. What income do you expect before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 12000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded rent 12,000; say this back, then ask\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Actually, the rent is fourteen thousand, not twelve."
+  },
+  {
+   "role": "assistant",
+   "text": "Is fourteen thousand rupees the correct rent amount?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 14000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "rent: 12,000 -> 14,000; confirm which is right before moving on\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, fourteen thousand rupees is correct."
+  },
+  {
+   "role": "assistant",
+   "text": "What income do you expect before the tenth of October?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My electricity bill is two thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "Your electricity bill is two thousand rupees. What income do you expect before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "electricity bill",
+      "amount": 2000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded electricity bill 2,000; say this back, then ask\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The electricity is three thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "Is three thousand rupees the correct electricity bill?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "electricity bill",
+      "amount": 3000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "electricity bill: 2,000 -> 3,000; confirm which is right before moving on\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I do not know."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ll leave the electricity amount as unknown. What income do you expect before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:electricity bill.amount",
+      "not_applicable": false
+     },
+     "result": "not known: electricity bill amount\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The shop income comes in around the tenth."
+  },
+  {
+   "role": "assistant",
+   "text": "Your shop income comes in around the tenth of October. How much is it?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "shop income",
+      "amount": null,
+      "day_of_month": 10,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "estimated",
+      "latest_day_of_month": null
+     },
+     "result": "recorded shop income on 10 Oct; say this back, then ask\nblocked: income\nmissing: shop income amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It\u2019s fifty thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your shop income is fifty thousand rupees, expected around the tenth of October. Is there anything else you want included before we make the 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "shop income",
+      "amount": 50000,
+      "day_of_month": 10,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "estimated",
+      "latest_day_of_month": null
+     },
+     "result": "recorded shop income 50,000; say this back, then ask\nin 50,000, out 14,000, lowest 1,466.57 on 9 October\nsurplus 51,000\nprovisional: electricity bill"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "There\u2019s a machine loan payment of six thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your machine loan payment is six thousand rupees. What day of the month is it due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "machine loan",
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": "secured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded machine loan 6,000; say this back, then ask\nin 50,000, out 14,000, lowest 1,466.57 on 9 October\nsurplus 51,000\nprovisional: electricity bill, machine loan\nmissing: machine loan due date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It\u2019s due on the twelfth."
+  },
+  {
+   "role": "assistant",
+   "text": "Your machine loan payment of six thousand rupees is due on the twelfth of September, and the dates don\u2019t line up. What other expense or payment should we include?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "machine loan",
+      "amount": 6000,
+      "day_of_month": 12,
+      "debt_kind": "secured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded machine loan due date 12 Sep; say this back, then ask\ntiming shortfall, the money is there but the dates do not line up\nin 50,000, out 14,000, lowest 1,466.57 on 9 October\nsurplus 51,000\nunpaid total 6,000\nprovisional: electricity bill"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Groceries are seven thousand rupees over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Your groceries are seven thousand rupees spread over the month. What other expense or payment should we include?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "amount": 7000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded groceries 7,000; say this back, then ask\ntiming shortfall, the money is there but the dates do not line up\nin 50,000, out 15,399.96, lowest 300.04 on 9 October\nsurplus 49,600.04\nunpaid total 11,600.04\nprovisional: electricity bill"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I could skip the newspaper, which costs three hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "The newspaper costs three hundred rupees and can be skipped. Is there anything else to include before we make the 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "newspaper",
+      "amount": 300,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded newspaper 300; say this back, then ask\ntiming shortfall, the money is there but the dates do not line up\nin 50,000, out 15,699.96, lowest 300.04 on 9 October\nsurplus 49,300.04\nunpaid total 11,600.04\nprovisional: electricity bill"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No, that\u2019s everything."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve captured everything you\u2019ve shared. Would you like me to make the 30-day plan now?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, please make the plan."
+  },
+  {
+   "role": "assistant",
+   "text": "Your plan has a timing shortfall: fifty thousand rupees is expected, but the dates don\u2019t line up, and the electricity amount is still unknown. First, you could ask your landlord in writing for a few extra days; paying rent late may mean a late fee and repeated lateness could put your tenancy at risk\u2014does that make sense?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final\ntiming shortfall, the money is there but the dates do not line up\nin 50,000, out 15,699.96, lowest 300.04 on 9 October\nsurplus 49,300.04\nunpaid total 11,600.04\nFrom 28 September there is not enough for rent; 5,600.04 of 14,000 is not covered this month. The money is not there until 10 October. You could ask your landlord in writing for a few extra days\nPaying rent late usually means a late fee, and doing it repeatedly puts your tenancy at risk.\nOn 12 September paying the 6,000 machine loan would leave you 6,399.96 short for groceries and rent later in the month. The money is not there until 10 October. You could ask the lender whether the due date can move to just after you are paid\nMissing a secured instalment adds penal charges, gets reported to the credit bureaus once it is thirty days past due, and the lender can eventually move to take back the asset.\nunpaid rent 5,600.04 due 28 September\nunpaid machine loan 6,000 due 12 September\nshop income is an estimate, around 50,000; the plan moves with it.\nprovisional: electricity bill"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, that makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true
+     },
+     "result": "understood, say one goodbye and call end_call in this reply"
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "15000.00",
+  "incomes": [
+   {
+    "name": "shop income",
+    "notes": "",
+    "amount": "50000.00",
+    "date": "2026-10-10",
+    "latest_date": null,
+    "certainty": "estimated"
+   }
+  ],
+  "debts": [
+   {
+    "name": "machine loan",
+    "notes": "",
+    "kind": "secured_emi",
+    "amount_due": "6000.00",
+    "min_due": null,
+    "due_date": "2026-09-12",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "amount": "14000.00",
+    "due_date": null,
+    "spread": false,
+    "survival": false
+   },
+   {
+    "name": "electricity bill",
+    "notes": "",
+    "amount": null,
+    "due_date": null,
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "groceries",
+    "notes": "",
+    "amount": "7000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "newspaper",
+    "notes": "",
+    "amount": "300.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "essential:electricity bill.amount",
+    "reason": "unknown"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 17
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15
+ ],
+ "usage": {
+  "input_tokens": 86840,
+  "output_tokens": 1469
+ }
+}

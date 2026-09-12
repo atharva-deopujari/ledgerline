@@ -1,0 +1,607 @@
+{
+ "scenario": "correction_and_conflict",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, here to help plan your next 30 days; how much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have fifteen thousand rupees right now."
+  },
+  {
+   "role": "assistant",
+   "text": "Fifteen thousand rupees is your balance today. What income do you expect between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "money right now",
+      "is_correction": false,
+      "amount": 15000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created opening balance 15,000. in 0, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent is twelve thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "Twelve thousand rupees for rent is recorded. When is the rent due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "is_correction": false,
+      "amount": 12000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created rent 12,000. in 0, out 12,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Actually, the rent is fourteen thousand, not twelve."
+  },
+  {
+   "role": "assistant",
+   "text": "Fourteen thousand rupees for rent is recorded. When is the rent due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "is_correction": true,
+      "amount": 14000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated rent 14,000. in 0, out 14,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It\u2019s due on the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "The rent of fourteen thousand rupees is due on the fifth. What income do you expect between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "is_correction": false,
+      "amount": 14000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated rent 14,000. in 0, out 14,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My electricity bill is two thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "Two thousand rupees for electricity is recorded. When is the electricity bill due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "electricity bill",
+      "is_correction": false,
+      "amount": 2000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created electricity bill 2,000. in 0, out 2,000. 14,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The electricity is three thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "Three thousand rupees for electricity is recorded. When is the electricity bill due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "electricity bill",
+      "is_correction": true,
+      "amount": 3000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated electricity bill 3,000. in 0, out 3,000. 14,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I do not know."
+  },
+  {
+   "role": "assistant",
+   "text": "You don\u2019t know when the electricity bill is due, so I won\u2019t ask again. What income do you expect between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:electricity bill.day_of_month",
+      "reason": "user_does_not_know"
+     },
+     "result": "\"EssentialExpense\" object has no field \"day_of_month\". Name the field as kind:name.attribute, like essential:rent.amount, or opening_balance. If nothing is missing, do not call this at all."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:electricity bill.due_day",
+      "reason": "user_does_not_know"
+     },
+     "result": "\"EssentialExpense\" object has no field \"due_day\". Name the field as kind:name.attribute, like essential:rent.amount, or opening_balance. If nothing is missing, do not call this at all."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The shop income comes on the tenth."
+  },
+  {
+   "role": "assistant",
+   "text": "Shop income arrives on the tenth, but I still need its amount. How much do you get as shop income?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "shop income",
+      "is_correction": false,
+      "amount": null,
+      "day_of_month": 10,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "created shop income. in 0, out 3,000. 14,000 stays unpaid. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It\u2019s fifty thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Fifty thousand rupees of confirmed shop income arrives on the tenth. Is there any other income, debt, essential expense, or optional spending before we make the plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "shop income",
+      "is_correction": false,
+      "amount": 50000,
+      "day_of_month": 10,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "updated shop income 50,000. in 50,000, out 3,000. 14,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have a machine loan of six thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Six thousand rupees for the machine loan is recorded. Which day of the month is the machine loan due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "machine loan",
+      "is_correction": false,
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": "secured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created machine loan 6,000. in 50,000, out 3,000. 14,000 stays unpaid. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It\u2019s due on the twelfth."
+  },
+  {
+   "role": "assistant",
+   "text": "Six thousand rupees for the machine loan is due on the twelfth. Is there any other income, debt, essential expense, or optional spending before we make the plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "machine loan",
+      "is_correction": false,
+      "amount": 6000,
+      "day_of_month": 12,
+      "debt_kind": "secured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated machine loan 6,000. in 50,000, out 9,000. 14,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I need seven thousand rupees for groceries."
+  },
+  {
+   "role": "assistant",
+   "text": "Seven thousand rupees for groceries is recorded across the month. Is there any other income, debt, essential expense, or optional spending before we make the plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "is_correction": false,
+      "amount": 7000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created groceries 7,000. in 50,000, out 10,000. 20,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I could skip the newspaper, three hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Three hundred rupees for the newspaper is optional and flexible. Is there any other income, debt, essential expense, or optional spending before we make the plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "newspaper",
+      "is_correction": false,
+      "amount": 300,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created newspaper 300. in 50,000, out 10,300. 20,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No, that\u2019s all."
+  },
+  {
+   "role": "assistant",
+   "text": "On the fifth of October, you\u2019re six thousand nine hundred ninety-nine rupees and ninety-two paise short for rent because the fifty thousand rupees arrives on the tenth; ask the provider for a few more days or to split the bill, otherwise food or power could be affected and reconnection may cost more. Would you like to hear the second action?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final. timing shortfall, the money is there but the dates do not line up. surplus 54,700. lowest 5,333.43 on 9 October. On 5 October you are 6,999.92 short for rent. The money is not there until 10 October. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands. Skip this and the food or the power goes, and getting reconnected costs more than the bill did. On 12 September paying the 6,000 machine loan would leave you 1,000 short for electricity bill and groceries later in the month. The money is not there until 10 October. You could ask the lender whether the due date can move to just after you are paid. Missing a secured instalment adds penal charges, gets reported to the credit bureaus once it is thirty days past due, and the lender can eventually move to take back the asset. unpaid rent 14,000 due 5 October. unpaid machine loan 6,000 due 12 September. in 50,000, out 10,300. 20,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, I\u2019d like to hear the second action."
+  },
+  {
+   "role": "assistant",
+   "text": "On the twelfth of September, paying the six thousand rupees machine loan would leave you one thousand rupees short for electricity and groceries later in the month; ask the lender whether the due date can move until just after you\u2019re paid, because missing a secured instalment can add charges, affect your credit record after thirty days, and eventually put the asset at risk. Does that action and what happens if you skip it make sense?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It does."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye, and take care.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true,
+      "restated_actions": null
+     },
+     "result": "understood, say one goodbye and call end_call in this reply. in 50,000, out 10,300. 20,000 stays unpaid."
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood and call complete"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "15000.00",
+  "opening_balance_turn": 1,
+  "opening_balance_confirmed": true,
+  "incomes": [
+   {
+    "name": "shop income",
+    "confirmed": true,
+    "source_turn": 9,
+    "notes": "",
+    "amount": "50000.00",
+    "date": "2026-10-10",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "machine loan",
+    "confirmed": true,
+    "source_turn": 11,
+    "notes": "",
+    "kind": "secured_emi",
+    "amount_due": "6000.00",
+    "min_due": null,
+    "due_date": "2026-09-12",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "confirmed": true,
+    "source_turn": 4,
+    "notes": "",
+    "amount": "14000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "electricity bill",
+    "confirmed": true,
+    "source_turn": 6,
+    "notes": "",
+    "amount": "3000.00",
+    "due_date": null,
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "groceries",
+    "confirmed": true,
+    "source_turn": 12,
+    "notes": "",
+    "amount": "7000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "newspaper",
+    "confirmed": true,
+    "source_turn": 13,
+    "notes": "",
+    "amount": "300.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [],
+  "conflicts": [],
+  "outliers": [],
+  "understanding": {
+   "confirmed": true,
+   "restated_actions": [],
+   "gaps": []
+  },
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 17
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15
+ ],
+ "usage": {
+  "input_tokens": 100339,
+  "output_tokens": 1805
+ }
+}

@@ -1,0 +1,423 @@
+{
+ "scenario": "garbage_opener",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline\u2014how much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Your WhatsApp."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019m Ledgerline, a money coach, not a WhatsApp contact. How much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have nine thousand rupees right now."
+  },
+  {
+   "role": "assistant",
+   "text": "Nine thousand rupees recorded. When will your next income arrive, and how much will it be?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "money right now",
+      "is_correction": false,
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created opening balance 9,000. in 0, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My salary comes on the first of next month, and it will be fifty-two thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Fifty-two thousand rupees recorded for the first of October. What essential bills or living costs must you pay before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "is_correction": false,
+      "amount": 52000,
+      "day_of_month": 1,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "created salary 52,000. in 52,000, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I need to pay sixteen thousand rupees in rent by the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "Sixteen thousand rupees for rent recorded, due by the fifth of October. What\u2019s the next essential bill or living cost?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "is_correction": false,
+      "amount": 16000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created rent 16,000. in 52,000, out 16,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I need groceries, about eight thousand rupees spread through the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Eight thousand rupees for groceries recorded across the month. Are there any debts or other essential costs before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "is_correction": false,
+      "amount": 8000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created groceries 8,000. in 52,000, out 24,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have four thousand rupees on my credit card, due on the twenty-second, with a minimum payment of twelve hundred."
+  },
+  {
+   "role": "assistant",
+   "text": "Four thousand rupees on the credit card is due on the twenty-second, with a minimum payment of twelve hundred rupees. Are there any other debts or essential costs?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card",
+      "is_correction": false,
+      "amount": 4000,
+      "day_of_month": 22,
+      "debt_kind": "credit_card",
+      "min_due": 1200,
+      "spread": false,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created credit card 4,000. in 52,000, out 24,000. 4,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "There\u2019s electricity of nineteen hundred rupees, due on the twenty-second."
+  },
+  {
+   "role": "assistant",
+   "text": "One thousand nine hundred rupees for electricity is due on the twenty-second. Is there anything else essential or any optional spending to include?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "electricity",
+      "is_correction": false,
+      "amount": 1900,
+      "day_of_month": 22,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created electricity 1,900. in 52,000, out 25,900. 4,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I could skip streaming, which costs five hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Five hundred rupees for streaming recorded as optional and flexible. Nothing is blocking the plan; would you like me to work out your next 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "streaming",
+      "is_correction": false,
+      "amount": 500,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created streaming 500. in 52,000, out 26,400. 4,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, please work it out."
+  },
+  {
+   "role": "assistant",
+   "text": "Four thousand rupees on the credit card is due on the twenty-second, but the money won\u2019t be there until the first of October; being more than three days late could mean a late fee and a past-due credit report. Could you ask the issuer to move the statement date or waive the late fee this once?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final. timing shortfall, the money is there but the dates do not line up. surplus 34,600. lowest 1,766.60 on 30 September. From 22 September there is not enough for credit card; 4,000 of 4,000 is not covered this month. The money is not there until 1 October. You could ask the issuer to move your statement date or to waive the late fee this once. If the minimum due is more than three days late, the issuer can charge a late fee and report the account past due to the credit bureaus. Move streaming, 500, to 1 October, once there is money in the account to cover it. unpaid credit card 4,000 due 22 September. in 52,000, out 26,400. 4,000 stays unpaid."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I\u2019ll ask the card issuer to move the statement date or waive the late fee this once."
+  },
+  {
+   "role": "assistant",
+   "text": "Five hundred rupees for streaming should be moved to the first of October, when the account has money to cover it; keeping it before then could leave the plan short. Does that action and what happens if you skip it make sense?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, that makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true,
+      "restated_actions": null
+     },
+     "result": "understood, say one goodbye and call end_call in this reply. in 52,000, out 26,400. 4,000 stays unpaid."
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "9000.00",
+  "opening_balance_turn": 2,
+  "opening_balance_confirmed": true,
+  "incomes": [
+   {
+    "name": "salary",
+    "confirmed": true,
+    "source_turn": 3,
+    "notes": "",
+    "amount": "52000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card",
+    "confirmed": true,
+    "source_turn": 6,
+    "notes": "",
+    "kind": "credit_card",
+    "amount_due": "4000.00",
+    "min_due": "1200.00",
+    "due_date": "2026-09-22",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "confirmed": true,
+    "source_turn": 4,
+    "notes": "",
+    "amount": "16000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": false
+   },
+   {
+    "name": "groceries",
+    "confirmed": true,
+    "source_turn": 5,
+    "notes": "",
+    "amount": "8000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   },
+   {
+    "name": "electricity",
+    "confirmed": true,
+    "source_turn": 7,
+    "notes": "",
+    "amount": "1900.00",
+    "due_date": "2026-09-22",
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming",
+    "confirmed": true,
+    "source_turn": 8,
+    "notes": "",
+    "amount": "500.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [],
+  "conflicts": [],
+  "outliers": [],
+  "understanding": {
+   "confirmed": true,
+   "restated_actions": [],
+   "gaps": []
+  },
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 12
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "usage": {
+  "input_tokens": 56380,
+  "output_tokens": 1196
+ }
+}

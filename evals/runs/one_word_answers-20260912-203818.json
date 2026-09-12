@@ -1,0 +1,494 @@
+{
+ "scenario": "one_word_answers",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, and I\u2019ll help you plan the next 30 days; how much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Six thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Six thousand rupees recorded. What income do you expect before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "cash and bank balance",
+      "is_correction": false,
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created opening balance 6,000. in 0, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "None."
+  },
+  {
+   "role": "assistant",
+   "text": "Zero income recorded. Which day of the month does your income come in?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "income",
+      "is_correction": false,
+      "amount": 0,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "created income 0. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Thirtieth."
+  },
+  {
+   "role": "assistant",
+   "text": "Income is due on the thirtieth, at zero rupees. What regular payments or debts are due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "income",
+      "is_correction": true,
+      "amount": 0,
+      "day_of_month": 30,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "updated income 0. in 0, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "Zero rupees in regular payments or debts recorded. What essential living costs, such as food, utilities, or medicine, will you have before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "regular payments or debts",
+      "is_correction": false,
+      "amount": 0,
+      "day_of_month": null,
+      "debt_kind": "informal",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created regular payments or debts 0. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "September."
+  },
+  {
+   "role": "assistant",
+   "text": "I heard \u201cSeptember,\u201d but I still need the amount for your essential living costs; how many rupees will you need?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "essential living costs",
+      "is_correction": false,
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created essential living costs. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "Zero rupees in essential living costs recorded. Are there any optional expenses you want included?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "essential living costs",
+      "is_correction": true,
+      "amount": 0,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated essential living costs 0. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Cable."
+  },
+  {
+   "role": "assistant",
+   "text": "Cable recorded as an optional expense. How much is your cable?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "cable",
+      "is_correction": false,
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created cable. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "I still need the cable amount; how many rupees is it?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Four hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Four hundred rupees for cable recorded. Which day of the month is the cable payment due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "cable",
+      "is_correction": true,
+      "amount": 400,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated cable 400. in 0, out 400. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I don\u2019t have that one."
+  },
+  {
+   "role": "assistant",
+   "text": "No problem. Are there any other regular payments or debts due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "optional:cable.day_of_month",
+      "reason": "user_does_not_know"
+     },
+     "result": "\"OptionalExpense\" object has no field \"day_of_month\". Name the field as kind:name.attribute, like essential:rent.amount, or opening_balance. If nothing is missing, do not call this at all."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "optional:cable.due_day",
+      "reason": "user_does_not_know"
+     },
+     "result": "\"OptionalExpense\" object has no field \"due_day\". Name the field as kind:name.attribute, like essential:rent.amount, or opening_balance. If nothing is missing, do not call this at all."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No."
+  },
+  {
+   "role": "assistant",
+   "text": "I still need the due day for your regular payments or debts, even though you said there are none; which day are they due?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "blocked: debt:regular payments or debts.due_date is not known yet"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Fifteenth."
+  },
+  {
+   "role": "assistant",
+   "text": "Five thousand six hundred rupees remains after the four-hundred-rupee cable expense. The first action is to keep four hundred rupees available for cable, and skipping it means the cable expense remains unpaid; does that and the consequence make sense?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "regular payments or debts",
+      "is_correction": true,
+      "amount": 0,
+      "day_of_month": 15,
+      "debt_kind": "informal",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated regular payments or debts 0. in 0, out 400."
+    },
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final. surplus 5,600. lowest 5,600 on 10 October. in 0, out 400."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true,
+      "restated_actions": null
+     },
+     "result": "understood, say one goodbye and call end_call in this reply. in 0, out 400."
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "6000.00",
+  "opening_balance_turn": 1,
+  "opening_balance_confirmed": true,
+  "incomes": [
+   {
+    "name": "income",
+    "confirmed": true,
+    "source_turn": 3,
+    "notes": "",
+    "amount": "0.00",
+    "date": "2026-09-30",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "regular payments or debts",
+    "confirmed": true,
+    "source_turn": 12,
+    "notes": "",
+    "kind": "informal",
+    "amount_due": "0.00",
+    "min_due": null,
+    "due_date": "2026-09-15",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "essential living costs",
+    "confirmed": true,
+    "source_turn": 6,
+    "notes": "",
+    "amount": "0.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "cable",
+    "confirmed": true,
+    "source_turn": 9,
+    "notes": "",
+    "amount": "400.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [],
+  "conflicts": [],
+  "outliers": [],
+  "understanding": {
+   "confirmed": true,
+   "restated_actions": [],
+   "gaps": []
+  },
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 14
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12
+ ],
+ "usage": {
+  "input_tokens": 74124,
+  "output_tokens": 1279
+ }
+}

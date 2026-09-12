@@ -1,0 +1,446 @@
+{
+ "scenario": "one_word_answers",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, here to help plan your next 30 days; how much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "6000 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "6,000 rupees. What income might arrive between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "cash and bank balance",
+      "is_correction": false,
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created opening balance 6,000. in 0, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "38000 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "38,000 rupees, provisional. Which day of the month does your income come in?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "income",
+      "is_correction": false,
+      "amount": 38000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "uncertain",
+      "latest_day_of_month": null
+     },
+     "result": "created income 38,000. in 0, out 0. provisional. This income is not counted as money until it arrives."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "30."
+  },
+  {
+   "role": "assistant",
+   "text": "38,000 rupees, provisional, arriving on the thirtieth. What essential bills must you pay before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "income",
+      "is_correction": true,
+      "amount": 38000,
+      "day_of_month": 30,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "uncertain",
+      "latest_day_of_month": null
+     },
+     "result": "updated income. in 0, out 0. provisional. This income is not counted as money until it arrives."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "No essential bills were given. Are there any debts or optional expenses due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essentials",
+      "reason": "not_applicable"
+     },
+     "result": "'' is not a valid ItemKind. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. If nothing is missing, do not call this."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "September."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve recorded September as an optional expense, but I still need its amount. How much is September?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "September",
+      "is_correction": false,
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created september. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "September has no expense. Are there any debts or optional expenses due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "remove_item",
+     "args": {
+      "kind": "optional",
+      "name": "September"
+     },
+     "result": "removed september. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Phone EMI."
+  },
+  {
+   "role": "assistant",
+   "text": "Phone EMI is recorded as an unsecured EMI. Which day of the month is it due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "Phone EMI",
+      "is_correction": false,
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "a new debt needs debt_kind: phone emi. Call upsert_item again with debt_kind set to one of: secured_emi, unsecured_emi, credit_card, informal."
+    },
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "Phone EMI",
+      "is_correction": true,
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": "unsecured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created phone emi. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "I still need the due day for your phone EMI. Which day of the month is it due?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "15."
+  },
+  {
+   "role": "assistant",
+   "text": "The phone EMI is due on the fifteenth. How much is it?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "Phone EMI",
+      "is_correction": true,
+      "amount": null,
+      "day_of_month": 15,
+      "debt_kind": "unsecured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated phone emi. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "2000 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "2,000 rupees is due on the fifteenth for the phone EMI. Are there any other debts or optional expenses due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "Phone EMI",
+      "is_correction": true,
+      "amount": 2000,
+      "day_of_month": 15,
+      "debt_kind": "unsecured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated phone emi 2,000. in 0, out 2,000. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "Nothing else was given. Would you like me to prepare your 30-day plan now?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "4,000 rupees remains after paying 2,000 rupees for the phone EMI on the fifteenth of September; because your 38,000 rupees income may not arrive, it isn\u2019t counted. The two actions are to keep 2,000 rupees ready for that EMI and avoid optional spending, because missing or spending that amount could leave the payment uncovered\u2014does that and what happens if you skip it make sense?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final. surplus 4,000. lowest 4,000 on 15 September. income may not arrive, so it is left out of the plan. in 0, out 2,000. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It does."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true,
+      "restated_actions": null
+     },
+     "result": "understood, say one goodbye and call end_call in this reply. in 0, out 2,000. provisional."
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "6000.00",
+  "opening_balance_turn": 1,
+  "opening_balance_confirmed": true,
+  "incomes": [
+   {
+    "name": "income",
+    "confirmed": true,
+    "source_turn": 3,
+    "notes": "",
+    "amount": "38000.00",
+    "date": "2026-09-30",
+    "latest_date": null,
+    "certainty": "uncertain"
+   }
+  ],
+  "debts": [
+   {
+    "name": "phone emi",
+    "confirmed": true,
+    "source_turn": 10,
+    "notes": "",
+    "kind": "unsecured_emi",
+    "amount_due": "2000.00",
+    "min_due": null,
+    "due_date": "2026-09-15",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [],
+  "optionals": [],
+  "unknowns": [],
+  "conflicts": [],
+  "outliers": [],
+  "understanding": {
+   "confirmed": true,
+   "restated_actions": [],
+   "gaps": []
+  },
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 14
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11
+ ],
+ "usage": {
+  "input_tokens": 67564,
+  "output_tokens": 1210
+ }
+}

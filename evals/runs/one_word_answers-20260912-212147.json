@@ -1,0 +1,359 @@
+{
+ "scenario": "one_word_answers",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, and I\u2019ll help you plan the next 30 days; how much money is in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Six thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "What income will you receive between the eleventh of September and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account balance",
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 6,000\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Thirty-eight thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "On which day will the thirty-eight thousand rupees arrive?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "income",
+      "amount": 38000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "recorded income 38,000 certainty confirmed\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: income\nmissing: income date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Day thirty."
+  },
+  {
+   "role": "assistant",
+   "text": "What debts do you need to pay between the eleventh of September and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "income",
+      "amount": 38000,
+      "day_of_month": 30,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "recorded income date 30 Sep\nin 38,000, out 0, lowest 6,000 on 11 September\nsurplus 44,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "What essential expenses, such as rent, food, utilities, or medicine, will you have in that period?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debts",
+      "not_applicable": true
+     },
+     "result": "none: debts\nin 38,000, out 0, lowest 6,000 on 11 September\nsurplus 44,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "September."
+  },
+  {
+   "role": "assistant",
+   "text": "What essential expense will you have in September, and how much will it cost?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "What optional expenses do you want included between the eleventh of September and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essentials",
+      "not_applicable": true
+     },
+     "result": "none: essentials\nin 38,000, out 0, lowest 6,000 on 11 September\nsurplus 44,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Cable TV, four hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "When is the cable TV payment due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "Cable TV",
+      "amount": 400,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded cable tv 400\nin 38,000, out 400, lowest 5,746.73 on 29 September\nsurplus 43,600"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "I need the day it\u2019s due, such as the fifth or thirtieth of September; which day is it?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "Cable TV",
+      "amount": 400,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "unchanged cable tv\nin 38,000, out 400, lowest 5,746.73 on 29 September\nsurplus 43,600"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I don\u2019t have that one."
+  },
+  {
+   "role": "assistant",
+   "text": "I couldn\u2019t record that missing date; would you like to continue without a due day?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "optional:Cable TV.day_of_month",
+      "not_applicable": false
+     },
+     "result": "\"OptionalExpense\" object has no field \"day_of_month\"."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "Pay cable TV: 400 rupees; if you skip it, the service may be affected. Keep the remaining money available for the period; if you spend it, you may have less available before the next income arrives. Does that and what happens if you skip either action make sense?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final\nin 38,000, out 400, lowest 5,746.73 on 29 September\nsurplus 43,600"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It does."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true
+     },
+     "result": "understood, say one goodbye and call end_call in this reply"
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "6000.00",
+  "incomes": [
+   {
+    "name": "income",
+    "notes": "",
+    "amount": "38000.00",
+    "date": "2026-09-30",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [],
+  "essentials": [],
+  "optionals": [
+   {
+    "name": "cable tv",
+    "notes": "",
+    "amount": "400.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "debts",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "essentials",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 12
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "usage": {
+  "input_tokens": 49959,
+  "output_tokens": 845
+ }
+}

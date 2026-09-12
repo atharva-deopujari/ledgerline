@@ -1,0 +1,411 @@
+{
+ "scenario": "timing_emi_before_salary",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline; how much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have 8,000 rupees in my account right now."
+  },
+  {
+   "role": "assistant",
+   "text": "Okay, eight thousand rupees in your account right now. What income do you expect between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account balance",
+      "is_correction": false,
+      "amount": 8000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created opening balance. in 0, out 0."
+    }
+   ],
+   "event_order": [
+    "message",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My salary of 72,000 rupees comes on the first of next month."
+  },
+  {
+   "role": "assistant",
+   "text": "Okay, seventy-two thousand rupees from your salary on the first of October. What bills or debts must you pay before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "is_correction": false,
+      "amount": 72000,
+      "day_of_month": 1,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "created salary. in 72,000, out 0."
+    }
+   ],
+   "event_order": [
+    "message",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent of 18,000 rupees is due on the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "Okay, eighteen thousand rupees for rent, due on the fifth of October. What other essential costs, debts, or regular spending will you have in this 30-day window?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "is_correction": false,
+      "amount": 18000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created rent. in 72,000, out 18,000."
+    }
+   ],
+   "event_order": [
+    "message",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My bike loan payment of 4,500 rupees is due on the twentieth."
+  },
+  {
+   "role": "assistant",
+   "text": "Okay, four thousand five hundred rupees for your bike loan, due on the twentieth of September. What do you spend on food, utilities, and medicine during the month?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "bike loan",
+      "is_correction": false,
+      "amount": 4500,
+      "day_of_month": 20,
+      "debt_kind": "secured_emi",
+      "min_due": null,
+      "spread": false,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created bike loan. in 72,000, out 22,500."
+    }
+   ],
+   "event_order": [
+    "message",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I spend about 9,000 rupees on groceries during the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Okay, about nine thousand rupees on groceries spread through the month. What optional spending do you expect, such as subscriptions, shopping, or eating out?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "is_correction": false,
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created groceries. in 72,000, out 31,500."
+    }
+   ],
+   "event_order": [
+    "message",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I could skip 700 rupees of streaming."
+  },
+  {
+   "role": "assistant",
+   "text": "Okay, seven hundred rupees for streaming, and it\u2019s flexible. Is there anything else that could affect the next thirty days, such as another payment or income?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "streaming",
+      "is_correction": false,
+      "amount": 700,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": null,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created streaming. in 72,000, out 32,200."
+    }
+   ],
+   "event_order": [
+    "message",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My electricity bill is 1,800 rupees, due on the eighteenth."
+  },
+  {
+   "role": "assistant",
+   "text": "Okay, one thousand eight hundred rupees for electricity, due on the eighteenth of September. Is there anything else that could affect the next thirty days, such as another payment or income?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "electricity",
+      "is_correction": false,
+      "amount": 1800,
+      "day_of_month": 18,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created electricity. in 72,000, out 34,000."
+    }
+   ],
+   "event_order": [
+    "message",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No, I don\u2019t have anything else."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve got everything needed for your thirty-day plan; would you like me to work it out now?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, please work it out."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ll work out your plan for the next thirty days now. Your money is enough overall, but the dates don\u2019t line up. First, move the seven hundred rupees streaming payment to the first of October, when your salary arrives; would that work for you?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final. timing shortfall, the money is there but the dates do not line up. surplus 46,000. Move streaming, 700, to 1 October, once there is money in the account to cover it. Pay bike loan on 1 October instead, 11 days late, which is the first day the money is there. in 72,000, out 34,000."
+    }
+   ],
+   "event_order": [
+    "message",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, I understand. I\u2019ll move the streaming payment to the first of October, and I\u2019ll make sure my essential bills are paid before then."
+  },
+  {
+   "role": "assistant",
+   "text": "The first action is clear: move streaming to the first of October, and keep essential bills paid before then. Second, pay the four thousand five hundred rupees bike loan on the first of October, which is eleven days late, because that\u2019s the first day the money is available; does that work for you?",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true,
+      "restated_actions": [
+       "Move the seven hundred rupees streaming payment to the first of October.",
+       "Keep essential bills paid before then."
+      ]
+     },
+     "result": "understood. in 72,000, out 34,000."
+    }
+   ],
+   "event_order": [
+    "message",
+    "function_call",
+    "message"
+   ]
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "8000.00",
+  "opening_balance_turn": 1,
+  "opening_balance_confirmed": true,
+  "incomes": [
+   {
+    "name": "salary",
+    "confirmed": true,
+    "source_turn": 2,
+    "notes": "",
+    "amount": "72000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike loan",
+    "confirmed": true,
+    "source_turn": 4,
+    "notes": "",
+    "kind": "secured_emi",
+    "amount_due": "4500.00",
+    "min_due": null,
+    "due_date": "2026-09-20",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "confirmed": true,
+    "source_turn": 3,
+    "notes": "",
+    "amount": "18000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": false
+   },
+   {
+    "name": "groceries",
+    "confirmed": true,
+    "source_turn": 5,
+    "notes": "",
+    "amount": "9000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   },
+   {
+    "name": "electricity",
+    "confirmed": true,
+    "source_turn": 7,
+    "notes": "",
+    "amount": "1800.00",
+    "due_date": "2026-09-18",
+    "spread": false,
+    "survival": false
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming",
+    "confirmed": true,
+    "source_turn": 6,
+    "notes": "",
+    "amount": "700.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [],
+  "conflicts": [],
+  "understanding": {
+   "confirmed": true,
+   "restated_actions": [
+    "Move the seven hundred rupees streaming payment to the first of October.",
+    "Keep essential bills paid before then."
+   ],
+   "gaps": []
+  },
+  "plan_final": true,
+  "call_ended": false,
+  "turn": 10
+ },
+ "plan_final": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9
+ ],
+ "usage": {
+  "input_tokens": 49780,
+  "output_tokens": 1291
+ }
+}

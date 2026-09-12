@@ -1,0 +1,33 @@
+{
+  "scenario": "voice-4e2eb2efe156",
+  "source": "voice",
+  "session_id": "4e2eb2efe156",
+  "prompt_version": "v1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-12",
+  "turns": [],
+  "state": {
+    "today": "2026-09-12",
+    "horizon_days": 30,
+    "opening_balance": null,
+    "opening_balance_turn": 0,
+    "opening_balance_confirmed": false,
+    "incomes": [],
+    "debts": [],
+    "essentials": [],
+    "optionals": [],
+    "unknowns": [],
+    "conflicts": [],
+    "understanding": null,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 0
+  },
+  "plan_final": false,
+  "cards_versions": [],
+  "ended_by": "idle",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  }
+}

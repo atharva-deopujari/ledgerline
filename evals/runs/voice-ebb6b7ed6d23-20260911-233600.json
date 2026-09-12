@@ -1,0 +1,202 @@
+{
+  "scenario": "voice-ebb6b7ed6d23",
+  "source": "voice",
+  "session_id": "ebb6b7ed6d23",
+  "prompt_version": "v1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-11",
+  "turns": [
+    {
+      "role": "user",
+      "text": "My EMI is"
+    },
+    {
+      "role": "user",
+      "text": "4200."
+    },
+    {
+      "role": "assistant",
+      "text": "Your EMI is 4,200 rupees. How much money do you have right now, counting cash and your bank balance?",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "debt",
+            "name": "EMI",
+            "is_correction": false,
+            "amount": 4200,
+            "day_of_month": null,
+            "debt_kind": null,
+            "min_due": null,
+            "spread": null,
+            "survival": null,
+            "flexible": null
+          },
+          "result": "a new debt needs debt_kind: emi. Call upsert_item again with debt_kind set to one of: secured_emi, unsecured_emi, credit_card, informal."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "debt",
+            "name": "EMI",
+            "is_correction": false,
+            "amount": 4200,
+            "day_of_month": null,
+            "debt_kind": null,
+            "min_due": null,
+            "spread": null,
+            "survival": null,
+            "flexible": null
+          },
+          "result": "a new debt needs debt_kind: emi. Call upsert_item again with debt_kind set to one of: secured_emi, unsecured_emi, credit_card, informal."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "debt",
+            "name": "EMI",
+            "is_correction": false,
+            "amount": 4200,
+            "day_of_month": null,
+            "debt_kind": "unsecured_emi",
+            "min_due": null,
+            "spread": null,
+            "survival": null,
+            "flexible": null
+          },
+          "result": "created emi. How much money do you have right now, counting cash and your bank balance?."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "debt",
+            "name": "EMI",
+            "is_correction": false,
+            "amount": 4200,
+            "day_of_month": null,
+            "debt_kind": "unsecured_emi",
+            "min_due": null,
+            "spread": null,
+            "survival": null,
+            "flexible": null
+          },
+          "result": "created emi. How much money do you have right now, counting cash and your bank balance?."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:05:15.094686+00:00",
+        "first_token": 5.521,
+        "first_audio": 5.908
+      }
+    },
+    {
+      "role": "user",
+      "text": "Yes."
+    },
+    {
+      "role": "assistant",
+      "text": "How much money do you have right now, counting cash and your bank balance?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:05:29.715050+00:00",
+        "first_token": 1.7,
+        "first_audio": 2.25
+      }
+    },
+    {
+      "role": "user",
+      "text": "My salary is 45,000 rupees"
+    },
+    {
+      "role": "assistant",
+      "text": "Your salary is 45,000 rupees. How much money do you have right now, counting cash and your bank balance?",
+      "tool_calls": [
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "salary",
+            "is_correction": false,
+            "amount": 45000,
+            "day_of_month": null,
+            "debt_kind": null,
+            "min_due": null,
+            "spread": null,
+            "survival": null,
+            "flexible": null
+          },
+          "result": "created salary. How much money do you have right now, counting cash and your bank balance?."
+        },
+        {
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "salary",
+            "is_correction": false,
+            "amount": 45000,
+            "day_of_month": null,
+            "debt_kind": null,
+            "min_due": null,
+            "spread": null,
+            "survival": null,
+            "flexible": null
+          },
+          "result": "created salary. How much money do you have right now, counting cash and your bank balance?."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-11T18:05:46.034958+00:00",
+        "first_token": 2.874,
+        "first_audio": 3.251
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-11",
+    "horizon_days": 30,
+    "opening_balance": null,
+    "incomes": [
+      {
+        "name": "salary",
+        "confirmed": false,
+        "source_turn": 4,
+        "notes": "",
+        "amount": "45000.00",
+        "date": null,
+        "latest_date": null,
+        "certainty": "confirmed"
+      }
+    ],
+    "debts": [
+      {
+        "name": "emi",
+        "confirmed": true,
+        "source_turn": 2,
+        "notes": "",
+        "kind": "unsecured_emi",
+        "amount_due": "4200.00",
+        "min_due": null,
+        "due_date": null,
+        "late_fee": null,
+        "autodebit": false,
+        "lender": null
+      }
+    ],
+    "essentials": [],
+    "optionals": [],
+    "unknowns": [],
+    "conflicts": [],
+    "understanding": null,
+    "plan_final": false,
+    "turn": 4
+  },
+  "plan_final": false,
+  "cards_versions": [
+    1,
+    2
+  ],
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  }
+}

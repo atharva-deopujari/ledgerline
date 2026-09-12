@@ -1,0 +1,406 @@
+{
+ "scenario": "fragmented_balance",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, and I\u2019ll help you plan the next 30 days; how much money do you have right now, including cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have"
+  },
+  {
+   "role": "user",
+   "text": "20,000 in cash and"
+  },
+  {
+   "role": "user",
+   "text": "20,000 in bank balance."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve recorded an opening balance of 40,000 rupees. What income do you expect between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "cash and bank balance",
+      "is_correction": false,
+      "amount": 40000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created opening balance 40,000. in 0, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent is"
+  },
+  {
+   "role": "user",
+   "text": "eleven thousand"
+  },
+  {
+   "role": "user",
+   "text": "rupees, due on the eighteenth."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve recorded rent of 11,000 rupees, due on the eighteenth of September. What income do you expect between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "is_correction": false,
+      "amount": 11000,
+      "day_of_month": 18,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created rent 11,000. in 0, out 11,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My salary of forty-five thousand rupees arrives on the first of October."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve recorded confirmed salary of 45,000 rupees arriving on the first of October. What other essential expenses will you have between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "is_correction": false,
+      "amount": 45000,
+      "day_of_month": 1,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "created salary 45,000. in 45,000, out 11,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I\u2019ll need six thousand rupees for groceries over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve recorded groceries of 6,000 rupees spread across the month. Are there any debts or instalments due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "is_correction": false,
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created groceries 6,000. in 45,000, out 17,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My credit card payment is three thousand rupees, due on the twentieth of September."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve recorded the credit card payment of 3,000 rupees, due on the twentieth of September. What is the minimum due on the credit card?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card",
+      "is_correction": false,
+      "amount": 3000,
+      "day_of_month": 20,
+      "debt_kind": "credit_card",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created credit card 3,000. in 45,000, out 20,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The minimum due is one thousand two hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "The credit card payment is 3,000 rupees, with a minimum due of 1,200 rupees on the twentieth of September. Is there anything else you need to include, such as another essential or optional expense?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card",
+      "is_correction": true,
+      "amount": 3000,
+      "day_of_month": 20,
+      "debt_kind": "credit_card",
+      "min_due": 1200,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated credit card. in 45,000, out 20,000."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I could skip the gym, which costs one thousand five hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve recorded the gym as an optional 1,500 rupees expense that can be skipped. Is there anything else to include before I make the 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "gym",
+      "is_correction": false,
+      "amount": 1500,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created gym 1,500. in 45,000, out 21,500."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No, that\u2019s everything."
+  },
+  {
+   "role": "assistant",
+   "text": "Your plan shows a surplus of 63,500 rupees, with the lowest balance at 21,000 rupees on the thirtieth of September. Your top action is to keep 11,000 rupees available for rent due on the eighteenth of September, because missing it could affect your housing; does that make sense?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final. surplus 63,500. lowest 21,000 on 30 September. in 45,000, out 21,500."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, it does."
+  },
+  {
+   "role": "assistant",
+   "text": "Your second action is to pay 1,200 rupees toward the credit card by the twentieth of September, because paying only the minimum may leave the remaining balance and possible charges; thanks for speaking with me, goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true,
+      "restated_actions": null
+     },
+     "result": "understood, say one goodbye and call end_call in this reply. in 45,000, out 21,500."
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan agreed and call complete"
+     },
+     "result": "call ended, say nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye"
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "40000.00",
+  "opening_balance_turn": 1,
+  "opening_balance_confirmed": true,
+  "incomes": [
+   {
+    "name": "salary",
+    "confirmed": true,
+    "source_turn": 3,
+    "notes": "",
+    "amount": "45000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card",
+    "confirmed": true,
+    "source_turn": 6,
+    "notes": "",
+    "kind": "credit_card",
+    "amount_due": "3000.00",
+    "min_due": "1200.00",
+    "due_date": "2026-09-20",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "confirmed": true,
+    "source_turn": 2,
+    "notes": "",
+    "amount": "11000.00",
+    "due_date": "2026-09-18",
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "groceries",
+    "confirmed": true,
+    "source_turn": 4,
+    "notes": "",
+    "amount": "6000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "gym",
+    "confirmed": true,
+    "source_turn": 7,
+    "notes": "",
+    "amount": "1500.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [],
+  "conflicts": [],
+  "outliers": [],
+  "understanding": {
+   "confirmed": true,
+   "restated_actions": [],
+   "gaps": []
+  },
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 10
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "usage": {
+  "input_tokens": 49050,
+  "output_tokens": 1150
+ }
+}

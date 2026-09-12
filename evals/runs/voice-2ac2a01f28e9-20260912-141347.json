@@ -1,0 +1,321 @@
+{
+  "scenario": "voice-2ac2a01f28e9",
+  "source": "voice",
+  "session_id": "2ac2a01f28e9",
+  "prompt_version": "v1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-12",
+  "turns": [
+    {
+      "role": "user",
+      "text": "Your WhatsApp."
+    },
+    {
+      "role": "assistant",
+      "text": "I\u2019m Ledgerline, not a WhatsApp contact. What\u2019s your current total across cash and bank balance?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:10:45.961222+00:00",
+        "first_token": 1.571,
+        "first_audio": 1.838
+      }
+    },
+    {
+      "role": "user",
+      "text": "I have"
+    },
+    {
+      "role": "user",
+      "text": "20,000 in cash and"
+    },
+    {
+      "role": "user",
+      "text": "20,000 in bank balance."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, twenty thousand rupees in cash and twenty thousand rupees in your bank balance. What else would you like to tell me?What\u2019s your next income or expense?",
+      "tool_calls": [
+        {
+          "id": "call_80zrKFTQafeW57wht5io4B4K",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "cash",
+            "is_correction": false,
+            "amount": 20000
+          },
+          "result": "created opening balance. in 0, out 0."
+        },
+        {
+          "id": "call_nR1WNpgHctB4hS7jywnTytjN",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "bank balance",
+            "is_correction": false,
+            "amount": 20000
+          },
+          "result": "unchanged opening balance. in 0, out 0."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:11:01.160203+00:00",
+        "first_token": 7.176,
+        "first_audio": 7.496
+      }
+    },
+    {
+      "role": "user",
+      "text": "Bought in."
+    },
+    {
+      "role": "user",
+      "text": "Where do we rent of, like, 11,000?"
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, your rent is eleven thousand rupees. Is it due on a particular day each month?What day is the rent due?",
+      "tool_calls": [
+        {
+          "id": "call_EQQDWabJYFnj6rkBV2VbSFI8",
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "is_correction": false,
+            "amount": 11000,
+            "spread": false,
+            "survival": true
+          },
+          "result": "created rent. in 0, out 11,000."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:11:24.641733+00:00",
+        "first_token": 2.411,
+        "first_audio": 2.797
+      }
+    },
+    {
+      "role": "user",
+      "text": "It is"
+    },
+    {
+      "role": "user",
+      "text": "on"
+    },
+    {
+      "role": "user",
+      "text": "September."
+    },
+    {
+      "role": "assistant",
+      "text": "Which day of September is the rent due?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:11:41.514249+00:00",
+        "first_token": 2.367,
+        "first_audio": 2.698
+      }
+    },
+    {
+      "role": "user",
+      "text": "September 18."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, your rent is due on the eighteenth of September. What\u2019s the next income or expense?What\u2019s the next income or expense?",
+      "tool_calls": [
+        {
+          "id": "call_KDLXQwirpBnogxoVkBi2O8Wx",
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "is_correction": true,
+            "amount": 11000,
+            "day_of_month": 18,
+            "spread": false,
+            "survival": true
+          },
+          "result": "updated rent. in 0, out 11,000."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:11:53.672358+00:00",
+        "first_token": 1.328,
+        "first_audio": 1.645
+      }
+    },
+    {
+      "role": "user",
+      "text": "Nothing."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, there\u2019s no other income or expense to record. What\u2019s your monthly income?You said there\u2019s nothing else to add. Do you have any income during the next 30 days?What\u2019s the next thing you\u2019d like to tell me?Are you still there? There\u2019s no rush.",
+      "tool_calls": [
+        {
+          "id": "call_UhqxbORXYNfPFCkO0B8TCBru",
+          "name": "mark_unknown",
+          "args": {
+            "field": "monthly_income",
+            "reason": "user_does_not_know"
+          },
+          "result": "'' is not a valid ItemKind. Fix that argument and call the tool again."
+        },
+        {
+          "id": "call_Q7q5A1qLxVsEr9AZIo0YH3UK",
+          "name": "mark_unknown",
+          "args": {
+            "field": "income",
+            "reason": "user_does_not_know"
+          },
+          "result": "created income. in 0, out 11,000. provisional."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:12:06.492969+00:00",
+        "first_token": 1.093,
+        "first_audio": 1.399
+      }
+    },
+    {
+      "role": "user",
+      "text": "Nothing."
+    },
+    {
+      "role": "assistant",
+      "text": "Okay, there\u2019s nothing else to add. Would you like to hear the plan for the next 30 days?",
+      "tool_calls": [],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:12:36.994952+00:00",
+        "first_token": 1.662,
+        "first_audio": 1.942
+      }
+    },
+    {
+      "role": "user",
+      "text": "Yes."
+    },
+    {
+      "role": "assistant",
+      "text": "I\u2019ll work out the next 30-day plan using your balances and rent due on the eighteenth of September.Your plan shows nine thousand rupees left after eleven thousand rupees rent, with the lowest balance being nine thousand rupees on the eighteenth of September. No income is counted because it isn\u2019t known yet; the first action is to keep eleven thousand rupees available for rent, and the consequence of not doing so is a shortfall. Does that action and consequence make sense?",
+      "tool_calls": [
+        {
+          "id": "call_QdiSrF0WFy5qcGSQ9XwJtsdK",
+          "name": "finalize_plan",
+          "args": {},
+          "result": "plan final. surplus 9,000. lowest 9,000 on 18 September. No income is counted, because it is not known yet. in 0, out 11,000. provisional."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:12:45.158306+00:00",
+        "first_token": 1.2,
+        "first_audio": 1.787
+      }
+    },
+    {
+      "role": "user",
+      "text": "Yes. It makes sense."
+    },
+    {
+      "role": "assistant",
+      "text": "The second action is to avoid committing the remaining nine thousand rupees until income is known, because no income is counted in this plan and spending it could leave you short. Does that action and consequence make sense?Thanks for speaking with me. Take care.",
+      "tool_calls": [
+        {
+          "id": "call_GYai0pQgxYYHz4fFMck2OPAT",
+          "name": "record_understanding",
+          "args": {
+            "confirmed": true
+          },
+          "result": "understood. in 0, out 11,000. provisional."
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:13:19.718399+00:00",
+        "first_token": 1.275,
+        "first_audio": 1.809
+      }
+    },
+    {
+      "role": "user",
+      "text": "Thank you."
+    },
+    {
+      "role": "assistant",
+      "text": "You\u2019re welcome. Goodbye.Goodbye.",
+      "tool_calls": [
+        {
+          "id": "call_zh8vj6Cb5BVvLYv7PACTZM9b",
+          "name": "end_call",
+          "args": {
+            "reason": "user thanked and call is complete"
+          },
+          "result": "say one short goodbye sentence, then stop"
+        }
+      ],
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:13:42.057950+00:00",
+        "first_token": 1.329,
+        "first_audio": 1.454
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-12",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "opening_balance_turn": 4,
+    "opening_balance_confirmed": true,
+    "incomes": [],
+    "debts": [],
+    "essentials": [
+      {
+        "name": "rent",
+        "confirmed": true,
+        "source_turn": 7,
+        "notes": "",
+        "amount": "11000.00",
+        "due_date": "2026-09-18",
+        "spread": false,
+        "survival": true
+      }
+    ],
+    "optionals": [],
+    "unknowns": [
+      {
+        "field": "income",
+        "question": "Is any money coming in over the next thirty days?",
+        "reason": "user_does_not_know"
+      }
+    ],
+    "conflicts": [],
+    "outliers": [],
+    "understanding": {
+      "confirmed": true,
+      "restated_actions": [],
+      "gaps": []
+    },
+    "plan_final": true,
+    "call_ended": true,
+    "turn": 12
+  },
+  "plan_final": true,
+  "cards_versions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "ended_by": "bot",
+  "llm_warnings": {
+    "previous_response_not_found": 1,
+    "drain_failed": 1
+  }
+}

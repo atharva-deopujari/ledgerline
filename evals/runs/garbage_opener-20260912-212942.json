@@ -1,0 +1,447 @@
+{
+ "scenario": "garbage_opener",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline; what\u2019s the money in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Your WhatsApp."
+  },
+  {
+   "role": "assistant",
+   "text": "I don\u2019t have WhatsApp, but I can help here; what\u2019s the money in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have nine thousand rupees in my account right now."
+  },
+  {
+   "role": "assistant",
+   "text": "9,000 rupees is in your account today; what income will arrive between now and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account balance",
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 9,000\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My salary of fifty-two thousand rupees arrives on the first of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "52,000 rupees arrives on the first of October; what essential expenses are due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "amount": 52000,
+      "day_of_month": 1,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "recorded salary 52,000 on 1 Oct\nin 52,000, out 0, lowest 9,000 on 11 September\nsurplus 61,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent of sixteen thousand rupees is due on the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "Rent is 16,000 rupees due on the fifth of October; are there any other essential expenses in this 30-day window?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 16000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded rent 16,000 due 5 Oct\nin 52,000, out 16,000, lowest 9,000 on 11 September\nsurplus 45,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Groceries cost eight thousand rupees over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Groceries are 8,000 rupees spread across the month; do you have any other essential expenses, debts, or optional spending?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "amount": 8000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded groceries 8,000\nin 52,000, out 24,000, lowest 3,666.60 on 30 September\nsurplus 37,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have a credit card payment of four thousand rupees due on the twenty-second."
+  },
+  {
+   "role": "assistant",
+   "text": "4,000 rupees is due on the twenty-second of September, and the dates don\u2019t line up; is that the minimum due or the full amount?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card payment",
+      "amount": 4000,
+      "day_of_month": 22,
+      "debt_kind": "credit_card",
+      "min_due": 4000,
+      "spread": false,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded credit card payment 4,000 due 22 Sep minimum due 4,000\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 24,000, lowest 3,666.60 on 30 September\nsurplus 37,000\nunpaid total 4,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The minimum due is one thousand two hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "4,000 rupees is recorded as the payment, and 1,200 rupees as the minimum due; which amount is right for the payment due on the twenty-second of September?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card payment",
+      "amount": 4000,
+      "day_of_month": 22,
+      "debt_kind": "credit_card",
+      "min_due": 1200,
+      "spread": false,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "credit card payment minimum due: 4,000 -> 1,200; confirm which is right before moving on\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 24,000, lowest 3,666.60 on 30 September\nsurplus 37,000\nunpaid total 4,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The full payment due is four thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "4,000 rupees is the full payment, with a 1,200-rupee minimum due; are there any other debts or spending to include?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card payment",
+      "amount": 4000,
+      "day_of_month": 22,
+      "debt_kind": "credit_card",
+      "min_due": 1200,
+      "spread": false,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "unchanged credit card payment\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 24,000, lowest 3,666.60 on 30 September\nsurplus 37,000\nunpaid total 4,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Electricity is one thousand nine hundred rupees, due on the twenty-second."
+  },
+  {
+   "role": "assistant",
+   "text": "1,900 rupees for electricity is due on the twenty-second of September; is there any other essential expense or optional spending?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "electricity",
+      "amount": 1900,
+      "day_of_month": 22,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded electricity 1,900 due 22 Sep\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 24,000, lowest 3,666.60 on 30 September\nsurplus 37,000\nunpaid total 5,900"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Streaming costs five hundred rupees, but I could skip it."
+  },
+  {
+   "role": "assistant",
+   "text": "500 rupees for streaming can be skipped; nothing is blocking the plan, so shall I work out your next 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "streaming",
+      "amount": 500,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded streaming 500\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 24,500, lowest 3,666.60 on 30 September\nsurplus 36,500\nunpaid total 5,900"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, please work it out."
+  },
+  {
+   "role": "assistant",
+   "text": "1,900 rupees for electricity is due on the twenty-second of September; ask your landlord in writing for a few extra days, because paying rent late can mean a late fee and repeated delays can put your tenancy at risk. Does that make sense, including what happens if you skip it?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 24,500, lowest 3,666.60 on 30 September\nsurplus 36,500\nunpaid total 5,900\nOn 22 September paying the 1,900 electricity would leave you 16,900 short for groceries and rent later in the month. The money is not there until 1 October. You could ask your landlord in writing for a few extra days\nPaying rent late usually means a late fee, and doing it repeatedly puts your tenancy at risk.\nFrom 22 September there is not enough for credit card payment; 4,000 of 4,000 is not covered this month. The money is not there until 1 October. You could ask the issuer to move your statement date or to waive the late fee this once\nIf the minimum due is more than three days late, the issuer can charge a late fee and report the account past due to the credit bureaus.\nunpaid electricity 1,900 due 22 September\nunpaid credit card payment 4,000 due 22 September"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, that makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true
+     },
+     "result": "understood, say one goodbye and call end_call in this reply"
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "9000.00",
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "amount": "52000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card payment",
+    "notes": "",
+    "kind": "credit_card",
+    "amount_due": "4000.00",
+    "min_due": "1200.00",
+    "due_date": "2026-09-22",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "amount": "16000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "groceries",
+    "notes": "",
+    "amount": "8000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   },
+   {
+    "name": "electricity",
+    "notes": "",
+    "amount": "1900.00",
+    "due_date": "2026-09-22",
+    "spread": false,
+    "survival": false
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming",
+    "notes": "",
+    "amount": "500.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 13
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12
+ ],
+ "usage": {
+  "input_tokens": 66421,
+  "output_tokens": 1292
+ }
+}

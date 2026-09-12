@@ -1,0 +1,636 @@
+{
+ "scenario": "one_word_answers",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, and I\u2019ll help you plan the next 30 days; how much money is in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "6000 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "You have 6,000 rupees in your account today. What income do you expect between now and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account today",
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 6,000; say this back, then ask\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "None."
+  },
+  {
+   "role": "assistant",
+   "text": "You don\u2019t expect any income before the tenth of October. Do you have any debts or repayments due in that period?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "income",
+      "not_applicable": true
+     },
+     "result": "none: income\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes. 2000 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your repayment is 2,000 rupees. What day is it due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "repayment",
+      "amount": 2000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "a new debt needs debt_kind: repayment. Call upsert_item again with debt_kind set to one of: secured_emi, unsecured_emi, credit_card, informal."
+    },
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "repayment",
+      "amount": 2000,
+      "day_of_month": null,
+      "debt_kind": "unsecured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded repayment 2,000; say this back, then ask\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: repayment\nmissing: repayment due date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "There\u2019s no due date for that repayment. What essential expenses will you have before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:repayment.day_of_month",
+      "not_applicable": true
+     },
+     "result": "'debt:repayment.day_of_month' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:repayment.due_date",
+      "not_applicable": true
+     },
+     "result": "none: repayment due date\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: repayment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "September."
+  },
+  {
+   "role": "assistant",
+   "text": "How much will your September expenses be in rupees?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "September expenses",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded september expenses\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: september expenses, repayment\nmissing: september expenses amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "You have no September expenses. Are there any other essential expenses before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:September expenses.amount",
+      "not_applicable": true
+     },
+     "result": "none: September expenses amount\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: september expenses, repayment\nmissing: september expenses amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes. 9000 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your other essential expenses are 9,000 rupees, leaving 3,000 rupees unpaid against the 6,000 rupees available. Are these expenses spread across the month?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "other essential expenses",
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded other essential expenses 9,000; say this back, then ask\nunsolvable, something is left unpaid\nin 0, out 6,000, lowest 0 on 30 September\nsurplus 0\nunpaid total 3,000\nprovisional: september expenses, repayment\nmissing: september expenses amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "Your 9,000 rupees of essential expenses are spread across the month, but 3,000 rupees would remain unpaid. Are any of those expenses food, utilities, or medicine?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "other essential expenses",
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "other essential expenses spread: now spread\nunsolvable, something is left unpaid\nin 0, out 6,000, lowest 0 on 30 September\nsurplus 0\nunpaid total 3,000\nprovisional: september expenses, repayment\nmissing: september expenses amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Food."
+  },
+  {
+   "role": "assistant",
+   "text": "Your essential expenses include food, so 3,000 rupees would remain unpaid. Can any part of the 9,000 rupees be reduced?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "other essential expenses",
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "other essential expenses survival: now survival\nunsolvable, something is left unpaid\nin 0, out 6,000, lowest 0 on 30 September\nsurplus 0\nunpaid total 3,000\nprovisional: september expenses, repayment\nmissing: september expenses amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No."
+  },
+  {
+   "role": "assistant",
+   "text": "The 9,000 rupees can\u2019t be reduced, so 3,000 rupees remains unpaid. What is the amount of your September expenses?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "other essential expenses",
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "unchanged other essential expenses\nunsolvable, something is left unpaid\nin 0, out 6,000, lowest 0 on 30 September\nsurplus 0\nunpaid total 3,000\nprovisional: september expenses, repayment\nmissing: september expenses amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "7000 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your September expenses are 7,000 rupees, and 10,000 rupees would remain unpaid overall. Are those September expenses spread across the month?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "September expenses",
+      "amount": 7000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded september expenses 7,000; say this back, then ask\nunsolvable, something is left unpaid\nin 0, out 6,000, lowest 0 on 30 September\nsurplus 0\nunpaid total 10,000\nprovisional: repayment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "Your 7,000 rupees of September expenses are spread across the month, and 10,000 rupees would remain unpaid overall. Are any of those expenses food, utilities, or medicine?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "September expenses",
+      "amount": 7000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "september expenses spread: now spread\nunsolvable, something is left unpaid\nin 0, out 6,000, lowest 0 on 30 September\nsurplus 0\nunpaid total 10,000\nprovisional: repayment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Food."
+  },
+  {
+   "role": "assistant",
+   "text": "Your September expenses include food, and 10,133 rupees and 37 paise would remain unpaid overall. Can any part of the 7,000 rupees be reduced?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "September expenses",
+      "amount": 7000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "september expenses survival: now survival\nunsolvable, something is left unpaid\nin 0, out 5,866.63, lowest 133.37 on 21 September\nsurplus 133.37\nunpaid total 10,133.37\nprovisional: repayment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No."
+  },
+  {
+   "role": "assistant",
+   "text": "The 7,000 rupees can\u2019t be reduced, leaving 10,133 rupees and 37 paise unpaid overall. Are there any optional expenses before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "September expenses",
+      "amount": 7000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "unchanged september expenses\nunsolvable, something is left unpaid\nin 0, out 5,866.63, lowest 133.37 on 21 September\nsurplus 133.37\nunpaid total 10,133.37\nprovisional: repayment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "What\u2019s the amount of that optional expense in rupees?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "optional expense",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded optional expense\nunsolvable, something is left unpaid\nin 0, out 5,866.63, lowest 133.37 on 21 September\nsurplus 133.37\nunpaid total 10,133.37\nprovisional: repayment, optional expense\nmissing: optional expense amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "400 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your optional expense is 400 rupees. Is it flexible, or do you want it to stay?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "optional expense",
+      "amount": 400,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded optional expense 400; say this back, then ask\nunsolvable, something is left unpaid\nin 0, out 5,866.63, lowest 133.37 on 21 September\nsurplus 133.37\nunpaid total 10,133.37\nprovisional: repayment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Flexible."
+  },
+  {
+   "role": "assistant",
+   "text": "The 400-rupee optional expense is flexible, but 10,133 rupees and 37 paise would still remain unpaid. Would you like to hear the 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "optional expense",
+      "amount": 400,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "unchanged optional expense\nunsolvable, something is left unpaid\nin 0, out 5,866.63, lowest 133.37 on 21 September\nsurplus 133.37\nunpaid total 10,133.37\nprovisional: repayment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "6000.00",
+  "incomes": [],
+  "debts": [
+   {
+    "name": "repayment",
+    "notes": "",
+    "kind": "unsecured_emi",
+    "amount_due": "2000.00",
+    "min_due": null,
+    "due_date": null,
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "september expenses",
+    "notes": "",
+    "amount": "7000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   },
+   {
+    "name": "other essential expenses",
+    "notes": "",
+    "amount": "9000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "optional expense",
+    "notes": "",
+    "amount": "400.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "income",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "debt:repayment.due_date",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "essential:September expenses.amount",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": false,
+  "plan_final": false,
+  "call_ended": false,
+  "turn": 18
+ },
+ "plan_final": false,
+ "call_ended": false,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17
+ ],
+ "usage": {
+  "input_tokens": 111593,
+  "output_tokens": 1862
+ }
+}

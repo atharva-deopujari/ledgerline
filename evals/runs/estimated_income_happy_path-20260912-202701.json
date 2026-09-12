@@ -1,0 +1,487 @@
+{
+ "scenario": "estimated_income_happy_path",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, here to help plan your next 30 days; how much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have eighteen thousand rupees right now."
+  },
+  {
+   "role": "assistant",
+   "text": "Eighteen thousand rupees is recorded. What income do you expect between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "money right now",
+      "is_correction": false,
+      "amount": 18000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created opening balance 18,000. in 0, out 0."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It's around forty thousand, I think. Nothing is confirmed."
+  },
+  {
+   "role": "assistant",
+   "text": "Forty thousand rupees is recorded as uncertain and won\u2019t be counted until it arrives. Which day of the month does your expected income come in?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "expected income",
+      "is_correction": false,
+      "amount": 40000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "uncertain",
+      "latest_day_of_month": null
+     },
+     "result": "created expected income 40,000. in 0, out 0. provisional. This income is not counted as money until it arrives."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Around the twentieth."
+  },
+  {
+   "role": "assistant",
+   "text": "The forty thousand rupees is expected around the twentieth and remains uncertain. What debt payments are due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "expected income",
+      "is_correction": true,
+      "amount": 40000,
+      "day_of_month": 20,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "uncertain",
+      "latest_day_of_month": null
+     },
+     "result": "updated expected income. in 0, out 0. provisional. This income is not counted as money until it arrives."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My credit card payment is due on the fifteenth, so not before the tenth."
+  },
+  {
+   "role": "assistant",
+   "text": "The credit card payment is due on the fifteenth, outside this window. What essential costs are due between today and the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card",
+      "is_correction": false,
+      "amount": null,
+      "day_of_month": 15,
+      "debt_kind": "credit_card",
+      "min_due": null,
+      "spread": false,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created credit card. in 0, out 0. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent of thirteen thousand rupees is due on the fifth, and internet is twelve hundred rupees on the eighth."
+  },
+  {
+   "role": "assistant",
+   "text": "Thirteen thousand rupees for rent and twelve hundred rupees for internet are recorded. What other essential costs do you expect before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "is_correction": false,
+      "amount": 13000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created rent 13,000. in 0, out 13,000. provisional."
+    },
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "internet",
+      "is_correction": false,
+      "amount": 1200,
+      "day_of_month": 8,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created internet 1,200. in 0, out 14,200. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Groceries will be about six thousand rupees over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Six thousand rupees for groceries is recorded across the month. What\u2019s the minimum due on your credit card?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "is_correction": false,
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created groceries 6,000. in 0, out 18,000. 2,200 stays unpaid. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The minimum due is fifteen hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Fifteen hundred rupees is recorded as the credit card minimum due on the fifteenth. Are there any optional expenses you want included in this 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card",
+      "is_correction": false,
+      "amount": null,
+      "day_of_month": 15,
+      "debt_kind": "credit_card",
+      "min_due": 1500,
+      "spread": false,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "updated credit card. in 0, out 18,000. 2,200 stays unpaid. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I could skip my yoga class, which costs nine hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Nine hundred rupees for the yoga class is recorded as flexible. Would you like me to prepare the 30-day plan now?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "yoga class",
+      "is_correction": false,
+      "amount": 900,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created yoga class 900. in 0, out 18,000. 2,200 stays unpaid. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, please."
+  },
+  {
+   "role": "assistant",
+   "text": "The credit card\u2019s total amount due is still missing. Do you know how much the total payment due is?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "blocked: debt:credit card.amount is not known yet"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I don't have that one."
+  },
+  {
+   "role": "assistant",
+   "text": "Zero rupees is left after the confirmed money; one thousand rupees of groceries and twelve hundred rupees of internet remain unpaid. The first action is to ask the grocery provider for a few more days or a split bill, because skipping it means food or power goes and reconnection can cost more; would you like to agree to that?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:credit card.amount",
+      "reason": "user_does_not_know"
+     },
+     "result": "created credit card amount. in 0, out 18,000. 2,200 stays unpaid. provisional."
+    },
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final. unsolvable, something is left unpaid. surplus 0. lowest 0 on 5 October. From 6 October there is not enough for groceries; 1,000 of 6,000 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands. Skip this and the food or the power goes, and getting reconnected costs more than the bill did. On 8 October you are 1,800 short for internet. The money is not there at any point in the next thirty days. You could ask your landlord in writing for a few extra days. Paying rent late usually means a late fee, and doing it repeatedly puts your tenancy at risk. unpaid groceries 1,000 due 6 October. unpaid internet 1,200 due 8 October. expected income may not arrive, so it is left out of the plan. in 0, out 18,000. 2,200 stays unpaid. provisional."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I agree to that."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true,
+      "restated_actions": null
+     },
+     "result": "understood, say one goodbye and call end_call in this reply. in 0, out 18,000. 2,200 stays unpaid. provisional."
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan agreed"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "18000.00",
+  "opening_balance_turn": 1,
+  "opening_balance_confirmed": true,
+  "incomes": [
+   {
+    "name": "expected income",
+    "confirmed": true,
+    "source_turn": 3,
+    "notes": "",
+    "amount": "40000.00",
+    "date": "2026-09-20",
+    "latest_date": null,
+    "certainty": "uncertain"
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card",
+    "confirmed": true,
+    "source_turn": 10,
+    "notes": "",
+    "kind": "credit_card",
+    "amount_due": null,
+    "min_due": "1500.00",
+    "due_date": "2026-09-15",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "confirmed": true,
+    "source_turn": 5,
+    "notes": "",
+    "amount": "13000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "internet",
+    "confirmed": true,
+    "source_turn": 5,
+    "notes": "",
+    "amount": "1200.00",
+    "due_date": "2026-10-08",
+    "spread": false,
+    "survival": false
+   },
+   {
+    "name": "groceries",
+    "confirmed": true,
+    "source_turn": 6,
+    "notes": "",
+    "amount": "6000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "yoga class",
+    "confirmed": true,
+    "source_turn": 8,
+    "notes": "",
+    "amount": "900.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "debt:credit card.amount",
+    "question": "How much is your credit card?",
+    "reason": "user_does_not_know"
+   }
+  ],
+  "conflicts": [],
+  "outliers": [],
+  "understanding": {
+   "confirmed": true,
+   "restated_actions": [],
+   "gaps": []
+  },
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 12
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13
+ ],
+ "usage": {
+  "input_tokens": 68124,
+  "output_tokens": 1357
+ }
+}

@@ -1,0 +1,590 @@
+{
+ "scenario": "one_word_answers",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline; what\u2019s the money currently in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Six thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "You have 6,000 rupees in your account today. What income do you expect before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "opening balance",
+      "amount": 6000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 6,000; say this back, then ask\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "None."
+  },
+  {
+   "role": "assistant",
+   "text": "You don\u2019t expect any income before the tenth of October. What essential expenses must you cover before then?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "income",
+      "not_applicable": true
+     },
+     "result": "none: income\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent."
+  },
+  {
+   "role": "assistant",
+   "text": "How much is the rent in rupees?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded rent\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: rent\nmissing: rent amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "Is there another essential expense you must cover before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:rent.amount",
+      "not_applicable": true
+     },
+     "result": "none: rent amount\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "September."
+  },
+  {
+   "role": "assistant",
+   "text": "How much were your September expenses in rupees?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "September expenses",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded september expenses\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: september expenses\nmissing: september expenses amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "Are there any debt payments or other essential expenses before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:september expenses.amount",
+      "not_applicable": true
+     },
+     "result": "none: september expenses amount\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Two thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "The debt payment is 2,000 rupees. What day of the month is it due?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "debt payment",
+      "amount": 2000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "a new debt needs debt_kind: debt payment. Call upsert_item again with debt_kind set to one of: secured_emi, unsecured_emi, credit_card, informal."
+    },
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "debt payment",
+      "amount": 2000,
+      "day_of_month": null,
+      "debt_kind": "unsecured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded debt payment 2,000; say this back, then ask\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: debt payment\nmissing: debt payment due date"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  },
+  {
+   "role": "assistant",
+   "text": "I still need to know whether there are any other debt payments or essential expenses before the tenth of October; are there?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:debt payment.day_of_month",
+      "not_applicable": false
+     },
+     "result": "'debt:debt payment.day_of_month' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:debt payment.due_date",
+      "not_applicable": false
+     },
+     "result": "not known: debt payment due date\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: debt payment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent."
+  },
+  {
+   "role": "assistant",
+   "text": "Rent is already noted as having no amount. Are there any other debt payments or essential expenses before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "unchanged rent\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: debt payment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Groceries."
+  },
+  {
+   "role": "assistant",
+   "text": "How much do you need for groceries in rupees before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded groceries\nin 0, out 0, lowest 6,000 on 11 September\nsurplus 6,000\nprovisional: groceries, debt payment\nmissing: groceries amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Seven thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Groceries are 7,000 rupees, leaving 1,166 rupees and 75 paise unpaid. Are there any optional expenses you want to keep before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "amount": 7000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded groceries 7,000; say this back, then ask\nunsolvable, something is left unpaid\nin 0, out 5,833.25, lowest 166.75 on 5 October\nsurplus 166.75\nunpaid total 1,166.75\nprovisional: debt payment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Cable."
+  },
+  {
+   "role": "assistant",
+   "text": "How much is the cable expense in rupees?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "cable",
+      "amount": null,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded cable\nunsolvable, something is left unpaid\nin 0, out 5,833.25, lowest 166.75 on 5 October\nsurplus 166.75\nunpaid total 1,166.75\nprovisional: debt payment, cable\nmissing: cable amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Four hundred rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Cable is 400 rupees, and 1,166 rupees and 75 paise remains unpaid. What\u2019s the debt payment\u2019s due date?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "cable",
+      "amount": 400,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": false,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded cable 400; say this back, then ask\nunsolvable, something is left unpaid\nin 0, out 5,833.25, lowest 166.75 on 5 October\nsurplus 166.75\nunpaid total 1,166.75\nprovisional: debt payment"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Fifteenth."
+  },
+  {
+   "role": "assistant",
+   "text": "The debt payment is due on the fifteenth of September, and 3,166 rupees and 75 paise remains unpaid. Is there anything else you want included before we make the plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "debt payment",
+      "amount": 2000,
+      "day_of_month": 15,
+      "debt_kind": "unsecured_emi",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded debt payment due date 15 Sep; say this back, then ask\nunsolvable, something is left unpaid\nin 0, out 5,833.25, lowest 166.75 on 5 October\nsurplus 166.75\nunpaid total 3,166.75"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No."
+  },
+  {
+   "role": "assistant",
+   "text": "The first action is to ask the grocery provider for a few more days or a split bill, because 1,166 rupees and 75 paise of the 7,000 rupees isn\u2019t covered; otherwise food or power could stop and reconnection could cost more. Does that and what happens if you skip it make sense?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final\nunsolvable, something is left unpaid\nin 0, out 5,833.25, lowest 166.75 on 5 October\nsurplus 166.75\nunpaid total 3,166.75\nFrom 6 October there is not enough for groceries; 1,166.75 of 7,000 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands\nSkip this and the food or the power goes, and getting reconnected costs more than the bill did.\nOn 15 September paying the 2,000 debt payment would leave you 1,833.25 short for groceries later in the month. The money is not there at any point in the next thirty days. You could ask the lender whether a part payment or a later due date is possible\nMissing this instalment means a bounce charge from both the lender and your bank, penal charges on the overdue amount, and a thirty day past due mark on your credit report.\nunpaid groceries 1,166.75 due 6 October\nunpaid debt payment 2,000 due 15 September"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It does."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true
+     },
+     "result": "understood, say one goodbye and call end_call in this reply"
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "6000.00",
+  "incomes": [],
+  "debts": [
+   {
+    "name": "debt payment",
+    "notes": "",
+    "kind": "unsecured_emi",
+    "amount_due": "2000.00",
+    "min_due": null,
+    "due_date": "2026-09-15",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "amount": null,
+    "due_date": null,
+    "spread": false,
+    "survival": false
+   },
+   {
+    "name": "september expenses",
+    "notes": "",
+    "amount": null,
+    "due_date": null,
+    "spread": false,
+    "survival": false
+   },
+   {
+    "name": "groceries",
+    "notes": "",
+    "amount": "7000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "cable",
+    "notes": "",
+    "amount": "400.00",
+    "date": null,
+    "flexible": false
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "income",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "essential:rent.amount",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "essential:september expenses.amount",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 17
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17
+ ],
+ "usage": {
+  "input_tokens": 99915,
+  "output_tokens": 1530
+ }
+}

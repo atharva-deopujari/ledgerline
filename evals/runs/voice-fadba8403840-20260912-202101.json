@@ -1,0 +1,270 @@
+{
+  "scenario": "voice-fadba8403840",
+  "source": "voice",
+  "session_id": "fadba8403840",
+  "prompt_version": "v1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-12",
+  "turns": [
+    {
+      "role": "user",
+      "text": "I have",
+      "finalisations": [
+        "I have"
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "How much money do you have right now, counting cash and your bank balance?",
+      "tool_calls": [],
+      "event_order": [
+        "message"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:49:56.563013+00:00",
+        "first_token": 1.836,
+        "first_audio": 2.252
+      }
+    },
+    {
+      "role": "user",
+      "text": "20,000 in cash,",
+      "finalisations": [
+        "20,000 in cash,"
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "",
+      "tool_calls": [
+        {
+          "id": "call_mX2AwxBLrlgfkA8DlIbxmDdJ",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "cash and bank balance",
+            "is_correction": false,
+            "amount": 20000
+          },
+          "result": "created opening balance 20,000. in 0, out 0."
+        }
+      ],
+      "event_order": [
+        "function_call"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:49:59.704415+00:00",
+        "first_audio": 0.278
+      }
+    },
+    {
+      "role": "user",
+      "text": "and 20,000 in bank balance.",
+      "finalisations": [
+        "and 20,000 in bank balance."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "What income do you expect between today and the eleventh of October?",
+      "tool_calls": [
+        {
+          "id": "call_ll3Los6m7bNthNzvTeKWOjer",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "bank balance",
+            "is_correction": false,
+            "amount": 20000
+          },
+          "result": "unchanged opening balance. in 0, out 0."
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:50:03.503132+00:00",
+        "first_token": 3.766,
+        "first_audio": 2.05
+      }
+    },
+    {
+      "role": "user",
+      "text": "Is",
+      "finalisations": [
+        "Is"
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "What were you going to add?",
+      "tool_calls": [],
+      "event_order": [
+        "message"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:50:20.403787+00:00",
+        "first_token": 1.341,
+        "first_audio": 1.786
+      }
+    },
+    {
+      "role": "user",
+      "text": "on September 18.",
+      "finalisations": [
+        "on",
+        "September 18."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "You expect income on the eighteenth of September, but the amount may not arrive. How much is it?",
+      "tool_calls": [
+        {
+          "id": "call_1hBICVtsUgQuyYtsZGWcIBeD",
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "income",
+            "is_correction": false,
+            "amount": null,
+            "day_of_month": 18,
+            "certainty": "uncertain"
+          },
+          "result": "created income. in 0, out 0. provisional. This income is not counted as money until it arrives."
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:50:25.264439+00:00",
+        "first_token": 4.399,
+        "first_audio": 2.01
+      }
+    },
+    {
+      "role": "user",
+      "text": "My rent is",
+      "finalisations": [
+        "My rent is"
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "",
+      "tool_calls": [
+        {
+          "id": "call_apAEFCpRxTEl1jlsG8RcNU18",
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "is_correction": false,
+            "amount": null,
+            "day_of_month": null,
+            "spread": false,
+            "survival": true
+          },
+          "result": "created rent. in 0, out 0. provisional."
+        }
+      ],
+      "event_order": [
+        "function_call"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:50:42.424488+00:00",
+        "first_audio": 3.12
+      }
+    },
+    {
+      "role": "user",
+      "text": "11,000 rupees.",
+      "finalisations": [
+        "11,000 rupees."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "How much is your rent?",
+      "tool_calls": [],
+      "event_order": [
+        "message"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-12T14:50:45.582974+00:00",
+        "first_token": 1.644,
+        "first_audio": 0.238
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-12",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "opening_balance_turn": 0,
+    "opening_balance_confirmed": true,
+    "incomes": [
+      {
+        "name": "income",
+        "confirmed": true,
+        "source_turn": 4,
+        "notes": "",
+        "amount": null,
+        "date": "2026-09-18",
+        "latest_date": null,
+        "certainty": "uncertain"
+      }
+    ],
+    "debts": [],
+    "essentials": [
+      {
+        "name": "rent",
+        "confirmed": false,
+        "source_turn": 5,
+        "notes": "",
+        "amount": null,
+        "due_date": null,
+        "spread": false,
+        "survival": true
+      }
+    ],
+    "optionals": [],
+    "unknowns": [],
+    "conflicts": [],
+    "outliers": [],
+    "understanding": null,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 6
+  },
+  "plan_final": false,
+  "cards_versions": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "ended_by": "client",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  }
+}

@@ -1,0 +1,283 @@
+{
+ "scenario": "timing_emi_before_salary",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hello, I\u2019m Ledgerline, and I\u2019ll help you look at the next 30 days; how much money do you have right now, counting cash and your bank balance?",
+   "tool_calls": []
+  },
+  {
+   "role": "user",
+   "text": "I have eight thousand rupees in my account right now."
+  },
+  {
+   "role": "assistant",
+   "text": "You have eight thousand rupees in your account right now. What income do you expect before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account balance",
+      "is_correction": false,
+      "amount": 8000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created opening balance. in 0, out 0."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I expect my salary of seventy-two thousand rupees on the first of October."
+  },
+  {
+   "role": "assistant",
+   "text": "Your salary is seventy-two thousand rupees on the first of October. What essential payment is due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "is_correction": false,
+      "amount": 72000,
+      "day_of_month": 1,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "created salary. in 72,000, out 0."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent of eighteen thousand rupees is due on the fifth of October."
+  },
+  {
+   "role": "assistant",
+   "text": "Your rent is eighteen thousand rupees, due on the fifth of October. Do you have any other essential payments or debts in this period?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "is_correction": false,
+      "amount": 18000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": false,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created rent. in 72,000, out 18,000."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, my bike loan payment is four thousand five hundred rupees, due on the twentieth."
+  },
+  {
+   "role": "assistant",
+   "text": "Your bike loan payment is four thousand five hundred rupees, due on the twentieth. Are there any regular food, utility, medicine, or other essential costs before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "bike loan",
+      "is_correction": false,
+      "amount": 4500,
+      "day_of_month": 20,
+      "debt_kind": "secured_emi",
+      "min_due": null,
+      "spread": false,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created bike loan. in 72,000, out 22,500."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My groceries cost about nine thousand rupees over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Your groceries are about nine thousand rupees spread over the month. Are any of these figures estimates or uncertain?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "is_correction": false,
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "created groceries. in 72,000, out 31,500."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No, these figures are not estimates."
+  },
+  {
+   "role": "assistant",
+   "text": "Thanks, I have the figures as confirmed. Would you like me to prepare your 30-day plan?",
+   "tool_calls": []
+  },
+  {
+   "role": "user",
+   "text": "Yes, please prepare the plan."
+  },
+  {
+   "role": "assistant",
+   "text": "Your salary is seventy-two thousand rupees on the first of October, and your rent is eighteen thousand rupees on the fifth; groceries are nine thousand rupees over the month, and the bike loan is four thousand five hundred rupees due on the twentieth of September, so the dates do not line up. Would you ask the lender whether the due date can move to just after you are paid, and keep the remaining money for rent and groceries?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final. timing shortfall, the money is there but the dates do not line up. surplus 48,500. Pay bike loan on 1 October instead, 11 days late, which is the first day the money is there. bike loan: You could ask the lender whether the due date can move to just after you are paid. in 72,000, out 31,500."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, I understand. I will ask the lender to move the bike-loan due date until after my salary arrives, and I will keep the remaining money aside for rent and groceries."
+  },
+  {
+   "role": "assistant",
+   "text": "You understood the plan: ask the lender to move the bike-loan due date until after your salary arrives, and keep the remaining money aside for rent and groceries.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true,
+      "restated_actions": [
+       "I will ask the lender to move the bike-loan due date until after my salary arrives.",
+       "I will keep the remaining money aside for rent and groceries."
+      ]
+     },
+     "result": "not restated: bike loan. in 72,000, out 31,500."
+    }
+   ]
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "8000.00",
+  "opening_balance_turn": 1,
+  "opening_balance_confirmed": true,
+  "incomes": [
+   {
+    "name": "salary",
+    "confirmed": true,
+    "source_turn": 2,
+    "notes": "",
+    "amount": "72000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike loan",
+    "confirmed": true,
+    "source_turn": 4,
+    "notes": "",
+    "kind": "secured_emi",
+    "amount_due": "4500.00",
+    "min_due": null,
+    "due_date": "2026-09-20",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "confirmed": true,
+    "source_turn": 3,
+    "notes": "",
+    "amount": "18000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": false
+   },
+   {
+    "name": "groceries",
+    "confirmed": true,
+    "source_turn": 5,
+    "notes": "",
+    "amount": "9000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [],
+  "unknowns": [],
+  "conflicts": [],
+  "understanding": {
+   "confirmed": true,
+   "restated_actions": [
+    "I will ask the lender to move the bike-loan due date until after my salary arrives.",
+    "I will keep the remaining money aside for rent and groceries."
+   ],
+   "gaps": [
+    "bike loan"
+   ]
+  },
+  "plan_final": true,
+  "turn": 8
+ },
+ "plan_final": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7
+ ],
+ "usage": {
+  "input_tokens": 34116,
+  "output_tokens": 973
+ }
+}

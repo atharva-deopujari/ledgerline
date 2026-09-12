@@ -1,0 +1,466 @@
+{
+ "scenario": "garbage_opener",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, and I\u2019ll help you plan the next 30 days; how much money is in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Your WhatsApp."
+  },
+  {
+   "role": "assistant",
+   "text": "What would you like to tell me about your WhatsApp?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I don\u2019t have that one."
+  },
+  {
+   "role": "assistant",
+   "text": "How much money is in your account today, even if it\u2019s zero?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "opening_balance",
+      "not_applicable": true
+     },
+     "result": "a balance cannot be not applicable; if there is nothing in the account, record it as zero."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "There\u2019s nine thousand rupees in my account today."
+  },
+  {
+   "role": "assistant",
+   "text": "You have 9,000 rupees in your account today. When will money next come in, and how much will it be?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "account today",
+      "amount": 9000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 9,000; say this back, then ask\nblocked: income"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My salary comes on the first of next month, and it will be fifty-two thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your salary is 52,000 rupees on the first of October. What essential bills must you pay before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "income",
+      "name": "salary",
+      "amount": 52000,
+      "day_of_month": 1,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": "confirmed",
+      "latest_day_of_month": null
+     },
+     "result": "recorded salary 52,000 on 1 Oct; say this back, then ask\nin 52,000, out 0, lowest 9,000 on 11 September\nsurplus 61,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I need to pay sixteen thousand rupees for rent by the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "Your rent is 16,000 rupees due by the fifth of October. What other essential bills are due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 16000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded rent 16,000 due 5 Oct; say this back, then ask\nin 52,000, out 16,000, lowest 9,000 on 11 September\nsurplus 45,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I don\u2019t have any other essential bills due before the tenth."
+  },
+  {
+   "role": "assistant",
+   "text": "You have no other essential bills due before the tenth of October. Do you have any flexible spending, such as food, travel, or subscriptions, in this period?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "other_essentials_before_window_end",
+      "not_applicable": true
+     },
+     "result": "'other_essentials_before_window_end' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:other bills",
+      "not_applicable": true
+     },
+     "result": "'essential:other bills' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:other.amount",
+      "not_applicable": true
+     },
+     "result": "none: other amount\nin 52,000, out 16,000, lowest 9,000 on 11 September\nsurplus 45,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I need about eight thousand rupees for groceries over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Your groceries are about 8,000 rupees spread over the month. Do you have any other spending you want included?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "groceries",
+      "amount": 8000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": true,
+      "survival": true,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded groceries 8,000; say this back, then ask\nin 52,000, out 24,000, lowest 3,666.60 on 30 September\nsurplus 37,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I could skip five hundred rupees for streaming."
+  },
+  {
+   "role": "assistant",
+   "text": "Streaming is 500 rupees and can be skipped. Are there any debts or credit-card payments due before the tenth of October?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "optional",
+      "name": "streaming",
+      "amount": 500,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded streaming 500; say this back, then ask\nin 52,000, out 24,500, lowest 3,333.20 on 30 September\nsurplus 36,500"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No, my credit card payment is due on the twenty-second."
+  },
+  {
+   "role": "assistant",
+   "text": "Your credit-card payment is due on the twenty-second of September. What\u2019s the minimum due and the full amount?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card",
+      "amount": null,
+      "day_of_month": 22,
+      "debt_kind": "credit_card",
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded credit card due 22 Sep; say this back, then ask\nin 52,000, out 24,500, lowest 3,333.20 on 30 September\nsurplus 36,500\nprovisional: credit card\nmissing: credit card minimum due, credit card amount"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The minimum due is one thousand two hundred rupees, and the full amount is four thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Your credit-card balance is 4,000 rupees, with a minimum due of 1,200 rupees on the twenty-second of September. Would you like to hear the 30-day plan?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "debt",
+      "name": "credit card",
+      "amount": 4000,
+      "day_of_month": 22,
+      "debt_kind": "credit_card",
+      "min_due": 1200,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded credit card 4,000; say this back, then ask\nrecorded credit card minimum due 1,200\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 24,500, lowest 3,666.60 on 30 September\nsurplus 36,500\nunpaid total 4,000"
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "other_debts",
+      "not_applicable": true
+     },
+     "result": "'other_debts' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "debt:other.amount",
+      "not_applicable": true
+     },
+     "result": "none: other amount\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 24,500, lowest 3,666.60 on 30 September\nsurplus 36,500\nunpaid total 4,000"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, please."
+  },
+  {
+   "role": "assistant",
+   "text": "Your first action is to contact the card issuer about the 4,000 rupees due on the twenty-second of September, because the money arrives on the first of October; paying late may lead to a fee and a past-due report. Does that action and consequence make sense?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 24,500, lowest 3,666.60 on 30 September\nsurplus 36,500\nunpaid total 4,000\nFrom 22 September there is not enough for credit card; 4,000 of 4,000 is not covered this month. The money is not there until 1 October. You could ask the issuer to move your statement date or to waive the late fee this once\nIf the minimum due is more than three days late, the issuer can charge a late fee and report the account past due to the credit bureaus.\nMove streaming, 500, to 1 October, once there is money in the account to cover it\nunpaid credit card 4,000 due 22 September"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, that makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true
+     },
+     "result": "understood, say one goodbye and call end_call in this reply"
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "9000.00",
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "amount": "52000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card",
+    "notes": "",
+    "kind": "credit_card",
+    "amount_due": "4000.00",
+    "min_due": "1200.00",
+    "due_date": "2026-09-22",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "amount": "16000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": false
+   },
+   {
+    "name": "groceries",
+    "notes": "",
+    "amount": "8000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming",
+    "notes": "",
+    "amount": "500.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "essential:other.amount",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "debt:other.amount",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 13
+ },
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12
+ ],
+ "usage": {
+  "input_tokens": 73813,
+  "output_tokens": 1307
+ }
+}
