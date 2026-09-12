@@ -1,0 +1,97 @@
+/**
+ * One place for colour, space and type. Status colours are deliberately a separate family
+ * from the accent: a card is never "branded", it is ok / warn / provisional / final /
+ * blocked, and each of those also says its own name in the badge.
+ *
+ * `--pending` is the amber both "not settled yet" marks share: the "?" on a provisional
+ * value, and the thinking dot on the state pill.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Neutrals — a cool paper, not pure white, so the cards can be white and still sit up. */
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-sunk: #eceef1;
+  --border: #dfe2e7;
+  --border-strong: #c6ccd4;
+  --text: #16191d;
+  --text-muted: #5d656f;
+  --text-faint: #8b939d;
+
+  /* Accent — one colour, used for the call to action and the live line. */
+  --accent: #2f4dd0;
+  --accent-ink: #ffffff;
+  --accent-soft: #e7ebfb;
+
+  /* Status — semantic, never the accent. */
+  --ok: #1f7a4d;
+  --ok-soft: #e2f3ea;
+  --pending: #9a6200;
+  --pending-soft: #fbf0d9;
+  --warn: #a4451a;
+  --warn-soft: #fceadf;
+  --provisional: #5b5470;
+  --provisional-soft: #eeecf4;
+  --final: #16665f;
+  --final-soft: #dff1ef;
+  --blocked: #a3242c;
+  --blocked-soft: #fbe4e5;
+
+  /* Space — a 4px base; everything is a multiple so rhythm survives editing. */
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+
+  /* Type */
+  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-num: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  --t-xs: 0.6875rem;
+  --t-sm: 0.8125rem;
+  --t-md: 0.9375rem;
+  --t-lg: 1.125rem;
+  --t-xl: 1.5rem;
+  --t-2xl: 1.875rem;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+  --shadow: 0 1px 2px rgb(16 19 24 / 6%), 0 4px 12px rgb(16 19 24 / 5%);
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101216;
+    --surface: #191c22;
+    --surface-sunk: #14171c;
+    --border: #282d36;
+    --border-strong: #3a414d;
+    --text: #eef0f3;
+    --text-muted: #a3abb7;
+    --text-faint: #767e8a;
+
+    --accent: #8ea4ff;
+    --accent-ink: #10131a;
+    --accent-soft: #1e2540;
+
+    --ok: #6ddaa3;
+    --ok-soft: #14281f;
+    --pending: #e8b451;
+    --pending-soft: #2c2415;
+    --warn: #f0997a;
+    --warn-soft: #2e1d16;
+    --provisional: #b4aace;
+    --provisional-soft: #221f2d;
+    --final: #6fd4c8;
+    --final-soft: #12272a;
+    --blocked: #f28b91;
+    --blocked-soft: #2d1719;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 4px 14px rgb(0 0 0 / 30%);
+  }
+}

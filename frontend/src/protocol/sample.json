@@ -1,0 +1,157 @@
+{
+  "type": "cards",
+  "v": 7,
+  "phase": "gathering",
+  "focus": "essentials",
+  "cards": [
+    {
+      "id": "income",
+      "title": "Income",
+      "status": "ok",
+      "rows": [
+        [
+          "Salary",
+          "42,000",
+          "1 Oct"
+        ]
+      ],
+      "kv": {},
+      "note": null
+    },
+    {
+      "id": "debts",
+      "title": "Loans & cards",
+      "status": "ok",
+      "rows": [
+        [
+          "Bike EMI",
+          "4,200",
+          "5 Oct"
+        ],
+        [
+          "HDFC card min",
+          "3,200",
+          "12 Oct"
+        ]
+      ],
+      "kv": {},
+      "note": null
+    },
+    {
+      "id": "essentials",
+      "title": "Essentials",
+      "status": "ok",
+      "rows": [
+        [
+          "Rent",
+          "12 ?",
+          "5 Oct"
+        ],
+        [
+          "Groceries",
+          "6,000",
+          "spread"
+        ],
+        [
+          "Electricity",
+          "amount?",
+          ""
+        ]
+      ],
+      "kv": {},
+      "note": "Rent came through as 12. Did you mean 12,000?"
+    },
+    {
+      "id": "optionals",
+      "title": "Optional",
+      "status": "ok",
+      "rows": [
+        [
+          "Streaming",
+          "1,200",
+          "3 Oct"
+        ]
+      ],
+      "kv": {},
+      "note": null
+    },
+    {
+      "id": "missing",
+      "title": "Still need",
+      "status": "warn",
+      "rows": [
+        [
+          "Opening balance",
+          "",
+          ""
+        ],
+        [
+          "Electricity",
+          "amount",
+          ""
+        ]
+      ],
+      "kv": {},
+      "note": null
+    },
+    {
+      "id": "summary",
+      "title": "This month",
+      "status": "warn",
+      "rows": [],
+      "kv": {
+        "in": "42,000",
+        "out": "25,400",
+        "lowest": "-1,800 on 5 Oct"
+      },
+      "note": "timing shortfall: money exists, dates do not line up"
+    },
+    {
+      "id": "actions",
+      "title": "Proposed",
+      "status": "provisional",
+      "rows": [
+        [
+          "Defer",
+          "Streaming 1,200",
+          "to 6 Oct"
+        ]
+      ],
+      "kv": {},
+      "note": null
+    }
+  ],
+  "timeline": [
+    {
+      "d": "2026-09-11",
+      "b": 3000,
+      "e": "start"
+    },
+    {
+      "d": "2026-09-20",
+      "b": 1200,
+      "e": null
+    },
+    {
+      "d": "2026-10-01",
+      "b": 43200,
+      "e": "salary"
+    },
+    {
+      "d": "2026-10-03",
+      "b": 42000,
+      "e": "streaming"
+    },
+    {
+      "d": "2026-10-05",
+      "b": -1800,
+      "e": "rent, bike EMI"
+    },
+    {
+      "d": "2026-10-10",
+      "b": -1800,
+      "e": null
+    }
+  ],
+  "ended": false
+}

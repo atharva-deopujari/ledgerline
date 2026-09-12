@@ -1,0 +1,773 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--t-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+ol,
+ul {
+  margin: 0;
+}
+
+ol,
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- shell ---------- */
+
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding: var(--s4);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.app__top {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+}
+
+.app__brand {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.app__bottom {
+  position: sticky;
+  bottom: 0;
+  padding: var(--s4) 0 var(--s2);
+  margin-top: auto;
+  background: linear-gradient(to top, var(--bg) 72%, transparent);
+}
+
+/* Room for the sticky bar so the last card is always reachable. */
+.board {
+  padding-bottom: var(--s6);
+}
+
+/* ---------- start screen ---------- */
+
+.start {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  align-items: flex-start;
+  padding-top: var(--s7);
+}
+
+.start__title {
+  font-size: var(--t-2xl);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 640;
+}
+
+.start__line {
+  color: var(--text-muted);
+  max-width: 34ch;
+}
+
+.start__button {
+  margin-top: var(--s2);
+  padding: var(--s3) var(--s5);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+
+.start__button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ---------- phase strip ---------- */
+
+.phase-strip {
+  display: flex;
+  gap: var(--s2);
+  flex: 1;
+}
+
+.phase-strip li {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+}
+
+.phase-strip__bar {
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  transition: background 240ms ease;
+}
+
+.phase-strip li[data-filled='true'] .phase-strip__bar {
+  background: var(--accent);
+}
+
+.phase-strip__label {
+  font-size: var(--t-xs);
+  color: var(--text-faint);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phase-strip li[aria-current='step'] .phase-strip__label {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---------- headline ---------- */
+
+.headline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-height: 4.5rem;
+}
+
+.headline__question {
+  font-size: var(--t-xl);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  font-weight: 620;
+  text-wrap: balance;
+}
+
+.headline__stream {
+  color: var(--text-muted);
+  font-size: var(--t-sm);
+  border-left: 2px solid var(--accent);
+  padding-left: var(--s3);
+  animation: fade-in 200ms ease both;
+}
+
+.headline__stream[data-speaking='true']::after {
+  content: '';
+  display: inline-block;
+  width: 0.4em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--accent);
+  animation: blink 1.1s steps(2, start) infinite;
+}
+
+/* ---------- cards ---------- */
+
+.card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s4);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--status, var(--border-strong));
+}
+
+.card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+
+.card__title {
+  font-size: var(--t-md);
+  font-weight: 620;
+  letter-spacing: -0.005em;
+}
+
+.card__note {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-size: var(--t-sm);
+  text-wrap: pretty;
+}
+
+.card--focus {
+  animation: rise 220ms ease both;
+}
+
+/* A card can carry both; without this the kv grid lands on the last row's date. */
+.rows + .kv {
+  margin-top: var(--s4);
+}
+
+.card--collapsed {
+  padding: var(--s3) var(--s4);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.card--collapsed .card__head {
+  margin-bottom: var(--s1);
+}
+
+.card--collapsed:hover {
+  border-color: var(--border-strong);
+}
+
+.card__summary {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--t-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status drives the rail colour and the badge; the badge also says the word. */
+[data-status='ok'] {
+  --status: var(--ok);
+  --status-soft: var(--ok-soft);
+}
+[data-status='warn'] {
+  --status: var(--warn);
+  --status-soft: var(--warn-soft);
+}
+[data-status='provisional'] {
+  --status: var(--provisional);
+  --status-soft: var(--provisional-soft);
+}
+[data-status='final'] {
+  --status: var(--final);
+  --status-soft: var(--final-soft);
+}
+[data-status='blocked'] {
+  --status: var(--blocked);
+  --status-soft: var(--blocked-soft);
+}
+
+.badge {
+  flex: none;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 2px var(--s2);
+  border-radius: var(--radius-pill);
+  color: var(--status, var(--text-muted));
+  background: var(--status-soft, var(--surface-sunk));
+}
+
+/* ---------- rows ---------- */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: 'label value' 'when value';
+  column-gap: var(--s3);
+  align-items: baseline;
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--border);
+  animation: highlight 900ms ease both;
+}
+
+.row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.row__label {
+  grid-area: label;
+}
+
+/* The "+N more" marker is a count of what was trimmed, not an item. */
+.row--more {
+  grid-template-columns: 1fr;
+  color: var(--text-faint);
+  font-size: var(--t-sm);
+  font-style: italic;
+}
+
+.row__value {
+  grid-area: value;
+  font-family: var(--font-num);
+  font-size: var(--t-md);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.row__uncertain {
+  margin-left: 2px;
+  color: var(--pending);
+  font-weight: 700;
+}
+
+.row__when {
+  grid-area: when;
+  font-size: var(--t-xs);
+  color: var(--text-faint);
+}
+
+/* ---------- kv ---------- */
+
+.kv {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--s3);
+}
+
+.kv__pair dt {
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.kv__pair dd {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- missing chips ---------- */
+
+.missing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.missing__title {
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.missing__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s1);
+  padding: var(--s1) var(--s3);
+  border: 1px dashed var(--warn);
+  border-radius: var(--radius-pill);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--t-sm);
+}
+
+.chip__hint {
+  font-size: var(--t-xs);
+  opacity: 0.75;
+}
+
+/* Parked, not pending: the user does not know this one, so it stops looking like a question. */
+.chip[data-known='false'] {
+  border-style: solid;
+  border-color: var(--border);
+  background: var(--surface-sunk);
+  color: var(--text-faint);
+}
+
+.missing__note {
+  margin-top: var(--s2);
+  color: var(--text-muted);
+  font-size: var(--t-sm);
+  text-wrap: pretty;
+}
+
+/* ---------- timeline ---------- */
+
+.timeline {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s3) var(--s4) var(--s2);
+  box-shadow: var(--shadow);
+}
+
+.timeline__chart {
+  display: block;
+  width: 100%;
+  height: 96px;
+  overflow: visible;
+}
+
+.timeline__line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.timeline__zero {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.timeline__dot {
+  fill: var(--accent);
+}
+
+.timeline__low {
+  fill: none;
+  stroke: var(--warn);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.timeline__low-label {
+  font-family: var(--font-num);
+  color: var(--text-muted);
+}
+
+.timeline__low-label[data-negative='true'] {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.timeline__axis {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-top: var(--s2);
+  font-size: var(--t-xs);
+  color: var(--text-faint);
+}
+
+/* ---------- plan ---------- */
+
+.plan {
+  background: var(--surface);
+  border: 1px solid var(--status, var(--border));
+  border-radius: var(--radius);
+  padding: var(--s4);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  animation: rise 260ms ease both;
+}
+
+.plan .card__head {
+  margin-bottom: 0;
+}
+
+.plan__group-title {
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  font-weight: 600;
+  margin-bottom: var(--s1);
+}
+
+.plan__group--unpaid .row__value {
+  color: var(--warn);
+}
+
+.plan__confirm[data-ended='true'] {
+  background: var(--surface-sunk);
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.plan__confirm[data-confirmed='true'] {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.plan__confirm {
+  padding: var(--s3);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 560;
+}
+
+/* ---------- voice bar ---------- */
+
+.voicebar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.voicebar__mic,
+.voicebar__end {
+  padding: var(--s2) var(--s4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-sunk);
+  font-size: var(--t-sm);
+  font-weight: 560;
+  white-space: nowrap;
+}
+
+.voicebar__end {
+  margin-left: auto;
+  border-color: transparent;
+  background: var(--blocked-soft);
+  color: var(--blocked);
+}
+
+.voicebar__mic[aria-pressed='true'] {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-color: transparent;
+}
+
+.voicebar__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--t-sm);
+  color: var(--text-muted);
+  min-width: 6.5rem;
+}
+
+.voicebar__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.voicebar__pill[data-state='listening'] .voicebar__dot {
+  background: var(--ok);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.voicebar__pill[data-state='speaking'] .voicebar__dot {
+  background: var(--accent);
+  animation: pulse 900ms ease-in-out infinite;
+}
+
+.voicebar__pill[data-state='thinking'] .voicebar__dot {
+  background: var(--pending);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* ---------- error ---------- */
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--blocked);
+  border-radius: var(--radius);
+  background: var(--blocked-soft);
+  color: var(--blocked);
+  font-size: var(--t-sm);
+}
+
+.error__text {
+  flex: 1;
+  text-wrap: pretty;
+}
+
+.error__retry {
+  flex: none;
+  padding: var(--s1) var(--s3);
+  border: 1px solid currentcolor;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-weight: 600;
+}
+
+/* ---------- board ---------- */
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.board__lead,
+.board__rest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.board__waiting {
+  color: var(--text-faint);
+  padding: var(--s5) 0;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+/* ---------- wide ---------- */
+
+@media (min-width: 960px) {
+  .app {
+    max-width: 960px;
+  }
+
+  .board {
+    flex-direction: row;
+    align-items: start;
+    gap: var(--s6);
+  }
+
+  .board__lead {
+    flex: 1 1 60%;
+    min-width: 0;
+    position: sticky;
+    top: var(--s4);
+  }
+
+  .board__rest {
+    flex: 1 1 40%;
+    min-width: 0;
+  }
+
+  .headline__question {
+    font-size: var(--t-2xl);
+  }
+}
+
+/* ---------- motion ---------- */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A changed row tints and settles; nothing on the page moves. */
+@keyframes highlight {
+  from {
+    background: var(--accent-soft);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
