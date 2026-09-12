@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260912T102031Z-b7fea693",
+  "created_at": "2026-09-12T10:20:37Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "The review found one call-lifecycle failure that can strand users after blocked audio, one mismatch between the actions explained and the actions checked for understanding, and one normalization gap that lets the transcript consistency check miss stale corrected amounts.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "frontend/src/call/useDailyCall.ts",
+      "line": 232,
+      "title": "Blocked audio leaves a live call that the advertised retry cannot replace",
+      "evidence": "The rejection path for `el.play()` only calls `fail('The browser blocked audio. Click Start again to let the plan speak.')`. It does not release or tear down the current Daily object. The reducer consequently moves to `error`, making the retry control available, but `start()` immediately returns because its guard is `if (startingRef.current || callRef.current) return`. The user is explicitly told to click Start again, yet that click is silently ignored while the old call and server session remain active.",
+      "recommendation": "Consider retiring the specific call when playback fails, while preserving the useful audio error message, so the server observes the disconnect and a subsequent Start can create a new call. Add a test that rejects `audio.play()`, verifies the old call is destroyed, and verifies the advertised retry performs a new POST and joins successfully."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "file": "ledgerline/agent/tools.py",
+      "line": 660,
+      "title": "Understanding gaps are computed from different actions than the plan explains",
+      "evidence": "Final-plan narration uses `_top_actions(plan)`, which deliberately deduplicates `(action.type, action.target)` because the engine can emit one action per prorated day. `_gaps`, however, still iterates `for action in plan.actions[:2]`. For actions such as two consecutive daily `DEFER_OPTIONAL` entries for streaming followed by a credit-card action, the assistant explains streaming and the card, but an unsure response produces gaps for streaming twice and omits the card.",
+      "recommendation": "Consider deriving comprehension gaps from the same distinct top-action selection used by `describe`, so the follow-up covers exactly the actions the person heard. Add a regression test with duplicate prorated actions followed by a second distinct action."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "evals/checks.py",
+      "line": 196,
+      "title": "Corrected-amount tracking does not use the application's item identity rules",
+      "evidence": "`_supersede` identifies an item with `key = f\"{args.get('kind')}:{name}\".lower()`, while the real state layer normalizes punctuation, whitespace, and articles through `normalise_name`. Thus an initial call named `the rent` and a correction named `rent` update the same domain item and cards, but are treated as unrelated by the checker. The old amount is never removed from `allowed`, so the assistant can later repeat the stale amount while contradicting the cards and still pass `numbers_traceable`.",
+      "recommendation": "Consider applying identity normalization equivalent to the domain state operation when tracking superseded tool arguments. Add a transcript regression covering article, punctuation, and spacing variants across an initial upsert and its correction."
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260912T100701Z-bf3f0e11",
+  "created_at": "2026-09-12T10:07:07Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "The review found one high-severity retry race and five medium/low issues affecting comprehension confirmation, room privacy, evaluation reliability, and terminal-state presentation. In particular, the pending-join cleanup tests do not model the backend's teardown latency, so the UI can still re-enable before the single server slot is actually released.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "frontend/src/call/useDailyCall.ts",
+      "line": 340,
+      "title": "Retry can re-enable before the asynchronous DELETE releases the server slot",
+      "evidence": "The pending-join terminal path uses `if (!joinedRef.current) void cancelSession(session.session_id)`, so it starts the DELETE without awaiting it. `cancelSession` adds the id to `cancelledRef` before awaiting `fetch`; subsequent calls therefore return immediately rather than joining the in-flight cleanup. Meanwhile `start()` can settle as soon as Daily's destroyed join rejects, causing `starting` to become false. The backend's `SessionRegistry.cancel` awaits the complete `run_session` teardown before returning the DELETE, including bounded worker cancellation and room deletion. Thus the controls can become enabled while the old registry entry still exists, and an immediate retry can still receive 409. The tests use an immediately resolving fake DELETE and cannot expose this interval.",
+      "recommendation": "Consider retaining the in-flight cancellation promise per session and awaiting it before the current start attempt clears `starting`, or before a subsequent POST is allowed. Add a test where DELETE remains pending after `join()` rejects and verify that the retry control stays unavailable, or that a new start waits rather than POSTing into the occupied slot."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "file": "ledgerline/agent/prompts/v1.md",
+      "line": 39,
+      "title": "The ending confirms acceptance, not that the user understands the plan",
+      "evidence": "The product requirements explicitly require the agent to confirm that the user understands the plan. The prompt instead says, `Then ask once if that works or they'd change anything` and treats `A yes, \"makes sense\" or \"got it\"` as agreement. A bare yes to whether the plan works only establishes acceptance and can be recorded as `confirmed true` without checking comprehension. The tool docstring reinforces this by describing `record_understanding` as recording whether the person is `happy with the plan`.",
+      "recommendation": "Consider asking a concise comprehension-focused question, such as whether the two actions and their consequences make sense, while retaining the deliberate decision not to require a recitation. Only record confirmed understanding when the response addresses comprehension rather than mere willingness to proceed."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "ledgerline/voice/transport.py",
+      "line": 50,
+      "title": "Financial voice rooms are created as public despite issuing meeting tokens",
+      "evidence": "Room creation uses `DailyRoomParams(privacy=\"public\", properties=props)`. Public Daily rooms can be joined with the room URL, so the browser's non-owner token does not protect access to a conversation containing sensitive income, debt, and balance information. The implementation already creates separate owner and guest tokens, making public room access unnecessary for the documented flow.",
+      "recommendation": "Consider creating private rooms so possession of the appropriate meeting token is required. Verify both browser and bot joins against a private room and retain the existing expiry and eject safeguards."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "evals/checks.py",
+      "line": 148,
+      "title": "The spoken-number parser merges separate amounts joined by “and”",
+      "evidence": "In `_words_to_numbers`, `elif word == \"and\" and seen: continue` always treats “and” as part of the current number. Consequently, `forty-five thousand and twelve thousand` is parsed as 57,000 rather than two amounts, 45,000 and 12,000. If the assistant subsequently says `fifty-seven thousand`, `numbers_traceable` considers that invented arithmetic authorized by the user's utterance. The current tests cover “and” within one amount but not conjunctions between separate amounts.",
+      "recommendation": "Consider segmenting coordinated amount phrases before number parsing, or ending the current number when text after “and” starts another scaled amount rather than a valid continuation. Add regression cases with multiple amounts in one natural utterance and assert that their sum is not introduced as an allowed source."
+    },
+    {
+      "id": "F5",
+      "severity": "medium",
+      "file": "evals/checks.py",
+      "line": 190,
+      "title": "Traceability allows obsolete corrected figures indefinitely",
+      "evidence": "`_sources_up_to` iterates over every prior turn and unions every user number and tool result into `allowed`: `for i, turn in enumerate(turns[: index + 1])` followed by `allowed |= numbers_in(turn[\"text\"])`. Nothing retracts an earlier amount after a correction. If a user changes rent from 11,000 to 12,000, the assistant can later revert to 11,000 and still pass `numbers_traceable`, despite the prompt requiring figures from the latest result and the requirement that conversation and cards remain consistent after corrections.",
+      "recommendation": "Consider tracking provenance by current financial field or otherwise invalidating superseded recording-tool values after corrections and conflict resolution. Add a transcript regression where an old corrected amount is spoken after the new value has been accepted."
+    },
+    {
+      "id": "F6",
+      "severity": "low",
+      "file": "frontend/src/App.tsx",
+      "line": 51,
+      "title": "A call that ends before joining is presented as an active-style board",
+      "evidence": "`started` is true for every `session.call === 'ended'`, even when no snapshot ever arrived. A `participant-left` event during a pending join therefore switches from the start screen to an empty board. Its fallback text is `Listening. Start whenever.` even though the call has ended, while the footer simultaneously shows a disabled `Start another call` control during unwind. This contradicts the adjacent comment that a failure before anything arrived should remain on the start screen.",
+      "recommendation": "Consider distinguishing a call that was actually live from an attempt that ended while connecting, or require a snapshot before treating an ended attempt as started. Keep pre-join terminal cases on the start/error presentation and reserve the retained board for calls that produced useful content."
+    }
+  ]
+}

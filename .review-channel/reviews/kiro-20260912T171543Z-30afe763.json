@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260912T171543Z-30afe763",
+  "created_at": "2026-09-12T17:15:49Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "The implementation has strong deterministic planning and card infrastructure, but four correctness gaps remain in core planning paths: fragmented balances can lose money, readiness permits plans before liabilities have been explored, undated essentials are silently treated as evenly spread, and alias-based removal can leave stale unknown fields. The first three can produce a final plan whose inputs or timing differ materially from what the person said.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "ledgerline/agent/tools/context.py",
+      "line": 39,
+      "title": "Fragmented balances still lose one of the stated account components",
+      "evidence": "`balance_total` only computes the correct total if the model emits a separate call for every component: `self._balance_parts[normalise_name(name)] = amount` followed by `return sum(...)`. The current saved `fragmented_balance` runs contain the three user fragments \"I have\", \"20,000 in cash and\", and \"20,000 in bank balance.\", but the model emits only one `upsert_item` for cash and the final state stores `opening_balance: \"20000.00\"`. `evals/REPORT.md` likewise records that all fifteen post-cut runs retained only 20,000 rather than the person's 40,000. The resulting cards and plan are therefore calculated from half the available money.",
+      "recommendation": "Consider making balance components model-independent—for example, persist named cash/account components and derive the opening total in code, or provide one operation that records all components atomically. Keep a regression that feeds the exact fragmented utterance and asserts a final opening balance of 40,000, not merely that multiple tool calls would add correctly if they happened."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "file": "ledgerline/domain/state/readiness.py",
+      "line": 23,
+      "title": "A plan becomes ready without establishing whether debts or expenses exist",
+      "evidence": "`blockers()` requires only an opening balance and an answered income question. `missing_fields()` then examines fields only on items already present; it has no category-level evidence that debts, essentials, or optional spending were asked about or explicitly absent. Consequently, a state containing only a balance and income has empty readiness blockers, and `finalize_plan` accepts it. This occurs in `fragmented_balance-20260912-220810.json`: the call finalizes after recording only cash, rent, and salary, omitting the scenario's groceries, credit card, and gym and reporting a 54,000 surplus.",
+      "recommendation": "Consider tracking adaptive discovery coverage separately from item fields, such as whether the person has addressed debts and household spending or explicitly said there are none. Finalization should require enough category coverage to support a realistic plan without imposing a fixed questionnaire. Add a test proving that balance plus income alone cannot silently become a final plan when major liability categories remain unaddressed."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "file": "ledgerline/domain/engine/events.py",
+      "line": 178,
+      "title": "Missing essential due dates are silently guessed as evenly spread spending",
+      "evidence": "The event builder uses `if essential.spread or essential.due_date is None:` and prorates the full amount across all thirty days. However, `missing_fields()` only adds an essential's amount and never its due date, so an undated rent or utility bill does not block finalization. Even an explicitly unknown due date is cleared to `None` and then follows this same spread branch. This converts missing timing information into a concrete daily schedule without marking the item excluded or the plan provisional, contrary to the requirement to avoid presenting guesses as facts and to account for payment timing.",
+      "recommendation": "Consider treating `spread=True` as the only authorization to prorate an essential. When `spread` is false and `due_date` is absent, surface the date as missing or explicitly excluded/provisional until the person supplies it or says it is genuinely spread through the month. Cover both an undated rent and a due date later marked unknown."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "ledgerline/domain/state/items.py",
+      "line": 298,
+      "title": "Removing an item through an alias leaves its unknown fields behind",
+      "evidence": "`remove()` finds the canonical stored item using the possessive-aware `_find`, but cleans unknowns with the requested name: `prefix = f\"{kind.value}:{normalise_name(name)}.\"`. If the stored item is `rent` and the user removes it as `my rent`, `_find` removes the item while the cleanup searches for `essential:my rent.*`; an existing `essential:rent.amount` unknown survives. The cards can then continue showing a nonexistent rent field as \"not known\" while the plan itself no longer contains that item.",
+      "recommendation": "Consider deriving the cleanup prefix and returned field from the canonical `existing.name` after resolution. Add coverage for removing `rent` as `my rent` and the reverse, asserting that all associated unknown fields disappear with the item."
+    }
+  ]
+}

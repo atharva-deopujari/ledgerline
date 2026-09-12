@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260912T070010Z-7bc8fe3c",
+  "created_at": "2026-09-12T07:00:16Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "Static review found four correctness issues: a partial income can strand the conversation with no question to ask, marking a known or disputed field unknown does not reconcile the value or conflict, a lifecycle event during Daily join can be overwritten by a stale joined transition, and an invalid credit-card minimum can inflate the plan beyond the stated total due.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "ledgerline/domain/state.py",
+      "line": 675,
+      "title": "An income without an amount leaves the agent blocked with no question",
+      "evidence": "`missing()` checks income dates only: `for income in state.incomes: if income.date is None: gaps.append(..., \"date\")`; it never adds `income:<name>.amount`. Meanwhile `readiness()` adds `\"no income recorded\"` unless some income has a non-None amount. Because the prompt exposes `missing()` questions but not blocker details, recording a partial fact such as salary arriving on the first with no amount leaves phase `gathering` and gives the agent no salary-amount question. This conflicts with the prompt's instruction to upsert partial facts and can prevent the required journey from reaching a plan.",
+      "recommendation": "Consider deriving an amount gap for every amountless income and ensuring that marking that specific gap unknown provides a non-stranding provisional path. Add an integration test beginning with a date-only income and verify that the next turn asks for its amount and can subsequently finalize or explicitly park it."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "file": "ledgerline/domain/state.py",
+      "line": 623,
+      "title": "Marking a field unknown leaves stale facts and conflicts active",
+      "evidence": "`mark_unknown()` only executes `state.unknowns.append(Unknown(field=field, ...))`; it does not clear the corresponding stored value, conflict, or outlier. Thus a user who retracts a known amount as unknown still gets calculations using the old exact amount, while the missing card says it is not known. More seriously, answering a conflict with \"I don't know\" records the unknown but leaves `state.conflicts` intact, so readiness remains blocked and the same conflict question continues to be surfaced despite the promise to never ask again.",
+      "recommendation": "Define reconciliation semantics for unknown answers on populated and disputed fields. Consider clearing or excluding the affected value and resolving matching conflict/outlier state, while preserving the opening-balance hard blocker where calculation is impossible. Cover both a retracted known amount and an unresolved conflict answered with `user_does_not_know`."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "frontend/src/call/useDailyCall.ts",
+      "line": 323,
+      "title": "A call released during join can still dispatch joined afterward",
+      "evidence": "Lifecycle handlers can call `release(call)`, whose teardown clears `callRef.current`, while `start()` is awaiting `call.join(...)`. After that await resolves, the success path unconditionally runs `setMicOn(call.localAudio())` and `dispatch({ type: 'joined' })` without checking that `callRef.current === call`. A participant-left, camera-error, or fatal error during the pending join can therefore first end and destroy the call and then transition the UI back to `live`, leaving no current call object to stop and no usable call behind the disabled start state.",
+      "recommendation": "Consider validating that the joined call is still current before publishing success, and ignore or cleanly retire stale join completions. Add a gated-join test that emits a terminal lifecycle event before resolving `join()` and asserts that `joined` is never dispatched afterward."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "ledgerline/domain/engine.py",
+      "line": 183,
+      "title": "A card minimum greater than the total due produces incorrect outflow",
+      "evidence": "For a credit card, the engine always books `amount=debt.min_due`, then computes `rest = debt.amount_due - debt.min_due` and simply omits the rest when it is non-positive. Neither the models nor `upsert()` validates the relationship. If transcription or the user supplies total due 5,000 and minimum due 10,000 in the same fact, the plan books 10,000 as required outflow—twice the stated debt—instead of asking for clarification. This violates the product's requirements for correct, testable calculations and conflict handling.",
+      "recommendation": "Consider rejecting or questioning a credit-card `min_due` that exceeds `amount_due` before event construction, including when either field is supplied later. Add tests for creation, update, and correction ordering so an internally inconsistent card cannot reach the plan engine."
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260911T183052Z-ec6c133c",
+  "created_at": "2026-09-11T18:30:58Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "Static review found eight issues affecting the required Docker journey, financial-plan safety, correction consistency, session concurrency, frontend conversation consistency, README completeness, and evaluation accuracy. Most importantly, the Docker context excludes the runtime system prompt, suspicious transcription amounts can reach a final plan without resolution, and the engine directly recommends paying debts late without consistently explaining consequences.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": ".dockerignore",
+      "line": 26,
+      "title": "The Docker image excludes the runtime system prompt",
+      "evidence": "The build context excludes every Markdown file with `*.md` and only re-includes the root `README.md`. `ledgerline/agent/prompt.py` loads `ledgerline/agent/prompts/v1.md` at runtime, while the Dockerfile copies `ledgerline/` from this filtered context. Consequently, a session reaches `base_prompt()` without `v1.md` in the image and fails when the first bot worker is built, breaking the required `docker compose up --build` journey.",
+      "recommendation": "Ensure files under `ledgerline/agent/prompts/` are included in the Docker context, and verify a real session can be created from the built image rather than checking only the health endpoint."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "file": "ledgerline/domain/state.py",
+      "line": 346,
+      "title": "Outlier amounts are recorded but never persist as unresolved facts",
+      "evidence": "For a new outlier, the code creates the ordinary model with `created = model(...)`, stores it, and places the doubt only on the transient `Outcome` through `outlier=question is not None`. Nothing is written to `item.notes`, `state.conflicts`, or another persistent blocker. `confirm_untouched()` can later mark that item confirmed, and `readiness()` only requires that some income amount exists. The changed live recording demonstrates this path with salary stored as `45.00` after asking whether 45,000 was intended.",
+      "recommendation": "Represent an outlier as persistent unresolved state and prevent finalization until the user confirms or corrects it. Clear that state only through an explicit resolution so subsequent turns and cards cannot lose the clarification request."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "file": "ledgerline/domain/engine.py",
+      "line": 462,
+      "title": "The plan directly instructs users to pay debts late without reliable consequences",
+      "evidence": "When a debt cannot be covered, `_pay_on_date` emits `f\"Pay {problem.source} on ... instead, {days_late} days late\"` and mutates the event to that later date. Its warning comes from `_late_warning`, which returns nothing for most delays under 30 days except a card minimum over three days late. The latest paid evaluation therefore tells the user to pay a secured bike loan 11 days late with no warning, while `ASK_LENDER` is appended later and omitted from the top-two explanation.",
+      "recommendation": "Do not treat an unapproved lender-date change as an executable plan action. Present the due-date mismatch and lender request as proposed actions, retain the original obligation until the user confirms an arrangement, and attach the appropriate policy consequence to every suggested late payment."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "ledgerline/domain/state.py",
+      "line": 414,
+      "title": "Removing an item leaves its unknowns and conflicts behind",
+      "evidence": "`remove()` only executes `getattr(state, attribute).remove(existing)` and returns. It does not remove `state.unknowns` or `state.conflicts` whose fields belong to the removed item. A removed expense can therefore remain visible as a `not known` chip, while a conflict attached to a removed item continues to block readiness and finalization.",
+      "recommendation": "When removing an item, also reconcile all derived unresolved state for that normalized kind/name. Add coverage for removing an item after marking one of its fields unknown and after opening a conflict."
+    },
+    {
+      "id": "F5",
+      "severity": "medium",
+      "file": "ledgerline/api/routes.py",
+      "line": 36,
+      "title": "The single-session guard is vulnerable to concurrent requests",
+      "evidence": "`start_session()` checks `if sessions.active` before awaiting room creation and two token requests. The registry is not reserved until `sessions.start(...)` after those awaits. Two requests arriving together can both observe zero active sessions and create two rooms and bot tasks, despite the API's stated one-call-at-a-time contract.",
+      "recommendation": "Make session reservation atomic before the first network await, and release the reservation on room or token creation failure. Test two concurrent POST requests rather than only sequential requests."
+    },
+    {
+      "id": "F6",
+      "severity": "medium",
+      "file": "frontend/src/components/PlanPanel.tsx",
+      "line": 6,
+      "title": "The final panel contradicts the voice confirmation flow",
+      "evidence": "The panel always displays `Say the changes back to me so I know they landed.` The changed system prompt explicitly says `Never ask them to repeat it back` and treats a plain yes or `makes sense` as confirmation. Thus the screen instructs the user to perform a step the speaking agent intentionally does not request, and the mock and frontend tests preserve the stale behavior.",
+      "recommendation": "Align the final-panel instruction with the implemented confirmation flow, such as asking the user to confirm whether the plan works or to raise anything unclear. Update the mock journey and assertions to exercise the same flow as the real prompt."
+    },
+    {
+      "id": "F7",
+      "severity": "medium",
+      "file": "README.md",
+      "line": 93,
+      "title": "Mandatory README results and limitations are still placeholders",
+      "evidence": "The required sections contain `Filled in after integration` under both `Test and evaluation results` and `What works, what does not, what is next`. The README specification explicitly requires test and evaluation results plus a short list of what works, what does not, what comes next, and where AI helped or produced poor work. The environment table also omits documented settings present in `.env.example`, including `CARTESIA_SPEED`, `END_GRACE_SECS`, `HOST`, and `PORT`.",
+      "recommendation": "Replace the placeholders with verified final results and the complete required README list, and document every environment variable exposed by `.env.example` with its purpose and requirement status."
+    },
+    {
+      "id": "F8",
+      "severity": "medium",
+      "file": "evals/checks.py",
+      "line": 15,
+      "title": "The banned-phrase check rejects legitimate discussion of an existing personal loan",
+      "evidence": "The unconditional `BANNED` tuple contains `\"personal loan\"`, and `banned_phrases()` flags that text anywhere in an assistant turn. The product rules prohibit recommending another loan, not acknowledging or planning an existing personal-loan payment. A correct response such as `your personal loan is due on the twentieth` therefore fails the claimed deterministic evaluation gate.",
+      "recommendation": "Check recommendation language such as taking, applying for, or obtaining a new loan rather than banning the debt name itself. Add a passing transcript where the assistant accurately repeats an existing personal-loan obligation and a failing transcript where it recommends borrowing."
+    }
+  ]
+}

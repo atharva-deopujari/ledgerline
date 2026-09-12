@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260912T074342Z-a7068109",
+  "created_at": "2026-09-12T07:43:47Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "The changed implementation has three material edge cases: a terminal Daily event during a pending join can expose retries before the committed server session is released, aggregated spread shortfalls retain only the first day's shortage in their spoken rationale, and marking the indispensable opening balance unknown causes the agent to ask for it again despite the never-repeat rule.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "frontend/src/call/useDailyCall.ts",
+      "line": 190,
+      "title": "A terminal event during join enables retry before the server session is cancelled",
+      "evidence": "A terminal handler calls `release(call)`, and `teardown` immediately executes `callRef.current = null` and `startingRef.current = false`. However, the associated server session is cancelled only after the still-pending `await call.join(...)` resolves or rejects, in the later stale-call branches. The reducer has already moved to `ended` or `error`, so the UI can offer Start/Try again while the first POST's single server slot remains occupied. If the user retries then, the new POST receives 409; if `join()` never settles after the terminal event, the slot is not explicitly returned at all. The new join-race tests wait for the original `start()` to finish before retrying, so they do not exercise this interval.",
+      "recommendation": "Keep the original start attempt guarded until it has fully settled and arrange for terminal handlers to cancel their associated `session_id` immediately, independently of whether `join()` later settles. Add a test that retries after the terminal event but before releasing the join promise and verifies there is no 409, duplicate start, or leaked server session."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "file": "ledgerline/domain/engine.py",
+      "line": 565,
+      "title": "Aggregated spread obligations speak only the first slice's shortfall",
+      "evidence": "When another event for an already-uncovered source is removed, `_settle` only runs `seen.amount += event.amount`; it does not update `seen.short`. For the existing 6,000-rupee groceries scenario with 1,000 available, 25 daily slices aggregate to 5,000 unpaid, but `short` remains the first 200-rupee slice. `_ask_actions` consequently says `On ... you are 200 short for groceries` while the same plan reports 5,000 unpaid, giving the person two incompatible descriptions of the gap.",
+      "recommendation": "Aggregate the shortage consistently for multi-event obligations, or phrase the action explicitly as the first daily shortfall while separately naming the total uncovered amount. Add an assertion over the generated ASK_LENDER rationale in the spread-essential regression test, not only over `Unpaid.amount`."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "ledgerline/agent/tools.py",
+      "line": 349,
+      "title": "Marking the opening balance unknown immediately asks for it again",
+      "evidence": "`describe` unconditionally falls back to `plan.questions[0]` whenever `plan.status == \"BLOCKED\"`. After `mark_unknown(field=\"opening_balance\", reason=\"user_does_not_know\")`, state correctly suppresses that field from `missing()`, but `build_plan` remains blocked and supplies `How much money do you have right now...` as its question. The mark_unknown result therefore carries the same question the person just said they cannot answer. The prompt directs the model both to ask any question carried by a result and to `never ask again`, so this path creates contradictory instructions and violates the required missing-information behavior.",
+      "recommendation": "Do not append a blocked-plan question for a field that the current outcome has just parked as unknown. For the indispensable opening balance, return a clear explanation that a numerical plan cannot be completed without it and allow the conversation to end honestly rather than asking the same question again. Cover the real mark_unknown tool result for opening_balance in an integration test."
+    }
+  ]
+}

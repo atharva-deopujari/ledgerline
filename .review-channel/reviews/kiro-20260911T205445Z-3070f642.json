@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260911T205445Z-3070f642",
+  "created_at": "2026-09-11T20:54:53Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "The review found six issues affecting core planning correctness, correction consistency, support for no-income users, post-confirmation UI state, evaluation validity, and the reviewer-facing mock journey. Most importantly, the engine can represent unaffordable essentials as if they were paid from a negative balance rather than identifying what remains unpaid.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "ledgerline/domain/engine.py",
+      "line": 278,
+      "title": "Unaffordable essentials are treated as paid rather than left unpaid",
+      "evidence": "The settlement logic explicitly says, \"Only debts are judged. Essentials are always booked,\" and then executes `if event.kind != \"debt\" or event.tier <= 1: balance -= event.amount; continue`. Consequently, an unaffordable rent or utility event remains in the timeline and drives the account negative, but it never produces an `Unpaid` row, consequence, or request to the landlord/provider. It also does not reserve future rent when deciding whether an earlier lower-priority debt can be paid. A plan can therefore show both obligations as paid from money that does not exist, contrary to the product requirement for a realistic plan that clearly identifies what cannot be covered.",
+      "recommendation": "Claude Code should consider making every required obligation participate in affordability and priority handling. At minimum, future higher-priority essentials should be reserved before lower-priority debts, and any essential that still cannot be funded should be represented explicitly with an unpaid amount, consequence, and realistic request rather than merely allowing a negative simulated balance. Add cases for unaffordable rent/utilities and for an earlier debt competing with later rent."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "file": "ledgerline/domain/state.py",
+      "line": 433,
+      "title": "Supplying a previously unknown value leaves a stale 'not known' fact",
+      "evidence": "When an existing value changes, the reconciliation code only clears matching outliers: `state.outliers = [o for o in state.outliers if o.field != field_of(kind, key)]`. It never removes a matching entry from `state.unknowns`. Since `mark_unknown` permanently appends that entry and `noted_unknowns` later returns every `user_does_not_know` entry, a person who initially does not know an electricity amount and later supplies it will still see Electricity marked \"not known\" even though the amount and calculations now use the new value.",
+      "recommendation": "Claude Code should consider clearing the matching unknown whenever an amount, date, minimum due, or opening balance becomes known, while preserving unrelated unknowns. Add correction tests that mark a field unknown, subsequently fill it, and verify the missing card, readiness state, and plan provisional status all reconcile."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "ledgerline/domain/state.py",
+      "line": 654,
+      "title": "A person with no income cannot finalize a plan",
+      "evidence": "Readiness unconditionally adds `\"no income recorded\"` when `not any(i.amount is not None for i in state.incomes)`, and the nearby comment states that having some income is \"not negotiable.\" There is no explicit no-income state or supported way for `mark_unknown` to satisfy this blocker. A person living from an opening balance, unemployed during the window, or expecting no income therefore remains in gathering forever even though the engine can calculate such a 30-day plan.",
+      "recommendation": "Claude Code should consider representing an explicit confirmed absence of income separately from income not yet discussed, and let that state satisfy readiness. Test a zero-income month with an opening balance and expenses, including a case where the available balance cannot cover everything."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "frontend/src/components/PlanPanel.tsx",
+      "line": 53,
+      "title": "The final screen keeps asking for confirmation after the user has confirmed",
+      "evidence": "The component unconditionally renders `<p className=\"plan__confirm\">{CONFIRM}</p>` whenever a plan card exists. After `record_understanding(confirmed=True)`, backend readiness changes from `confirm` to `plan` and pushes another cards snapshot, but the plan card remains present. The UI therefore continues to display \"Does this work for you?\" after the person has already agreed, including on the plan left visible after the call ends.",
+      "recommendation": "Claude Code should consider showing the confirmation prompt only during the confirmation phase and replacing or removing it once understanding is confirmed. Add a component or journey test for the snapshot pushed after `record_understanding(confirmed=True)`."
+    },
+    {
+      "id": "F5",
+      "severity": "medium",
+      "file": "evals/checks.py",
+      "line": 141,
+      "title": "The number-traceability check lets invented tool arguments authorize themselves",
+      "evidence": "`_sources_up_to` treats both tool results and raw tool arguments as trusted numeric sources: `allowed |= numbers_in(str(tool_call.get(\"result\", \"\")))` followed by `allowed |= numbers_in(str(tool_call.get(\"args\", {})))`. If the model invents 12,300, sends it as an `upsert_item` argument, and then says 12,300, the check passes even though the person never stated that number. The resulting tool output will also contain the invented value. This defeats the deterministic check for one of the product's central prohibitions and can produce false passing evaluation results.",
+      "recommendation": "Claude Code should consider validating fact-recording tool arguments against the current or prior user utterance rather than treating those arguments as independent evidence. Derived plan figures can remain traceable to trusted tool results, but an upsert amount should require a user source. Add a regression transcript where the model invents an upsert amount and verify that it fails."
+    },
+    {
+      "id": "F6",
+      "severity": "low",
+      "file": "frontend/src/mock/script.ts",
+      "line": 215,
+      "title": "The reviewer-facing mock final plan is internally inconsistent",
+      "evidence": "The final plan reports `lowest: '+900 on 5 Oct'`, but its own timeline subsequently reaches `-300` on 6 October. It also marks the HDFC minimum \"unpaid, due 12 Oct\" even though the displayed 30-day timeline ends on 10 October, and it demonstrates a `Split` action that is not part of the backend `ActionType` or card verb contract. Thus the mock journey and browser tests can pass while presenting calculations and actions the real engine could not produce.",
+      "recommendation": "Claude Code should consider generating the mock snapshot from a real domain fixture or, at minimum, making its dates, minimum balance, actions, and unpaid obligations match backend semantics. The browser journey should validate a financially coherent snapshot rather than only checking that supplied strings render."
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260912T061037Z-e848fe14",
+  "created_at": "2026-09-12T06:10:46Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "Static review found four correctness and lifecycle issues: corrections can leave stale conflicts blocking the conversation, changing an unknown's meaning can preserve a now-invalid agreement, delayed events from an old Daily call can terminate a replacement call, and the planning reserve can leave usable cash idle while declaring every competing debt unpaid.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "file": "ledgerline/domain/state.py",
+      "line": 466,
+      "title": "A correction can update a disputed field without clearing its existing conflict",
+      "evidence": "The conflict branch is skipped when `is_correction` is true, after which the new value is written by `setattr(existing, model_attribute, fresh)`. The reconciliation code only removes unknowns and amount outliers: `state.unknowns = [...]` and `state.outliers = [...]`; it never removes a matching entry from `state.conflicts`. If 11,000 versus 12,000 is already open and the person corrects the value to a third figure such as 13,000, the item becomes 13,000 while readiness remains blocked by the stale 11,000-versus-12,000 question.",
+      "recommendation": "Consider reconciling an open conflict for every materially corrected field when applying `is_correction=True`, including the valid third-value case, and add a regression test asserting that the stored value, conflict list, card question, and readiness agree afterward."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "file": "ledgerline/domain/state.py",
+      "line": 613,
+      "title": "Changing an existing unknown reason is treated as unchanged and preserves stale agreement",
+      "evidence": "The existing-record branch mutates state and immediately returns: `recorded.reason = reason` followed by `return Outcome(status=\"unchanged\", field=field)`. It does not call `_unsettle(state)`. This is financially meaningful for the special `income` field: changing `not_applicable` to `user_does_not_know` changes the plan from confirmed zero income to provisional excluded income, yet a prior `Understanding(confirmed=True)` remains and `readiness()` can continue reporting phase `done` for the recomputed plan.",
+      "recommendation": "Distinguish an identical reason from a changed reason. Consider returning `updated` and clearing the prior understanding when the reason changes, while retaining the current no-op behavior only when the reason is actually identical."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "frontend/src/call/useDailyCall.ts",
+      "line": 248,
+      "title": "A delayed event from the previous Daily object can tear down a newly started call",
+      "evidence": "Every call object registers handlers that invoke the shared `release()`: both `participant-left` and `left-meeting` call `release()`, and `release()` invokes `teardown()`, which operates on the current global `callRef`. The first event dispatches `left` before asynchronous leave/destroy finishes, so the UI can offer and begin another call. If the old object then emits its delayed `left-meeting` or error event, that old handler calls `release()` again and can clear, leave, and destroy the new object now stored in `callRef`. The test double emits `left-meeting` synchronously from `leave()`, so the restart tests do not exercise this ordering.",
+      "recommendation": "Consider binding lifecycle handlers and teardown to the specific call instance or a generation token, ignoring events from non-current calls, and preventing restart until the previous teardown has completed. Add a test where the first call emits `left-meeting` only after the second call has joined."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "ledgerline/domain/engine.py",
+      "line": 663,
+      "title": "Static priority reserves can leave affordable obligations unpaid and cash unused",
+      "evidence": "The engine computes `reserve = _reserve_after(events, window)` once from all original obligations, then passes that same reserve through every `_settle(...)` pass while `_settle` removes uncovered events from `events`. Removed higher-priority obligations therefore remain reserved forever. For example, with 5,000 available, an informal debt of 5,000 due first, and a later secured EMI of 10,000, the later EMI reserve makes the informal debt unpayable; the EMI is then also removed as unpayable, leaving both obligations unpaid and the full 5,000 idle even though it could completely cover one of them.",
+      "recommendation": "Consider recalculating reservations as obligations become uncovered, or selecting a policy-ranked feasible set explicitly so retained cash has a stated purpose and the plan does not mark an affordable obligation unpaid without explanation. Add a regression scenario where a higher-priority future obligation is itself unaffordable but a lower-priority obligation is fully affordable."
+    }
+  ]
+}

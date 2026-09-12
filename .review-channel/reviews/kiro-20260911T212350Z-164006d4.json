@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260911T212350Z-164006d4",
+  "created_at": "2026-09-11T21:23:58Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "The implementation has two core calculation defects: payment tiers are not respected across different due dates, and summaries mix unpaid obligations into a cashflow that excludes them. Corrections to income ranges cannot fully replace old information, unknown income can be silently treated as zero, and ending an unconfirmed call leaves stale UI state. The reviewer-facing mock also speaks one total incorrectly.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "ledgerline/domain/engine.py",
+      "line": 307,
+      "title": "Earlier low-priority debts consume money reserved for later high-priority debts",
+      "evidence": "`_first_unpayable` walks events chronologically and accepts a judged debt whenever `balance - reserve.after(day, event)` covers it. `_Reserve.after` reserves future essentials for a debt, but no future higher-priority debts. Consequently, with 5,000 available, an informal debt of 5,000 due first and a secured EMI of 5,000 due later, the informal debt is paid and the secured EMI is marked unpaid, despite policy ranks 5 and 2 respectively. Tier sorting only changes ordering among events on the same day.",
+      "recommendation": "Consider reserving future obligations that outrank the current event, not just essentials, or allocate scarce money globally by policy tier while retaining due-date feasibility. Add a regression test with differently dated debts whose priority order conflicts with chronological order."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "file": "ledgerline/domain/engine.py",
+      "line": 703,
+      "title": "Summary totals and timeline use different cashflows",
+      "evidence": "`total_out_planned = sum((e.amount for e in events if e.kind != \"income\"), ZERO) + unpaid_total` adds obligations that `_settle` removed from `events`, while `closing_balance`, `lowest_balance`, and the timeline are simulated only from the remaining events. The generated mock demonstrates the contradiction: opening 8,000 plus income 72,000 minus displayed outflow 32,200 implies 47,800, but its timeline closes at 52,300 because the unpaid 4,500 EMI was not booked. `describe()` can therefore speak a surplus from one cashflow and a lowest balance from another.",
+      "recommendation": "Use one cashflow consistently for planned outflow, post-action shortfall, timeline, low point, and closing balance. If unpaid or conditional obligations must remain visible, expose them as a separate liability total or model an explicitly conditional timeline rather than adding them only to selected summary fields."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "ledgerline/domain/state.py",
+      "line": 364,
+      "title": "Correcting a ranged income to an exact date leaves the old latest date active",
+      "evidence": "Income updates assign `soft[\"latest_date\"]` only when `resolve_day(... latest_day_of_month ...)` is non-null: `if latest is not None: soft[\"latest_date\"] = latest`. If the user first gives a range and later corrects it to a definite date, the normal correction omits `latest_day_of_month`, so the old `Income.latest_date` survives and `_build_events` continues using it instead of the corrected exact date.",
+      "recommendation": "Provide an explicit way for a correction to clear `latest_date`, and test a range followed by an exact-date correction through the real tool handler and engine."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "ledgerline/domain/state.py",
+      "line": 665,
+      "title": "Unknown or declined income is treated as confirmed zero income",
+      "evidence": "`no_income_confirmed` accepts every reason in `_NEVER_ASK_AGAIN`, including `user_does_not_know` and `user_declined`: `u.field == NO_INCOME and u.reason in _NEVER_ASK_AGAIN`. Thus `mark_unknown(\"income\", \"user_does_not_know\")` clears the income blocker as though the user confirmed no income. Because no Income item is excluded, `build_plan` also reports the resulting zero-income plan as non-provisional, contrary to the recorded uncertainty.",
+      "recommendation": "Reserve the no-income confirmation path for an explicit `not_applicable` response. Keep unknown or declined income visibly provisional, or represent it as an excluded uncertain income fact so the plan does not present zero income as established."
+    },
+    {
+      "id": "F5",
+      "severity": "medium",
+      "file": "ledgerline/agent/tools.py",
+      "line": 545,
+      "title": "Ending a call does not publish the resulting done phase",
+      "evidence": "`end_call` sets `ctx.state.call_ended = True` and requests transport shutdown, but never calls `recompute_and_push`. Although `readiness()` maps `call_ended` to phase `done`, the browser never receives that phase when someone ends before confirming. It retains the previous `plan` or `confirm` snapshot, so `PlanPanel` can continue displaying “Does this work for you?” after the call has ended. The same stale-state path occurs when the user presses End and disconnects directly.",
+      "recommendation": "Ensure call termination publishes a final snapshot, or have the frontend derive a non-questioning ended presentation from its call lifecycle. Cover both voice-triggered `end_call` before agreement and the browser End button with a real state transition test."
+    },
+    {
+      "id": "F6",
+      "severity": "low",
+      "file": "frontend/src/mock/script.ts",
+      "line": 48,
+      "title": "Reviewer-facing mock speaks 27,700 as “twenty-seven seven”",
+      "evidence": "The ready snapshot displays outflow `27,700`, but the scripted voice text is `Got it. Seventy-two thousand in, twenty-seven seven out.` This is not a natural or unambiguous pronunciation of 27,700 and makes the spoken conversation inconsistent with the card.",
+      "recommendation": "Use the complete spoken amount, such as “twenty-seven thousand seven hundred,” and add an assertion that scripted financial amounts match the generated snapshots."
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260911T213837Z-9c6a049f",
+  "created_at": "2026-09-11T21:38:43Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "The review found six issues affecting repeat-call behavior, treatment of estimated income, truthful confirmation state, finalization safety, persisted outlier recovery, and presentation of adverse plans. The most serious cases can leave a new call displaying stale data, count a rough income as certain, or claim that a plan was confirmed when the user merely ended the call.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "frontend/src/state/sessionReducer.ts",
+      "line": 54,
+      "title": "A completed call prevents snapshots from a subsequent call being accepted",
+      "evidence": "The connect transition deliberately preserves the prior snapshot with `return { ...initialSession, cards: state.cards, call: 'connecting' }`, while the cards transition rejects `action.message.v <= state.cards.v`. Backend `ToolContext.cards_version` starts at zero for every call, so after a call ending at version 4, versions 1 through 4 from the next call are discarded and the old plan remains on screen. The second-call browser test ends its first call before snapshots arrive, so it does not exercise this case.",
+      "recommendation": "Consider resetting the snapshot/version boundary when a genuinely new session starts, or scope monotonic version comparison to a session identifier. Add coverage that completes a call after receiving several snapshots and then verifies that version 1 from the next call replaces the old cards."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "file": "ledgerline/domain/engine.py",
+      "line": 127,
+      "title": "Estimated income is treated and displayed as confirmed money",
+      "evidence": "`Certainty.ESTIMATED` is defined for income stated as \"around\" or \"roughly\", but `_build_events` only branches on `if income.certainty is Certainty.UNCERTAIN`. Estimated income therefore falls through into a normal `_Event` for its full amount. It neither adds an exclusion/warning nor contributes to `plan.provisional`, and the income card consequently renders the amount with status `ok` and no uncertainty marker.",
+      "recommendation": "Consider explicitly carrying estimated certainty into plan and card semantics. If estimated income remains included in arithmetic, mark the result provisional and clearly identify the estimate; alternatively use a documented conservative treatment. Add an end-to-end domain/card test for `certainty=estimated`."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "file": "frontend/src/components/PlanPanel.tsx",
+      "line": 72,
+      "title": "Ending a call without agreement is displayed as plan confirmation",
+      "evidence": "The panel equates every done phase with agreement: `snapshot.phase === 'done'` renders the constant `Plan confirmed.`. However, `readiness()` sets done when `state.call_ended or understood`, and `end_call` explicitly supports ending \"any time they say they are done or say goodbye\" before setting `call_ended = True`. Thus a user who declines to continue or says goodbye without confirming understanding receives a final snapshot that falsely says the plan was confirmed.",
+      "recommendation": "Consider representing call termination separately from confirmed understanding in the wire snapshot, and render confirmation only from an explicit `Understanding(confirmed=True)` signal. Cover the agent-driven `end_call` path without a preceding successful `record_understanding`, not only the browser End button path."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "ledgerline/agent/tools.py",
+      "line": 508,
+      "title": "Finalize can succeed while known financial items still have unanswered fields",
+      "evidence": "`finalize_plan` checks only `state_ops.readiness(ctx.state).blockers`, despite its docstring saying it \"refuses and tells you what is still missing.\" `missing()` records unanswered debt due dates, card minimums, income dates, optional amounts, and debt amounts, but `readiness()` does not put those fields in `blockers`; it only blocks opening balance, conflicts/outliers, absence of any income amount, and unanswered essential amounts. A named loan with no amount or due date can therefore be excluded from the calculation while the tool marks the plan final.",
+      "recommendation": "Consider making finalization reject unresolved structural entries from `readiness.missing`, while continuing to permit fields explicitly recorded as unknown or declined. Add integration tests showing that incomplete debts, card minimums, and income dates cannot silently pass the finalization gate."
+    },
+    {
+      "id": "F5",
+      "severity": "medium",
+      "file": "ledgerline/agent/prompt.py",
+      "line": 51,
+      "title": "Persisted outlier questions disappear from subsequent turn instructions",
+      "evidence": "`_needs_confirmation` reads conflicts plus item notes containing the word `outlier`: `if not item.confirmed and \"outlier\" in item.notes.lower()`. The changed state implementation does not write such notes; `_record_outlier` stores a `Conflict` object in `state.outliers`. Consequently `readiness()` remains blocked by the outlier, but subsequent `turn_block()` output contains neither its question nor any actionable missing-field prompt.",
+      "recommendation": "Consider deriving the confirmation section directly from both `state.conflicts` and `state.outliers`, as the cards layer already does. Add a prompt test using a real outlier-producing `upsert` and verify that its question remains present until resolved."
+    },
+    {
+      "id": "F6",
+      "severity": "medium",
+      "file": "ledgerline/domain/cards.py",
+      "line": 202,
+      "title": "Adverse plans receive an 'ok' summary badge",
+      "evidence": "For every non-blocked, non-provisional plan, `_summary_card` sets `status=\"ok\"` regardless of `plan.status`. The generated plan snapshot demonstrates the contradiction: a TIMING result with `unpaid: 4,500` is emitted with summary status `ok`. Since `StatusBadge` prints the raw status word, the interface visibly labels a month with an unpaid EMI as \"ok\" even while its note says the lender must move the payment.",
+      "recommendation": "Consider mapping TIMING, STRUCTURAL, and UNSOLVABLE outcomes to warning/error-style card statuses rather than using certainty alone as the summary status. Keep provisionality visible separately if both dimensions need representation, and test badges for each plan status."
+    }
+  ]
+}

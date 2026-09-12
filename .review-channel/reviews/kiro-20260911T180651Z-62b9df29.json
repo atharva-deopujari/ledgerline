@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260911T180651Z-62b9df29",
+  "created_at": "2026-09-11T18:06:58Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "The implementation has a substantial end-to-end structure, but several core required behaviors remain broken: completing partial facts can crash, uncertain income cannot be represented through the agent, conflict handling only covers amounts, final voice explanations omit important consequences, and successful no-action plans cannot complete the understanding check. The final-plan UI also mislabels and duplicates proposed actions, failed browser joins can strand the only server session, and mandatory README sections remain placeholders.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "ledgerline/domain/state.py",
+      "line": 256,
+      "title": "Completing a partially recorded item can crash the tool call",
+      "evidence": "The prompt directs the model to record partial facts, so an existing item can have a null monetary field. When a later turn supplies that amount, `money_changed = amount is not None and amount != previous_amount` is true, and the recent-item branch executes `spoken_old, spoken_new = group_inr(previous_amount), group_inr(amount)`. `group_inr(None)` reaches an assertion in `quantise`, raising `AssertionError`; the tool handler catches only `ValueError`. For example, recording an amountless essential and later supplying its amount takes this path instead of completing the item.",
+      "recommendation": "Treat a transition from an unknown amount to a known amount as field completion rather than a contradiction, and add regression coverage for completing partial income, debt, essential, and optional records."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "file": "ledgerline/agent/tools.py",
+      "line": 237,
+      "title": "The live agent cannot represent uncertain or date-range income",
+      "evidence": "The `upsert_item` signature exposes `amount`, `day_of_month`, `debt_kind`, `min_due`, `spread`, `survival`, and `flexible`, but no income `certainty` or `latest_date`. Consequently every tool-created `Income` uses the model defaults `certainty=Certainty.CONFIRMED` and `latest_date=None`, even if the user says income may not arrive or gives a date range. Although the engine has logic to exclude `UNCERTAIN` income and assume the latest date, the voice agent has no path to populate those fields.",
+      "recommendation": "Provide tool-level inputs for income certainty and date ranges, including validation and conversation tests showing that uncertain income is not presented as guaranteed money."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "file": "ledgerline/agent/tools.py",
+      "line": 205,
+      "title": "Final tool output withholds unpaid details and action consequences from the voice model",
+      "evidence": "For `finalize_plan`, `describe` only appends the status shape, `_shortfall(plan)`, and `_action_phrase` for the top two actions. `_action_phrase` returns only `action.rationale`. It never includes `action.warning`, `plan.warnings`, or any `plan.unpaid` name, amount, due date, consequence, or ask. Thus an unsolvable plan can return only `unsolvable, something is left unpaid`, and card-minimum or late-payment warnings computed by the engine are unavailable to the model. This conflicts with the requirement to explain plainly what cannot be solved and with the prompt rule not to propose skipped or delayed payments without the returned consequence.",
+      "recommendation": "Ensure the final tool result supplies the model with the specific unpaid obligations and relevant warnings or consequences, while retaining a concise and traceable spoken format."
+    },
+    {
+      "id": "F4",
+      "severity": "high",
+      "file": "ledgerline/agent/tools.py",
+      "line": 388,
+      "title": "A fully affordable plan cannot complete the mandatory understanding check",
+      "evidence": "`record_understanding` refuses when `ctx.last_plan` has no actions: `if ctx.last_plan is None or not ctx.last_plan.actions: ... \"There is no plan to restate yet. Call finalize_plan first.\"` A normal `OK` plan commonly has an empty action list, even after `finalize_plan` has run. The agent therefore cannot record that the user understands such a plan, and the evaluation harness likewise cannot reach its completion condition based on `state.understanding.confirmed`.",
+      "recommendation": "Allow understanding to be recorded for a finalized plan with no proposed changes, using an appropriate confirmation of the outcome rather than requiring two actions to restate."
+    },
+    {
+      "id": "F5",
+      "severity": "medium",
+      "file": "ledgerline/domain/state.py",
+      "line": 417,
+      "title": "Facts marked as unknown remain in the assistant's question queue",
+      "evidence": "`mark_unknown` documents that the value is recorded so the assistant will \"never ask for it again,\" and the system prompt makes the same promise. However, `missing()` only silences reasons in `(\"user_declined\", \"not_applicable\")`; `user_does_not_know` remains in the returned missing list. `turn_block` then instructs the model to ask the first missing question, so a user who says they do not know can be asked for the same value again on later turns.",
+      "recommendation": "Separate unresolved-but-provisional facts from questions that should still be asked, and ensure `user_does_not_know` does not re-enter the conversational question queue."
+    },
+    {
+      "id": "F6",
+      "severity": "medium",
+      "file": "ledgerline/domain/state.py",
+      "line": 275,
+      "title": "Conflicting dates and other non-primary fields are silently overwritten",
+      "evidence": "Conflict detection is conditioned solely on `money_changed`. A changed date is applied directly by `if resolved is not None and getattr(existing, date_field) != resolved: setattr(existing, date_field, resolved)`, and changed `min_due`, debt kind, spread, survival, and flexible values are also assigned through `extra` without conflict checks. Opening balance uses a separate setter that always replaces the previous value. Therefore statements such as salary arriving on the 10th and later on the 15th can silently alter the plan even when the second statement was not identified as a correction.",
+      "recommendation": "Apply explicit correction/conflict semantics to all financially material fields, especially dates, card minimums, debt type, and opening balance, and test that unresolved contradictions block finalization."
+    },
+    {
+      "id": "F7",
+      "severity": "medium",
+      "file": "frontend/src/components/PlanPanel.tsx",
+      "line": 18,
+      "title": "The final panel labels proposed actions as covered and displays them twice",
+      "evidence": "The backend constructs the final plan card with `rows=action_rows + unpaid`. The component then assigns every non-unpaid plan row to `paid` and renders it under the heading `Covered`. It subsequently reads the separate `actions` card and renders the same action rows again under `Proposed`. A deferred or requested payment is therefore shown twice and once as already covered, despite the product rule prohibiting claims that an action has been completed.",
+      "recommendation": "Give covered obligations and proposed actions distinct data and presentation semantics; proposed changes should appear once and must not be labeled as completed or covered."
+    },
+    {
+      "id": "F8",
+      "severity": "medium",
+      "file": "frontend/src/call/useDailyCall.ts",
+      "line": 246,
+      "title": "A failed browser join can strand the sole backend session",
+      "evidence": "The POST to `/api/sessions` starts the server-side session before the browser creates or joins its Daily call. If the Daily factory is unavailable, the hook returns immediately; if `call.join` rejects, it only destroys the local call object. There is no request to cancel the newly created backend session. Because the API permits only one active session, an immediate retry receives 409 until the worker times out or the room expires, contradicting the displayed instruction to start again.",
+      "recommendation": "Provide a session cancellation path or delay committing the active session until the client joins, and cover factory-load and pre-join failure retries end to end."
+    },
+    {
+      "id": "F9",
+      "severity": "medium",
+      "file": "README.md",
+      "line": 95,
+      "title": "Mandatory README results and limitations are still placeholders",
+      "evidence": "The required `Test and evaluation results` section says `Filled in after integration`, and `What works, what does not, what is next` also says `Filled in after integration.` The README specification explicitly requires test and evaluation results plus a short list of what works, what does not work, what would be built next, where AI helped, and where AI produced incorrect or poor work.",
+      "recommendation": "Complete the required README sections with verified results and the requested candid limitations and AI-use summary before release."
+    }
+  ]
+}

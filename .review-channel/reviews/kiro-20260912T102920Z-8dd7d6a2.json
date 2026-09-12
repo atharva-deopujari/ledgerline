@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260912T102920Z-8dd7d6a2",
+  "created_at": "2026-09-12T10:29:27Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "Two correctness gaps remain: a delayed audio-play rejection from an obsolete Daily call can corrupt and strand a replacement call, and the number-provenance check continues authorizing both amounts after a conflict has been resolved, so it can miss speech that contradicts the selected value.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "frontend/src/call/useDailyCall.ts",
+      "line": 228,
+      "title": "A late play rejection from an old call can strand the current call",
+      "evidence": "The asynchronous rejection handler runs without rechecking which call is current: `void Promise.resolve(el.play()).catch(() => { fail('The browser blocked audio. Start the call again to hear the plan.'); onBlocked() })`. The surrounding event handler checks `isCurrent()` only before calling `onTrackStarted`; `play()` may remain pending after that. If the old call ends, a replacement joins, and the old promise then rejects, `fail()` changes the replacement's reducer state to `error`, while `onBlocked` is still bound to and tears down only the old object. The replacement remains in `callRef`, so its End control disappears and the advertised retry is refused by `start()`'s guard.",
+      "recommendation": "Claude Code should consider validating the bound call again inside the asynchronous `play()` rejection path before dispatching or retiring anything. Add a regression test with a deferred `play()` promise that rejects only after the first call has been replaced, asserting that the new call remains live and untouched."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "file": "evals/checks.py",
+      "line": 244,
+      "title": "Resolved conflicts leave the rejected amount authorized by the traceability check",
+      "evidence": "The checker removes a superseded amount and then unconditionally restores every number from that call's result: `allowed -= superseded` followed by `allowed |= from_result | from_args`. A conflict-producing `upsert_item` result intentionally contains both figures so the assistant can ask which is right. Later, `resolve_conflict` has only `field` and `chosen` arguments, so `_supersede` cannot retire the rejected figure. Consequently, after choosing either `previous` or `new`, both conflict values remain in `allowed` forever and `numbers_traceable` will accept the assistant speaking the value that the user rejected, contrary to the latest-state consistency requirement.",
+      "recommendation": "Claude Code should consider tracking open conflict values by field and applying `resolve_conflict`'s `chosen` argument to retire the rejected value after the resolution turn while still permitting both values during the conflict question. Add tests for both `previous` and `new` choices followed by an assistant turn that incorrectly repeats the discarded amount."
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260912T082624Z-1869b2b9",
+  "created_at": "2026-09-12T08:26:34Z",
+  "scope": "changed files since git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "base_ref": "git:57167ba46f6fadde1412176cc3e85c610df5a3bd",
+  "status": "findings",
+  "summary": "Static review found four issues: the plan can recommend new credit despite an explicit product prohibition, obligation shortfalls are described with a misleading figure that includes reserved future spending, retry controls can silently ignore a press for up to twenty seconds after a failed join, and cancellation during backend teardown can release the session while the old worker is still shutting down.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "ledgerline/domain/policy.py",
+      "line": 52,
+      "title": "Survival shortfalls recommend taking new credit",
+      "evidence": "The survival tier tells the user, \"You could ask family or a local shop for a few days' credit\". `ledgerline/domain/engine.py` places `tier.ask` directly into every uncovered obligation's `ASK_LENDER` rationale. Consequently, an uncovered grocery or utility budget makes the assistant recommend new borrowing, despite the product rules explicitly saying it must not recommend taking another loan.",
+      "recommendation": "Replace this option with non-borrowing assistance or negotiation guidance that complies with the product rules, and add a semantic regression test covering the complete engine-authored recommendation rather than only matching words such as \"loan\" or \"BNPL\"."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "file": "ledgerline/domain/engine.py",
+      "line": 372,
+      "title": "Reserved future expenses are misreported as the current payment's shortfall",
+      "evidence": "`_first_unpayable` computes `available = balance - reserve.after(day, event)` and returns `event.amount - available`; `_ask_actions` then says, \"On <date> you are <short> short for <item>.\" This can exceed the obligation itself. The changed test deliberately expects a 4,000 personal EMI to be described as \"20,000 short for personal emi\" because future rent and groceries are included in the reserve. That statement conflicts with the 4,000 unpaid row and does not accurately describe the amount short for that EMI.",
+      "recommendation": "Keep the reserve for prioritization, but distinguish the due-day payment gap from the amount protected for future higher-priority obligations. Either report the actual payment shortfall, or explicitly say that paying the item would leave the larger stated gap across named essential obligations."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "frontend/src/call/useDailyCall.ts",
+      "line": 260,
+      "title": "Retry is visibly available while the hook silently refuses it",
+      "evidence": "Terminal handlers dispatch `left` or `error` immediately, which makes the UI expose Start/Try again, but `start()` begins with `if (startingRef.current || callRef.current) return`. `startingRef` remains true until the original pending `join()` settles or reaches the 20-second timeout. `joinInterval.test.ts` codifies the dead interval by pressing retry while join is hanging and asserting that no second POST occurs. The user receives no feedback that the enabled retry was ignored.",
+      "recommendation": "Keep the retry control disabled while the original start remains in flight, or abort/settle the stale join before presenting retry. Alternatively queue the retry gesture so one new attempt starts after teardown; do not silently return from an enabled control."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "ledgerline/voice/session.py",
+      "line": 50,
+      "title": "A cancellation during teardown does not wait for the shielded step",
+      "evidence": "`_finish` claims to let its coroutine finish, but when `await asyncio.shield(task)` receives `CancelledError`, it only appends the exception and returns. The shielded operation remains in `_TEARDOWN` and continues in the background while `run_session` proceeds to delete the room, re-raises the cancellation, and lets `SessionRegistry.cancel()` release the single-call slot. A replacement session can therefore start while the previous worker's `cancel()` is still running.",
+      "recommendation": "After recording cancellation, continue awaiting the shielded task to completion before advancing to room deletion and re-raising. Extend the teardown test to assert that the worker-cancel coroutine itself has completed before `run_session` and `SessionRegistry.cancel()` return."
+    }
+  ]
+}
