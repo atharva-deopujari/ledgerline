@@ -1,0 +1,56 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Ledgerline spike</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 46rem; }
+  input { width: 100%; padding: .5rem; font: inherit; }
+  button { padding: .5rem 1rem; font: inherit; margin-top: .5rem; }
+  pre { background: #111; color: #0f0; padding: 1rem; overflow: auto; min-height: 12rem; }
+</style>
+
+<h1>Ledgerline spike</h1>
+<p>Paste the room URL the bot printed, click Join, allow the microphone, then talk.</p>
+<input id="url" placeholder="https://your-domain.daily.co/room-name" />
+<button id="join">Join</button>
+<button id="leave">Leave</button>
+<pre id="log"></pre>
+<audio id="bot" autoplay></audio>
+
+<script src="https://unpkg.com/@daily-co/daily-js@0.92.2/dist/daily-iframe-esm.js"></script>
+<script>
+  // daily-js 0.92.x exposes window.Daily (NOT DailyIframe).
+  const log = (...args) => {
+    const line = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
+    console.log(...args);
+    document.getElementById("log").textContent += line + "\n";
+  };
+
+  let call = null;
+
+  document.getElementById("join").onclick = async () => {
+    const url = document.getElementById("url").value.trim();
+    call = window.Daily.createCallObject();
+
+    // Call-object mode renders nothing: attach the bot's audio track by hand.
+    call.on("track-started", (e) => {
+      if (e.track.kind === "audio" && !e.participant.local) {
+        document.getElementById("bot").srcObject = new MediaStream([e.track]);
+        log("bot audio attached");
+      }
+    });
+
+    call.on("app-message", (e) => {
+      // RTVI rides the same channel; the app's own messages are the ones without that label.
+      log("app-message", { label: e.data && e.data.label, data: e.data, from: e.fromId });
+    });
+
+    call.on("error", (e) => log("ERROR", e));
+    call.on("joined-meeting", () => log("joined"));
+
+    await call.join({ url, startVideoOff: true, startAudioOff: false });
+  };
+
+  document.getElementById("leave").onclick = async () => {
+    if (call) { await call.leave(); await call.destroy(); call = null; log("left"); }
+  };
+</script>
