@@ -1,0 +1,41 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/inject-kiro-review.py\"",
+            "timeout": 5,
+            "statusMessage": "Loading latest Kiro review"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/kiro_bridge.py\" prompt",
+            "timeout": 30,
+            "statusMessage": "Checking for Kiro review request"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/kiro_bridge.py\" stop",
+            "timeout": 900,
+            "statusMessage": "Kiro reviewing changed files"
+          }
+        ]
+      }
+    ]
+  }
+}

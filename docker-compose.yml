@@ -1,0 +1,19 @@
+name: ledgerline
+
+services:
+  ledgerline:
+    build: .
+    image: ledgerline:local
+    ports:
+      - "7860:7860"
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "7860"
+    # A demo should fail loudly, not restart-loop past a missing API key.
+    restart: "no"
+    init: true
+    volumes:
+      # recordings of every call, real or simulated; the eval corpus must outlive the container
+      - ./evals/runs:/app/evals/runs

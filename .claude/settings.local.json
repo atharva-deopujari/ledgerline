@@ -1,0 +1,9 @@
+{
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright-mcp"
+  ],
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "opus"
+  }
+}

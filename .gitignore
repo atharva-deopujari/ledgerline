@@ -9,17 +9,21 @@ __pycache__/
 .venv/
 .pytest_cache/
 .ruff_cache/
+.hypothesis/
 .mypy_cache/
+.import_linter_cache/
 
-# evals (paid runs, never committed)
-evals/runs/
+# frontend build output (rebuilt inside the Docker image)
+frontend/dist/
+
+# eval logs; the recordings under evals/runs are committed on purpose, they are the evidence
+# behind evals/REPORT.md and can be replayed with the checks
 *.eval.log
 
-# local tooling
-.kiro/
-.review-channel/
-.claude/settings.local.json
-.DS_Store
+# independent reviewer: the reviewer's configuration (.kiro), the bridge hooks (.claude) and the
+# immutable review artifacts (.review-channel/reviews) are committed; only the runtime scratch
+# (arm flags, bridge log, raw reviewer stdout) is not
+.review-channel/runtime/
+*.bak
 
-# claude code project config (personal)
-.claude/
+.DS_Store

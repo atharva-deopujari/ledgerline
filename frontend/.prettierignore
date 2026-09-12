@@ -1,0 +1,7 @@
+dist
+coverage
+node_modules
+# Contract files owned by the orchestrator — read, never reformat.
+src/protocol/types.ts
+src/protocol/sample.json
+src/mock/snapshots.json
