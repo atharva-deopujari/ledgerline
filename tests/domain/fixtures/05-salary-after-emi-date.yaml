@@ -1,0 +1,41 @@
+name: "5. Salary lands after the EMI date"
+source: "research 09 section 7, scenario 5"
+note: >
+  The research quotes the BEFORE-actions figures, min -7,000 with negative days 09-14 and 09-15.
+  The final plan never goes negative, so the summary is lowest 0 on 09-15 with no negative days.
+  Research 09 calls this TIMING and expects a PAY_ON_DATE to 09-16 with the stated 500 late fee.
+  The engine no longer does that: only the lender can agree to move a due date, so the 7,000 EMI
+  is reported unpaid on 09-14 with one ASK_LENDER naming the 12,200 shortfall and 09-16 as the
+  first day the money is there. No payment is made late, so the 500 fee never enters the plan and
+  closing is 28,000 rather than 20,500.
+facts:
+  opening_balance: 1000
+  incomes:
+    - {name: salary, amount: 45000, date: 2026-09-16}
+  debts:
+    - name: auto emi
+      kind: secured_emi
+      amount_due: 7000
+      due_date: 2026-09-14
+      late_fee: 500
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+    - {name: rent, amount: 12000, due_date: 2026-10-01}
+expected:
+  status: TIMING
+  provisional: false
+  total_in: 45000
+  total_out_required: 25000
+  total_out_planned: 18000
+  unpaid_total: 7000
+  shortfall_before_actions: 21000
+  shortfall_after_actions: 28000
+  lowest_balance: 0
+  lowest_balance_date: 2026-09-15
+  closing_balance: 28000
+  negative_days: []
+  actions:
+    - {type: ASK_LENDER, target: auto emi, date_from: 2026-09-14, date_to: 2026-09-16}
+  unpaid:
+    - {name: auto emi, amount: 7000, due_date: 2026-09-14, tier: 2}
+  excluded_items: []

@@ -1,0 +1,48 @@
+name: "4. Unsolvable"
+source: "research 09 section 7, scenario 4"
+note: >
+  Action order puts the lender request first: it has a deadline and a consequence, and the spoken
+  explanation only covers the top two. Nothing is pruned while an obligation goes unpaid, so all
+  three cuts stay -- every rupee they save is a rupee that could pay an obligation.
+  Research 09 expects the 9,000 personal EMI to be the casualty and the 500 card minimum to be
+  paid. It is the other way round here, and deliberately: a card minimum ranks below an unsecured
+  instalment, so the 500 waits and the 9,000 EMI is kept current. Paying the 500 on 25 September
+  would leave the EMI 500 short on 5 October, which costs penal charges, a thirty day mark and
+  eventually the asset, against one late fee on the card.
+facts:
+  opening_balance: 2000
+  incomes:
+    - {name: salary, amount: 30000, date: 2026-09-15}
+  debts:
+    - {name: hdfc card, kind: credit_card, amount_due: 10000, min_due: 500, due_date: 2026-09-25}
+    - {name: personal emi, kind: unsecured_emi, amount_due: 9000, due_date: 2026-10-05}
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+    - {name: utilities, amount: 2000, due_date: 2026-09-20, survival: true}
+    - {name: rent, amount: 15000, due_date: 2026-10-05}
+  optionals:
+    - {name: dining, amount: 3000}
+    - {name: gym, amount: 2000}
+    - {name: ott, amount: 800}
+expected:
+  status: UNSOLVABLE
+  provisional: false
+  total_in: 30000
+  total_out_required: 47800
+  total_out_planned: 32000
+  unpaid_total: 500
+  shortfall_before_actions: -15800
+  shortfall_after_actions: 0
+  lowest_balance: 0
+  lowest_balance_date: 2026-10-10
+  closing_balance: 0
+  negative_days: []
+  actions:
+    - {type: ASK_LENDER, target: hdfc card, date_from: 2026-09-25}
+    - {type: PAY_MIN_DUE, target: hdfc card, amount: 500}
+    - {type: CUT_OPTIONAL, target: dining}
+    - {type: CUT_OPTIONAL, target: gym}
+    - {type: CUT_OPTIONAL, target: ott}
+  unpaid:
+    - {name: hdfc card, amount: 500, due_date: 2026-09-25, tier: 4}
+  excluded_items: []

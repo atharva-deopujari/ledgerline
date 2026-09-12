@@ -1,0 +1,39 @@
+name: "3. Structural shortfall fixed by cuts"
+source: "research 09 section 7, scenario 3"
+note: >
+  Cuts go largest first (research 09 section 2), so the order is dining, gym, ott. Closing a
+  5,800 gap needs all three either way; largest first just asks for fewer changes when it does
+  not.
+facts:
+  opening_balance: 2000
+  incomes:
+    - {name: salary, amount: 40000, date: 2026-09-15}
+  debts:
+    - {name: hdfc card, kind: credit_card, amount_due: 10000, min_due: 500, due_date: 2026-09-25}
+    - {name: personal emi, kind: unsecured_emi, amount_due: 9000, due_date: 2026-10-05}
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+    - {name: utilities, amount: 2000, due_date: 2026-09-20, survival: true}
+    - {name: rent, amount: 15000, due_date: 2026-10-05}
+  optionals:
+    - {name: dining, amount: 3000}
+    - {name: gym, amount: 2000}
+    - {name: ott, amount: 800}
+expected:
+  status: STRUCTURAL
+  provisional: false
+  total_in: 40000
+  total_out_required: 47800
+  total_out_planned: 42000
+  shortfall_before_actions: -5800
+  shortfall_after_actions: 0
+  lowest_balance: 0
+  lowest_balance_date: 2026-10-10
+  closing_balance: 0
+  negative_days: []
+  actions:
+    - {type: CUT_OPTIONAL, target: dining}
+    - {type: CUT_OPTIONAL, target: gym}
+    - {type: CUT_OPTIONAL, target: ott}
+  unpaid: []
+  excluded_items: []

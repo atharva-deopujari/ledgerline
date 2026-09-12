@@ -1,0 +1,26 @@
+name: "9. Zero debts"
+source: "research 09 section 7, scenario 9"
+facts:
+  opening_balance: 10000
+  incomes:
+    - {name: salary, amount: 30000, date: 2026-10-01}
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+    - {name: rent, amount: 10000, due_date: 2026-10-05}
+  optionals:
+    - {name: outing, amount: 2000, date: 2026-09-20}
+expected:
+  status: OK
+  provisional: false
+  total_in: 30000
+  total_out_required: 18000
+  total_out_planned: 18000
+  shortfall_before_actions: 22000
+  shortfall_after_actions: 22000
+  lowest_balance: 4000
+  lowest_balance_date: 2026-09-30
+  closing_balance: 22000
+  negative_days: []
+  actions: []
+  unpaid: []
+  excluded_items: []

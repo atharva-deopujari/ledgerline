@@ -1,0 +1,30 @@
+name: "1. Comfortable surplus"
+source: "research 09 section 7, scenario 1"
+facts:
+  opening_balance: 25000
+  incomes:
+    - {name: salary, amount: 60000, date: 2026-10-01}
+  debts:
+    - {name: personal emi, kind: unsecured_emi, amount_due: 5000, due_date: 2026-10-03}
+    - {name: hdfc card, kind: credit_card, amount_due: 12000, min_due: 1500, due_date: 2026-09-20}
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+    - {name: rent, amount: 15000, due_date: 2026-10-05}
+  optionals:
+    - {name: ott, amount: 500, date: 2026-09-15}
+    - {name: dining, amount: 3000, date: 2026-09-25}
+expected:
+  status: OK
+  provisional: false
+  total_in: 60000
+  total_out_required: 41500
+  total_out_planned: 41500
+  shortfall_before_actions: 43500
+  shortfall_after_actions: 43500
+  lowest_balance: 5500
+  lowest_balance_date: 2026-09-30
+  closing_balance: 43500
+  negative_days: []
+  actions: []
+  unpaid: []
+  excluded_items: []

@@ -1,0 +1,41 @@
+name: "10. Income date is a range"
+source: "research 09 section 7, scenario 10, with the context7 appendix corrections"
+note: >
+  The appendix corrects the BEFORE-actions minimum to -5,000 on 09-30, first negative day 09-20.
+  The 4,000 EMI cannot be paid on 09-20, and the engine does not move a lender's date, so it is
+  reported uncovered there with one ASK_LENDER naming 10-01 as the first day the money exists.
+  The dip is not the EMI's fault either way: 200/day of groceries outruns a 3,000 opening balance.
+  The last five days of grocery money before the salary, 1,000 of it, are uncovered too, and are
+  named rather than shown as a negative balance. Status stays TIMING: the month balances at
+  +28,000, nothing is missing except the money arriving sooner. provisional is true because a
+  latest_date was assumed.
+facts:
+  opening_balance: 3000
+  incomes:
+    - {name: salary, amount: 50000, date: 2026-09-28, latest_date: 2026-10-01}
+  debts:
+    - {name: personal emi, kind: unsecured_emi, amount_due: 4000, due_date: 2026-09-20}
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+    - {name: rent, amount: 15000, due_date: 2026-10-01}
+expected:
+  status: TIMING
+  provisional: true
+  total_in: 50000
+  total_out_required: 25000
+  total_out_planned: 20000
+  unpaid_total: 5000
+  shortfall_before_actions: 28000
+  shortfall_after_actions: 33000
+  lowest_balance: 0
+  lowest_balance_date: 2026-09-25
+  closing_balance: 33000
+  negative_days: []
+  actions:
+    - {type: ASK_LENDER, target: groceries, date_from: 2026-09-26, date_to: 2026-10-01}
+    - {type: ASK_LENDER, target: personal emi, date_from: 2026-09-20, date_to: 2026-10-01}
+  unpaid:
+    - {name: groceries, amount: 1000, due_date: 2026-09-26, tier: 0}
+    - {name: personal emi, amount: 4000, due_date: 2026-09-20, tier: 3}
+  excluded_items: []
+  warning_contains: "latest"

@@ -1,0 +1,42 @@
+name: "2. Timing shortfall fixed by deferring"
+source: "research 09 section 7, scenario 2, with the context7 appendix corrections"
+note: >
+  The appendix quotes the BEFORE-actions minimum, -5,800 on 09-29, and -800 on 09-29 after the
+  deferral alone. Summary.lowest_balance is the FINAL plan, so it is 2,200 on 09-29 here.
+  The appendix names 10-01 as the deferral target without deriving it; the rule in the brief is
+  "the first day the balance recovers", which is 09-30, the day the salary lands.
+  Research 09 calls this TIMING, and the classification still is: net is +27,000. The status is
+  UNSOLVABLE because the engine no longer moves a lender's due date on the user's behalf. The
+  3,000 EMI cannot be paid on 09-25, so it is reported unpaid on its own date with one ASK_LENDER
+  action; the money exists on 09-30, which is what the request is for. Closing is 30,000 rather
+  than 27,000 precisely because that 3,000 has not left the account.
+facts:
+  opening_balance: 6000
+  incomes:
+    - {name: salary, amount: 50000, date: 2026-09-30}
+  debts:
+    - {name: personal emi, kind: unsecured_emi, amount_due: 3000, due_date: 2026-09-25}
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+    - {name: rent, amount: 15000, due_date: 2026-10-01}
+  optionals:
+    - {name: festival shopping, amount: 5000, date: 2026-09-20, flexible: true}
+expected:
+  status: TIMING
+  provisional: false
+  total_in: 50000
+  total_out_required: 29000
+  total_out_planned: 26000
+  unpaid_total: 3000
+  shortfall_before_actions: 27000
+  shortfall_after_actions: 30000
+  lowest_balance: 2200
+  lowest_balance_date: 2026-09-29
+  closing_balance: 30000
+  negative_days: []
+  actions:
+    - {type: ASK_LENDER, target: personal emi, date_from: 2026-09-25, date_to: 2026-09-30}
+    - {type: DEFER_OPTIONAL, target: festival shopping, date_to: 2026-09-30}
+  unpaid:
+    - {name: personal emi, amount: 3000, due_date: 2026-09-25, tier: 3}
+  excluded_items: []

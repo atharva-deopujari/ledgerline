@@ -1,0 +1,26 @@
+name: "6. Missing amount"
+source: "research 09 section 7, scenario 6"
+facts:
+  opening_balance: 5000
+  incomes:
+    - {name: salary, amount: 40000, date: 2026-09-30}
+  debts:
+    - {name: personal emi, kind: unsecured_emi, amount_due: 6000, due_date: 2026-10-05}
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+    - {name: rent, due_date: 2026-10-01}
+expected:
+  status: OK
+  provisional: true
+  total_in: 40000
+  total_out_required: 12000
+  total_out_planned: 12000
+  shortfall_before_actions: 33000
+  shortfall_after_actions: 33000
+  lowest_balance: 1200
+  lowest_balance_date: 2026-09-29
+  closing_balance: 33000
+  negative_days: []
+  actions: []
+  unpaid: []
+  excluded_items: [rent]

@@ -1,0 +1,32 @@
+name: "8. Correction changes the result"
+source: "research 09 section 7, scenario 8 (scenario 3 with salary 46,000)"
+facts:
+  opening_balance: 2000
+  incomes:
+    - {name: salary, amount: 46000, date: 2026-09-15}
+  debts:
+    - {name: hdfc card, kind: credit_card, amount_due: 10000, min_due: 500, due_date: 2026-09-25}
+    - {name: personal emi, kind: unsecured_emi, amount_due: 9000, due_date: 2026-10-05}
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+    - {name: utilities, amount: 2000, due_date: 2026-09-20, survival: true}
+    - {name: rent, amount: 15000, due_date: 2026-10-05}
+  optionals:
+    - {name: dining, amount: 3000}
+    - {name: gym, amount: 2000}
+    - {name: ott, amount: 800}
+expected:
+  status: OK
+  provisional: false
+  total_in: 46000
+  total_out_required: 47800
+  total_out_planned: 47800
+  shortfall_before_actions: 200
+  shortfall_after_actions: 200
+  lowest_balance: 200
+  lowest_balance_date: 2026-10-10
+  closing_balance: 200
+  negative_days: []
+  actions: []
+  unpaid: []
+  excluded_items: []

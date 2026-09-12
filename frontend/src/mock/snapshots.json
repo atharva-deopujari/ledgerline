@@ -1,0 +1,508 @@
+{
+  "gathering": {
+    "type": "cards",
+    "v": 1,
+    "phase": "gathering",
+    "ended": false,
+    "focus": "essentials",
+    "cards": [
+      {
+        "id": "income",
+        "title": "Income",
+        "status": "ok",
+        "rows": [
+          [
+            "Salary",
+            "45,000",
+            "1 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "essentials",
+        "title": "Essentials",
+        "status": "ok",
+        "rows": [
+          [
+            "Groceries",
+            "9,000",
+            "spread"
+          ],
+          [
+            "Rent",
+            "12,000",
+            "5 Oct"
+          ],
+          [
+            "Electricity",
+            "amount?",
+            ""
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "missing",
+        "title": "Still need",
+        "status": "warn",
+        "rows": [
+          [
+            "Electricity amount",
+            "",
+            ""
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "summary",
+        "title": "This month",
+        "status": "provisional",
+        "rows": [],
+        "kv": {
+          "in": "45,000",
+          "out": "21,000",
+          "lowest": "2,000 on 30 Sep"
+        },
+        "note": "the next thirty days are covered"
+      }
+    ],
+    "timeline": [
+      {
+        "d": "2026-09-11",
+        "b": 7700,
+        "e": "start"
+      },
+      {
+        "d": "2026-09-30",
+        "b": 2000,
+        "e": "lowest"
+      },
+      {
+        "d": "2026-10-01",
+        "b": 46700,
+        "e": "salary"
+      },
+      {
+        "d": "2026-10-05",
+        "b": 33500,
+        "e": "rent"
+      },
+      {
+        "d": "2026-10-10",
+        "b": 32000,
+        "e": null
+      }
+    ]
+  },
+  "ready": {
+    "type": "cards",
+    "v": 2,
+    "phase": "ready",
+    "ended": false,
+    "focus": "summary",
+    "cards": [
+      {
+        "id": "income",
+        "title": "Income",
+        "status": "ok",
+        "rows": [
+          [
+            "Salary",
+            "72,000",
+            "1 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "essentials",
+        "title": "Essentials",
+        "status": "ok",
+        "rows": [
+          [
+            "Groceries",
+            "9,000",
+            "spread"
+          ],
+          [
+            "Rent",
+            "18,000",
+            "5 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "optionals",
+        "title": "Optional",
+        "status": "ok",
+        "rows": [
+          [
+            "Streaming",
+            "700",
+            "14 Sep"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "summary",
+        "title": "This month",
+        "status": "ok",
+        "rows": [],
+        "kv": {
+          "in": "72,000",
+          "out": "27,700",
+          "lowest": "1,300 on 30 Sep"
+        },
+        "note": "the next thirty days are covered"
+      }
+    ],
+    "timeline": [
+      {
+        "d": "2026-09-11",
+        "b": 7700,
+        "e": "start"
+      },
+      {
+        "d": "2026-09-14",
+        "b": 6100,
+        "e": "streaming"
+      },
+      {
+        "d": "2026-09-30",
+        "b": 1300,
+        "e": "lowest"
+      },
+      {
+        "d": "2026-10-01",
+        "b": 73000,
+        "e": "salary"
+      },
+      {
+        "d": "2026-10-05",
+        "b": 53800,
+        "e": "rent"
+      },
+      {
+        "d": "2026-10-10",
+        "b": 52300,
+        "e": null
+      }
+    ]
+  },
+  "plan": {
+    "type": "cards",
+    "v": 3,
+    "phase": "plan",
+    "ended": false,
+    "focus": "plan",
+    "cards": [
+      {
+        "id": "income",
+        "title": "Income",
+        "status": "ok",
+        "rows": [
+          [
+            "Salary",
+            "72,000",
+            "1 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "debts",
+        "title": "Loans & cards",
+        "status": "ok",
+        "rows": [
+          [
+            "Bike EMI",
+            "4,500",
+            "20 Sep"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "essentials",
+        "title": "Essentials",
+        "status": "ok",
+        "rows": [
+          [
+            "Groceries",
+            "9,000",
+            "spread"
+          ],
+          [
+            "Rent",
+            "18,000",
+            "5 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "optionals",
+        "title": "Optional",
+        "status": "ok",
+        "rows": [
+          [
+            "Streaming",
+            "700",
+            "14 Sep"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "summary",
+        "title": "This month",
+        "status": "warn",
+        "rows": [],
+        "kv": {
+          "in": "72,000",
+          "out": "27,700",
+          "lowest": "2,000 on 30 Sep",
+          "unpaid": "4,500"
+        },
+        "note": "the money arrives after the due date; ask the lender to move it"
+      },
+      {
+        "id": "actions",
+        "title": "Proposed",
+        "status": "ok",
+        "rows": [
+          [
+            "Ask",
+            "Bike EMI 4,500",
+            "to 1 Oct"
+          ],
+          [
+            "Defer",
+            "Streaming 700",
+            "to 1 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "plan",
+        "title": "Your plan",
+        "status": "final",
+        "rows": [
+          [
+            "Ask",
+            "Bike EMI 4,500",
+            "to 1 Oct"
+          ],
+          [
+            "Defer",
+            "Streaming 700",
+            "to 1 Oct"
+          ],
+          [
+            "Bike EMI",
+            "4,500",
+            "unpaid, due 20 Sep"
+          ]
+        ],
+        "kv": {},
+        "note": "the money arrives after the due date; ask the lender to move it. Missing a secured instalment adds penal charges, gets reported to the credit bureaus once it is thirty days past due, and the lender can eventually move to take back the asset."
+      }
+    ],
+    "timeline": [
+      {
+        "d": "2026-09-11",
+        "b": 7700,
+        "e": "start"
+      },
+      {
+        "d": "2026-09-30",
+        "b": 2000,
+        "e": "lowest"
+      },
+      {
+        "d": "2026-10-01",
+        "b": 73000,
+        "e": "salary, streaming"
+      },
+      {
+        "d": "2026-10-05",
+        "b": 53800,
+        "e": "rent"
+      },
+      {
+        "d": "2026-10-10",
+        "b": 52300,
+        "e": null
+      }
+    ]
+  },
+  "done": {
+    "type": "cards",
+    "v": 4,
+    "phase": "done",
+    "ended": true,
+    "focus": "plan",
+    "cards": [
+      {
+        "id": "income",
+        "title": "Income",
+        "status": "ok",
+        "rows": [
+          [
+            "Salary",
+            "72,000",
+            "1 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "debts",
+        "title": "Loans & cards",
+        "status": "ok",
+        "rows": [
+          [
+            "Bike EMI",
+            "4,500",
+            "20 Sep"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "essentials",
+        "title": "Essentials",
+        "status": "ok",
+        "rows": [
+          [
+            "Groceries",
+            "9,000",
+            "spread"
+          ],
+          [
+            "Rent",
+            "18,000",
+            "5 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "optionals",
+        "title": "Optional",
+        "status": "ok",
+        "rows": [
+          [
+            "Streaming",
+            "700",
+            "14 Sep"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "summary",
+        "title": "This month",
+        "status": "warn",
+        "rows": [],
+        "kv": {
+          "in": "72,000",
+          "out": "27,700",
+          "lowest": "2,000 on 30 Sep",
+          "unpaid": "4,500"
+        },
+        "note": "the money arrives after the due date; ask the lender to move it"
+      },
+      {
+        "id": "actions",
+        "title": "Proposed",
+        "status": "ok",
+        "rows": [
+          [
+            "Ask",
+            "Bike EMI 4,500",
+            "to 1 Oct"
+          ],
+          [
+            "Defer",
+            "Streaming 700",
+            "to 1 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "plan",
+        "title": "Your plan",
+        "status": "final",
+        "rows": [
+          [
+            "Ask",
+            "Bike EMI 4,500",
+            "to 1 Oct"
+          ],
+          [
+            "Defer",
+            "Streaming 700",
+            "to 1 Oct"
+          ],
+          [
+            "Bike EMI",
+            "4,500",
+            "unpaid, due 20 Sep"
+          ]
+        ],
+        "kv": {},
+        "note": "the money arrives after the due date; ask the lender to move it. Missing a secured instalment adds penal charges, gets reported to the credit bureaus once it is thirty days past due, and the lender can eventually move to take back the asset."
+      }
+    ],
+    "timeline": [
+      {
+        "d": "2026-09-11",
+        "b": 7700,
+        "e": "start"
+      },
+      {
+        "d": "2026-09-30",
+        "b": 2000,
+        "e": "lowest"
+      },
+      {
+        "d": "2026-10-01",
+        "b": 73000,
+        "e": "salary, streaming"
+      },
+      {
+        "d": "2026-10-05",
+        "b": 53800,
+        "e": "rent"
+      },
+      {
+        "d": "2026-10-10",
+        "b": 52300,
+        "e": null
+      }
+    ]
+  }
+}

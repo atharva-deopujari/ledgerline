@@ -1,0 +1,41 @@
+name: "11. A spread optional defers as one thing, and only if it earns its place"
+source: >
+  Session B's paid harness run (docs/process/requests.md). A subscription prorated across the window
+  used to emit one DEFER_OPTIONAL per day: twenty actions of 23.33 each for one 700 rupee item.
+note: >
+  The dip is 09-21 to 09-30: 300 a day of groceries outruns an 8,000 opening balance once the
+  4,500 EMI lands on 09-20. Deferring the 700 subscription cannot close a 2,966 dip on its own;
+  and the engine does not move a lender's date, so the 4,500 EMI is reported unpaid on 09-20
+  with one ASK_LENDER naming 10-01 as the first day the money exists. The subscription deferral
+  survives the prune this time: nothing is pruned while an obligation goes unpaid, and here that
+  is right -- the 700 it saves is 700 that could go toward the EMI.
+facts:
+  opening_balance: 8000
+  incomes:
+    - {name: salary, amount: 72000, date: 2026-10-01}
+  debts:
+    - {name: bike emi, kind: secured_emi, amount_due: 4500, due_date: 2026-09-20}
+  essentials:
+    - {name: groceries, amount: 9000, spread: true, survival: true}
+    - {name: rent, amount: 18000, due_date: 2026-10-05}
+  optionals:
+    - {name: streaming, amount: 700, flexible: true}
+expected:
+  status: TIMING
+  provisional: false
+  total_in: 72000
+  total_out_required: 32200
+  total_out_planned: 27700
+  unpaid_total: 4500
+  shortfall_before_actions: 47800
+  shortfall_after_actions: 52300
+  lowest_balance: 2000
+  lowest_balance_date: 2026-09-30
+  closing_balance: 52300
+  negative_days: []
+  actions:
+    - {type: ASK_LENDER, target: bike emi, date_from: 2026-09-20, date_to: 2026-10-01}
+    - {type: DEFER_OPTIONAL, target: streaming, amount: 700, date_from: 2026-09-11, date_to: 2026-10-01}
+  unpaid:
+    - {name: bike emi, amount: 4500, due_date: 2026-09-20, tier: 2}
+  excluded_items: []

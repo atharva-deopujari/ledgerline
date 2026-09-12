@@ -1,0 +1,16 @@
+name: "7. No opening balance blocks the plan"
+source: "research 09 section 7, scenario 7 (the conflict gate became the balance gate at the cut)"
+facts:
+  incomes:
+    - {name: salary, amount: 50000, date: 2026-09-30}
+  essentials:
+    - {name: groceries, amount: 6000, spread: true, survival: true}
+expected:
+  status: BLOCKED
+  provisional: false
+  summary: null
+  timeline: []
+  actions: []
+  unpaid: []
+  excluded_items: []
+  blockers: ["opening_balance"]
