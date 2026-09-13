@@ -132,7 +132,7 @@ call. Fragment support is the reason the simulation is worth running.
 
 ### 2.3 The deterministic checks — `evals/checks.py`
 
-Twelve checks gate a run. One paragraph each.
+Fourteen checks gate a run. One paragraph each.
 
 **`numbers_traceable`** — every figure of 100 or more the assistant speaks must be in
 `_sources_up_to(turns, i)`: the union of every number the person has said, every number in a tool
@@ -151,6 +151,16 @@ is the rule that replaced the deleted conflict machinery.
 the item. Naming the value is deliberately *not* enough: saying "your rent is twelve rupees" out
 loud **is** the failure. No floor on `optional` (a 40-rupee subscription is real) or `balance` (a
 person with 40 rupees is exactly who this call is for). Failure looks like `rent 12`.
+
+**`actions_match_plan`** — added 13 September, §10.5. Every action the assistant proposes in a
+turn that explains a final plan must be an action the engine proposed. It reads only sentences
+carrying a proposal verb — one family per `ActionType`: defer, cut, pay only part, ask the lender
+— and asks whether the item named in one appears in the `finalize_plan` result. Deliberately not
+"keep", "set aside" or a bare "pay": telling somebody to have the rent ready on the eighteenth
+describes the plan's own timeline. A sentence naming any item the plan does contain is
+authorised, so an explanation that also mentions the salary in passing is not punished. Failure
+looks like `phone emi: your top action is to pay the phone emi of two thousand rupees` in a run
+whose plan had no actions at all.
 
 **`one_question_per_turn`** — more than one `?` in an assistant turn. Failure is the live call's
 four-question turn.
@@ -1167,3 +1177,136 @@ existing double read-back so that nobody removes the second figure believing it 
 
 Unverified: no matrix has run since. The cell is `fragmented_balance`, and the measure is
 `state_matches_facts`, which now fails a run that records a minimum equal to the balance.
+
+### 10.3 Review 13, F1 and F2 · 13 September
+
+One cell, `fragmented_balance`, five runs, run twice because the first exposed a regression the
+fixes themselves caused.
+
+| check | before (15 post-cut runs) | cell 1 | cell 2 |
+|---|---|---|---|
+| state_matches_facts | 0% | **100%** | **100%** |
+| changed_value_acknowledged | 100% | **0%** | **100%** |
+| numbers_traceable | 100% | 100% | 80% |
+| one_question_per_turn | 100% | 100% | 100% |
+| no_question_after_unknown | 100% | 100% | 100% |
+| amounts_repeated | 100% | 100% | 100% |
+| every other rule | 100% | 100% | 100% |
+
+**§6.7 is closed.** Every one of the fifteen post-cut runs stored 20,000 where the person had
+40,000; all five runs of both cells store 40,000. Two fixes, and the cell shows both were needed:
+`balance_total` was discarding its parts whenever `state.turn` moved — the commonest case there
+is, since VAD cuts the utterance and the bank fragment lands in the turn after the cash — and the
+balance result now asks the model to record any other amount before it replies. In the live runs
+the second call arrives in the same turn, so the two are belt and braces rather than duplicates.
+
+**The regression is the part worth reading.** With the parts adding, the domain reported
+`opening balance: 20,000 -> 40,000`, and the change instruction attached to it was `confirm which
+is right before moving on`. The result asked the person to choose between half and all of their
+own money. `changed_value_acknowledged` fell to 0% in five runs of five, and the model was right
+every time: it refused to ask. A balance that moves is never a disagreement — the tool owns that
+arithmetic and the figure is the sum of the parts, so there are no two competing values to settle.
+Balance changes now carry `say the total back and ask`. This is the second boundary found on the
+result-carried lever, after §10.2: an instruction has to be true of the situation it rides on, and
+a correct instruction attached to the wrong case is worse than none, because the model obeys the
+other rules and fails the one that was misapplied.
+
+**F2 took a nudge rather than a gate**, and the reasoning is on the record in
+`docs/process/status-B.md`: a category-level "have debts been established" answered in code is a
+questionnaire in disguise, and the cut placed discovery with the model deliberately. What code
+knows and the model does not is the one turn when nothing is blocking any more, so that turn
+carries `ready to plan; if you have not yet asked whether anything else goes out this month, ask
+once, then finalize_plan`. It cost nothing measurable: `one_question_per_turn` and
+`no_question_after_unknown` both stayed at 100% in the same cell, as did the longer `missing:`
+line that Session A's undated-essential change introduced.
+
+**One new defect, unfixed.** `numbers_traceable` 80%: a run spoke "paying only the minimum leaves
+1,800 rupees still due", which is 3,000 minus 1,200. That run's plan came back with a surplus of
+63,500 and **no actions at all**, and the model invented two actions and the remainder to go with
+them. It belongs to §6.1's family rather than beside it: a result that says there is nothing to do
+gives the model nothing to explain, and it fills the gap. The treatment is the same — state the
+figure so nothing is left to derive, which here means the engine naming what a minimum payment
+leaves unpaid.
+
+### 10.4 B-13 · a plan with nothing to do · 13 September
+
+`fragmented_balance`, five runs, the third cell on this scenario.
+
+| check | cell 2 | cell 3 |
+|---|---|---|
+| numbers_traceable | 80% | **100%** |
+| state_matches_facts | 100% | 100% |
+| changed_value_acknowledged | 100% | 100% |
+| every other rule | 100% | 100% |
+
+All five runs clean of every rule.
+
+The defect, from `evals/runs/fragmented_balance-20260913-003557.json`: the engine returned a plan
+with a surplus of 63,500 and **no actions at all**, and the bot then described two actions nobody
+had proposed and added "paying only the minimum leaves 1,800 rupees still due" — 3,000 minus
+1,200, computed and spoken as plan output. `numbers_traceable` caught the figure; nothing caught
+the two invented actions, and nothing could, because no check reads whether a spoken action exists
+in the plan.
+
+This is §6.1's family rather than a new one. A result with nothing in it to explain reads as a gap
+and the model fills the gap, exactly as it did when asked what would happen if an uncertain income
+never arrived. The treatment is the same: leave nothing to derive. Split across two layers — the
+engine now carries the remainder after a minimum payment as a figure, so an action that exists
+says what it leaves behind; and `describe` says, when there are no actions **and nothing unpaid**,
+`no actions needed: every payment is covered in full; explain the lowest point and propose nothing`.
+
+The second condition is §10.3's boundary applied before it could bite. "Every payment is covered
+in full" is true of a clean plan and a lie beside a list of unpaid bills, where it would tell
+somebody who is short that they are fine. An UNSOLVABLE plan with no actions gets no such line;
+its unpaid rows already say what is wrong.
+
+Worth recording for the same reason as §10.2 and §10.3: three of the last four boundaries on the
+result-carried lever have been about **when an instruction is false of the case it rides on**,
+not about wording. The lever is strong enough that a misapplied instruction is obeyed, which makes
+the condition on it the part that needs the care.
+
+### 10.5 `actions_match_plan` · the advice nobody was checking · 13 September
+
+Zero spend: written offline and replayed over the 103 post-cut saved runs.
+
+`numbers_traceable` guards the numbers. Nothing guarded the advice. In
+`fragmented_balance-20260913-003557` the bot proposed keeping 11,000 back for rent and paying
+1,200 to the credit card when the engine's plan contained **no actions at all**, and every rule
+passed it, because both figures had been recorded earlier in the call and were therefore
+traceable. A run could invent an entire course of action out of real numbers.
+
+The check reads only turns that explain a final plan, only sentences carrying a proposal verb,
+and asks whether the item named appears in the `finalize_plan` result. It never matches on a
+sentence: the model words the action and code never does.
+
+**Two narrowings, both from reading failures rather than from theory.** The first cut counted
+"keep", "set aside" and a bare "pay" as proposals and failed **41%** of post-cut runs — almost
+all on sentences doing the job correctly, because "keep 11,000 available for rent by the
+eighteenth" describes the plan's own timeline. Restricting the verbs to one family per
+`ActionType` took it to 93%. Then a correct explanation was still failing: "if you don't move it,
+the 500-rupee streaming payment may be taken before your salary arrives" proposes the move the
+plan *does* contain, and was flagged for naming the salary in passing. A sentence naming any item
+the plan contains is now authorised.
+
+| stage | pass rate over 103 post-cut runs |
+|---|---|
+| proposal verbs including keep / set aside / pay | 59% |
+| one verb family per `ActionType` | 93% |
+| a planned item in the sentence authorises it | **94%** |
+
+All six surviving failures were read. They are one shape: the plan had no actions and the bot
+manufactured an action with a consequence attached. The clearest is
+`one_word_answers-20260912-213637`, which is independent of the run that prompted the check —
+"Your top action is to pay the phone EMI of two thousand rupees by the fifteenth of September; if
+you skip it, the plan won't include that payment. Your second action is to keep cable at four
+hundred rupees within the window" — against a plan result whose only lines were a surplus of
+3,600 and no actions whatever. The bot announced a first and second action whose existence it had
+invented, with consequences for skipping them.
+
+**The §10.4 fix closes this shape, and the same replay shows it.** Of the five runs recorded after
+the no-actions line landed, five are clean; the only failure in that day's runs is 003557, from
+before it. The 94% is therefore a historical figure across a period that includes the defect and
+excludes its fix, which is the honest way to read it and the reason it is quoted as such.
+
+The honest limit: this rule judges proposals that name an item. A proposal naming none — "you
+should hold some of that back" — passes, and no rule here can see it.

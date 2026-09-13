@@ -534,3 +534,20 @@ changed. If the possessives are meant to come back, nothing on my side needs tou
 purpose, because "my loan" and "his loan" are two people's debts. `possessive_of` splits them when
 both names carry one. The check keys on `normalise_name`, so it follows whatever A decides; the
 agent side needs nothing.
+
+### B-13 · a plan with nothing to do gave the model nothing to say, so it invented some
+
+Found by the review 13 cell, `evals/runs/fragmented_balance-20260913-003557.json`. The engine
+returned a plan with a surplus of 63,500 and **no actions at all**; the bot then said "keep 11,000
+rupees available for rent by the eighteenth of September and pay at least 1,200 rupees toward the
+credit card by the twentieth; paying only the minimum leaves 1,800 rupees still due", inventing
+both actions and computing 3,000 minus 1,200 for the remainder. `numbers_traceable` caught the
+1,800 and nothing caught the two invented actions. Same shape as the 13,000 shortfall in
+`correction_and_conflict`: a result with nothing in it to explain reads as a gap, and the model
+fills the gap. Two halves, split by layer and both agreed with the orchestrator. **A's half:**
+the `PAY_MIN_DUE` action carries the remainder after the minimum as a figure, so nothing is left
+to derive when the action does exist. **B's half, done:** when `finalize_plan` returns a plan with
+no actions and nothing unpaid, the result says so in words the model can use — `no actions
+needed: every payment is covered in full; explain the lowest point and propose nothing`. It rides
+only that case; beside an unpaid bill the same sentence would tell somebody who is short that they
+are fine.

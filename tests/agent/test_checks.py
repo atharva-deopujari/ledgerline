@@ -1100,6 +1100,82 @@ def test_an_implausible_salary_is_caught_too():
     assert "implausible_amount_confirmed" in rules(checks.run_checks(t))
 
 
+# ------------------------------------------------------------------ actions match the plan
+
+
+def planned(result: str, *after) -> dict:
+    """A run that finalised, plus the assistant turns that explained the plan."""
+    return transcript(
+        user("go on then"),
+        bot("Here is the plan.", [call(name="finalize_plan", args={}, result=result)]),
+        *after,
+        state=state(
+            essentials=[{"name": "rent", "amount": "11000.00"}],
+            debts=[{"name": "credit card", "amount_due": "3000.00"}],
+            optionals=[{"name": "gym", "amount": "1500.00"}],
+        ),
+    )
+
+
+PLAN_WITH_AN_ACTION = (
+    "plan final\n"
+    "in 45,000, out 21,500, lowest 1,000 on 30 September\n"
+    "surplus 0, shortfall 0\n"
+    "gym: move it to next month, the money is needed for rent"
+)
+
+PLAN_WITH_NOTHING_TO_DO = (
+    "plan final\n"
+    "in 45,000, out 21,500, lowest 21,000 on 30 September\n"
+    "surplus 63,500, shortfall 0\n"
+    "no actions needed: every payment is covered in full; "
+    "explain the lowest point and propose nothing"
+)
+
+
+def test_an_action_the_plan_proposed_is_fine():
+    t = planned(PLAN_WITH_AN_ACTION, bot("Move the gym payment to next month. Does that work?"))
+    assert "actions_match_plan" not in rules(checks.run_checks(t))
+
+
+def test_an_action_the_plan_never_proposed_is_caught():
+    """The live defect, `fragmented_balance-20260913-003557`: the engine returned a surplus and no
+    actions, and the bot proposed keeping money back for rent and paying the card minimum. Both
+    figures were traceable because both had been recorded earlier in the call, so every existing
+    rule passed a run that invented an entire course of action."""
+    t = planned(
+        PLAN_WITH_NOTHING_TO_DO,
+        bot("Pay at least 1,200 rupees toward the credit card by the twentieth. Make sense?"),
+    )
+    assert "actions_match_plan" in rules(checks.run_checks(t))
+
+
+def test_naming_an_item_without_proposing_anything_is_not_an_action():
+    """Walking through the month is the job. "Your rent is due on the eighteenth" proposes
+    nothing, and a rule that reads it as a proposal would fail every explanation there is."""
+    t = planned(
+        PLAN_WITH_NOTHING_TO_DO,
+        bot("Your rent of 11,000 rupees is due on the eighteenth. Does that match?"),
+    )
+    assert "actions_match_plan" not in rules(checks.run_checks(t))
+
+
+def test_the_rule_says_nothing_about_turns_before_the_plan():
+    """Mid-gathering the engine has actions it would suggest and the model is right to ignore
+    them; this rule is only about the turns that explain a final plan."""
+    t = transcript(
+        user("my gym is 1500"),
+        bot("Recorded. Shall we move the gym payment?", [call(args={"name": "gym"})]),
+        state=state(optionals=[{"name": "gym", "amount": "1500.00"}]),
+    )
+    assert "actions_match_plan" not in rules(checks.run_checks(t))
+
+
+def test_a_run_that_never_finalised_is_not_judged():
+    t = transcript(user("hello"), bot("Hi."), state=state())
+    assert "actions_match_plan" not in rules(checks.run_checks(t))
+
+
 # ------------------------------------------------------------------ state matches the facts
 
 

@@ -178,6 +178,8 @@ def build_tools(ctx: ToolContext) -> list[Callable[..., Any]]:
         except ValueError as refusal:
             await params.result_callback(_refused(refusal))
             return
+        if item_kind is ItemKind.BALANCE:
+            ctx.forget_balance_parts()
         plan = await ctx.recompute_and_push(FOCUS_BY_KIND[item_kind])
         await reply(params, "remove_item", args, told(outcome, plan))
 

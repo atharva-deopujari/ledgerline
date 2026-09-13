@@ -18,6 +18,7 @@ from ledgerline.domain.models import (
     ActionType,
     ItemKind,
     OutcomeStatus,
+    Phase,
     PlanStatus,
     Readiness,
     UnknownReason,
@@ -40,14 +41,16 @@ def created(**over) -> Outcome:
     return Outcome(**base)
 
 
-def updated(changes: dict) -> Outcome:
-    return Outcome(
+def updated(changes: dict, **over) -> Outcome:
+    base = dict(
         status=OutcomeStatus.UPDATED,
         kind=ItemKind.ESSENTIAL,
         name="rent",
         field="essential:rent.amount",
         changes=changes,
     )
+    base.update(over)
+    return Outcome(**base)
 
 
 def parked(field: str = "essential:electricity.amount", **over) -> Outcome:
@@ -121,6 +124,26 @@ def test_a_balance_result_asks_for_the_other_half_before_the_read_back():
         "recorded opening balance 20,000; record any other amount they named before replying, "
         "then say the total back and ask"
     )
+
+
+def test_a_balance_that_grew_by_a_part_is_read_back_not_disputed():
+    """Measured, not guessed. With the parts persisting, the second fragment made the domain
+    report "opening balance: 20,000 -> 40,000" and `describe` attached "confirm which is right" —
+    so the result asked the person to choose between the half and the whole of their own money.
+    `changed_value_acknowledged` went to 0% in five runs of five, and rightly: the model refused
+    to ask a nonsense question.
+
+    The tool owns this arithmetic. A balance total is never contested, because no two figures are
+    competing — one is the sum of the parts and code computed it. It is read back instead."""
+    outcome = updated({"opening_balance": ("20,000", "40,000")}, kind=ItemKind.BALANCE, name="")
+    first = lines(describe(outcome, make_plan()))[0]
+    assert first == "opening balance: 20,000 -> 40,000; say the total back and ask"
+    assert phrases.CONFIRM_CHANGE not in first
+
+
+def test_a_changed_amount_that_is_not_a_balance_still_asks_which_is_right():
+    result = describe(updated({"essential:rent.amount": ("11,000", "12,000")}), make_plan())
+    assert phrases.CONFIRM_CHANGE in result
 
 
 def test_an_implausible_amount_is_flagged_instead_of_read_back():
@@ -357,6 +380,40 @@ def test_a_timing_shortfall_is_named_next_to_the_surplus():
     assert "surplus 0, shortfall 0" in result
 
 
+def test_the_turn_nothing_blocks_any_more_asks_once_about_what_else_goes_out():
+    """Review 13 F2. `blockers` is the opening balance and the income question and nothing else,
+    so a call that has a balance, an income and one essential is READY — and
+    `fragmented_balance-20260912-220810` finalised there, on cash, rent and salary alone,
+    reporting a 54,000 surplus while the groceries, the card and the gym were never asked about.
+
+    No code gate: the cut put discovery with the model on purpose, and a category checklist in
+    code is a questionnaire wearing a different hat. What code does know, and the model does not,
+    is the moment nothing is blocking any more. That is the one turn worth a nudge.
+    """
+    ready = Readiness(phase=Phase.READY, blockers=[], missing_fields=[])
+    result = describe(created(), make_plan(), ready)
+    assert phrases.READY_TO_PLAN in result
+
+
+def test_the_nudge_is_not_repeated_once_the_plan_is_final():
+    """PLAN and DONE are past it; a second nudge would be a rule fighting the ending."""
+    for phase in (Phase.PLAN, Phase.DONE):
+        done = Readiness(phase=phase, blockers=[], missing_fields=[])
+        assert phrases.READY_TO_PLAN not in describe(created(), make_plan(), done)
+
+
+def test_the_nudge_stays_quiet_while_anything_is_still_blocking():
+    gathering = Readiness(phase=Phase.GATHERING, blockers=["income"], missing_fields=[])
+    assert phrases.READY_TO_PLAN not in describe(created(), make_plan(), gathering)
+
+
+def test_the_nudge_stays_quiet_while_the_plan_is_being_explained():
+    """`actions=True` is the turn that walks through the plan. Pointing the model back at the
+    gathering question there is the defect `missing:` suppression was written for."""
+    ready = Readiness(phase=Phase.READY, blockers=[], missing_fields=[])
+    assert phrases.READY_TO_PLAN not in describe(None, make_plan(), ready, actions=True)
+
+
 # ------------------------------------------------------------------ the missing list
 
 
@@ -499,10 +556,75 @@ def test_more_than_three_unpaid_rows_are_summarised():
     assert "and 2 more unpaid" in lines(result)
 
 
-def test_the_first_plan_warning_is_passed_on():
+def test_a_plan_that_needs_nothing_says_so_in_words_the_model_can_use():
+    """B-13. `fragmented_balance-20260913-003557`: the engine returned a surplus of 63,500 and no
+    actions at all, and the model invented two actions and a remainder to go with them — "paying
+    only the minimum leaves 1,800 rupees still due", which is 3,000 minus 1,200. Same shape as
+    the 13,000: a result with nothing to explain is read as a gap, and the model fills it."""
+    result = describe(None, make_plan(actions=[]), headline=phrases.PLAN_FINAL, actions=True)
+    assert phrases.NO_ACTIONS in result
+
+
+def test_the_no_actions_line_does_not_claim_cover_that_does_not_exist():
+    """The boundary the balance regression taught: an instruction has to be true of the case it
+    rides on. "Every payment is covered in full" beside a list of unpaid bills is the one lie
+    that matters — it tells somebody who is short that they are fine."""
+    plan = make_plan(
+        status=PlanStatus.UNSOLVABLE,
+        actions=[],
+        unpaid=[
+            Unpaid(
+                name="credit card",
+                amount=money(3000),
+                due_date=dt.date(2026, 9, 20),
+                tier=2,
+                consequence="interest accrues",
+                ask="ask the lender to move the date",
+            )
+        ],
+    )
+    result = describe(None, plan, headline=phrases.PLAN_FINAL, actions=True)
+    assert phrases.NO_ACTIONS not in result
+
+
+def test_the_no_actions_line_stays_out_of_a_gathering_result():
+    """Mid-gathering there are no actions yet because nothing has been planned, which is not the
+    same fact at all."""
+    assert phrases.NO_ACTIONS not in describe(created(), make_plan(actions=[]))
+
+
+def test_a_plan_with_actions_says_nothing_about_having_none():
+    plan = make_plan(
+        actions=[
+            Action(
+                type=ActionType.DEFER_OPTIONAL,
+                target="gym",
+                amount=money(1500),
+                rationale="move it to next month",
+            )
+        ]
+    )
+    result = describe(None, plan, headline=phrases.PLAN_FINAL, actions=True)
+    assert phrases.NO_ACTIONS not in result
+
+
+def test_the_first_plan_warning_is_carried_as_a_note_not_as_a_sentence():
+    """Engine warnings were passed through whole, and Session A's new one — "rent has no date;
+    spread across the month." — is a finished sentence with a full stop on it. Every other line
+    in a result is a compact fact behind a label, and the one time a bare label reached the model
+    it was read out verbatim ("missing: electricity amount", F7). A sentence is likelier still.
+    The carrier changes here rather than the engine string: `note:` marks it as something to
+    paraphrase, and the trailing stop goes so it does not read as speech ready to say."""
     plan = make_plan(warnings=["two incomes fall outside the window"])
     result = describe(None, plan, headline=phrases.PLAN_FINAL, actions=True)
-    assert "two incomes fall outside the window" in lines(result)
+    assert "note: two incomes fall outside the window" in lines(result)
+
+
+def test_a_warning_that_ends_in_a_full_stop_loses_it():
+    plan = make_plan(warnings=["rent has no date; spread across the month."])
+    result = describe(None, plan, headline=phrases.PLAN_FINAL, actions=True)
+    assert "note: rent has no date; spread across the month" in lines(result)
+    assert "spread across the month." not in result
 
 
 def test_actions_stay_out_of_a_result_that_is_only_recording_a_fact():
@@ -571,8 +693,12 @@ def test_a_finalised_plan_carrying_consequences_still_fits_in_ninety_words():
 
 
 def test_a_clean_plan_stays_short():
+    """35, raised from 25 when the no-actions line landed (B-13). The budget exists so a result
+    does not turn into a speech the model reads out, and the fifteen words bought here are the
+    ones that stop it inventing a speech of its own: a plan with nothing to do used to say
+    nothing about having nothing to do."""
     result = describe(None, make_plan(), ready(), headline=phrases.PLAN_FINAL, actions=True)
-    assert len(result.split()) < 25, result
+    assert len(result.split()) < 35, result
 
 
 def test_one_consequence_shared_by_three_unpaid_rows_is_said_once():

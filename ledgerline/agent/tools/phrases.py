@@ -44,6 +44,13 @@ CONFIRM_CHANGE = "confirm which is right before moving on"
 # rest, in the one place the model is certainly reading at the moment it has to speak.
 READ_BACK = "say this back, then ask"
 
+# A balance that moved is never a disagreement. The tool owns this arithmetic: the figure is the
+# sum of the parts the person named, so there are not two competing values to settle and asking
+# "which is right, 20,000 or 40,000?" invites somebody to choose between half and all of their
+# own money. Measured: with CONFIRM_CHANGE on it, `changed_value_acknowledged` was 0% in five
+# runs of five, because the model was right to refuse the question.
+BALANCE_TOTAL = "say the total back and ask"
+
 # The same lever again, for an amount too small to be real. The cut handed implausibility to the
 # model with nothing but a prompt line, and the first matrix measured that at 0 out of 5: the
 # result said "recorded rent 12; say this back, then ask" and the model dutifully told the person
@@ -61,6 +68,33 @@ CONFIRM_AMOUNT = " looks small, confirm it before moving on"
 BALANCE_PARTS = (
     "record any other amount they named before replying, then say the total back and ask"
 )
+
+# The one turn code knows something the model does not: nothing is blocking any more. Review 13
+# found a call finalising on cash, rent and salary alone and reporting a 54,000 surplus, because
+# `blockers` is the opening balance and the income question and nothing else. A category gate in
+# code would be a questionnaire in disguise and the cut gave discovery to the model on purpose,
+# so this is a nudge at the moment it is useful rather than a rule that holds the plan back.
+READY_TO_PLAN = (
+    "ready to plan; if you have not yet asked whether anything else goes out this month, "
+    "ask once, then finalize_plan"
+)
+
+# Engine warnings are prose the engine wrote for a person, and every other line in a result is a
+# compact fact behind a label. Passed through whole they read as speech ready to say, which is
+# how "missing: electricity amount" ended up spoken verbatim on a live run. The label marks it as
+# something to paraphrase; the trailing stop is dropped for the same reason.
+# A plan that needs nothing still has to be explained, and the result used to say nothing about
+# it. B-13: the engine returned a surplus of 63,500 and no actions, and the model invented two
+# actions and a remainder to go with them. Same shape as the shortfall it computed for itself --
+# a result with nothing to explain reads as a gap, and the model fills it. Rides only the case
+# where there is genuinely nothing left owing: beside an unpaid bill this sentence would tell
+# somebody who is short that they are fine.
+NO_ACTIONS = (
+    "no actions needed: every payment is covered in full; "
+    "explain the lowest point and propose nothing"
+)
+
+NOTE = "note: "
 
 RECORDED = "recorded "
 UNCHANGED = "unchanged "

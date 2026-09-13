@@ -34,7 +34,6 @@ class ToolContext:
         self.last_focus: CardId | None = None
         self._handled: dict[tuple[int, str, str], str] = {}
         self._balance_parts: dict[str, Decimal] = {}
-        self._balance_turn = -1
 
     def balance_total(self, name: str, amount: Decimal) -> Decimal:
         """The opening balance after this part is added in.
@@ -45,14 +44,24 @@ class ToolContext:
         had 20,000. The model must not add the two itself — it must not add anything — so the
         tool does it, and the total comes back in the result where the model may read it.
 
-        Only within one turn: across turns a second figure is a new statement about the same
-        balance, and overwriting it is the domain's job.
+        The parts live for the whole call, not for one turn. Review 13 found the turn-scoped
+        version losing money in the commonest case there is: VAD cuts the utterance, the model
+        answers the cash before the bank fragment lands, and the bank arrives in the next turn
+        — where the parts had just been thrown away, so it replaced the cash instead of adding
+        to it. A name already seen is that part again, however late: "the cash is actually
+        twenty-five" corrects the cash and does not open a second pile of money.
+
+        There is deliberately no heuristic for a name that sounds like a total. If somebody
+        restates the whole balance under a new word the sum is spoken back to them and they can
+        correct it, which is a better failure than silently planning on half.
         """
-        if self._balance_turn != self.state.turn:
-            self._balance_turn = self.state.turn
-            self._balance_parts = {}
         self._balance_parts[normalise_name(name)] = amount
         return sum(self._balance_parts.values(), Decimal(0))
+
+    def forget_balance_parts(self) -> None:
+        """Drop every part. The balance was removed, so the next part named starts a new total
+        rather than resurrecting money the person has said they no longer have."""
+        self._balance_parts = {}
 
     def _key(self, name: str, args: dict) -> tuple[int, str, str]:
         return (self.state.turn, name, json.dumps(args, sort_keys=True, default=str))

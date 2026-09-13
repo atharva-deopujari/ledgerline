@@ -206,14 +206,40 @@ async def test_the_same_balance_part_said_twice_is_replaced_not_added(tools, par
     assert last["amount"] == 25000
 
 
-async def test_a_balance_in_a_later_turn_is_not_added_to_the_earlier_one(tools, params, rec, state):
-    """Across turns a second figure is a new statement about the same balance, and overwriting
-    it is the domain's job. Only fragments of one utterance are parts of one balance."""
+async def test_a_balance_part_named_in_a_later_turn_is_still_a_part(tools, params, rec, state):
+    """Review 13 F1, the half nobody had measured. The parts used to be dropped whenever
+    `state.turn` moved, so a model that recorded the cash in one turn and the bank in the next
+    replaced the cash instead of adding to it — and the next turn is exactly how the fragments
+    arrive, because VAD cuts the utterance and the model answers before the rest of it lands.
+    Parts now live for the whole call.
+    """
     await tools["upsert_item"](params, kind="balance", name="cash", amount=20000)
     state.turn += 1
-    await tools["upsert_item"](params, kind="balance", name="bank", amount=30000)
+    await tools["upsert_item"](params, kind="balance", name="bank balance", amount=20000)
     last = [c for c in rec.calls if c[0] == "upsert"][-1][2]
-    assert last["amount"] == 30000
+    assert last["amount"] == 40000
+
+
+async def test_the_same_part_restated_in_a_later_turn_updates_that_part(tools, params, rec, state):
+    """A name already seen is that part again, however late it comes back: "the cash is actually
+    twenty-five" is a correction to the cash, not a second pile of money."""
+    await tools["upsert_item"](params, kind="balance", name="cash", amount=20000)
+    await tools["upsert_item"](params, kind="balance", name="bank balance", amount=20000)
+    state.turn += 1
+    await tools["upsert_item"](params, kind="balance", name="cash", amount=25000)
+    last = [c for c in rec.calls if c[0] == "upsert"][-1][2]
+    assert last["amount"] == 45000
+
+
+async def test_removing_the_balance_forgets_every_part(tools, params, rec, state):
+    """Otherwise a balance the person withdrew comes back the next time they name any part."""
+    await tools["upsert_item"](params, kind="balance", name="cash", amount=20000)
+    rec.outcome = Outcome(status="removed", name="opening balance")
+    await tools["remove_item"](params, kind="balance", name="account")
+    state.turn += 1
+    await tools["upsert_item"](params, kind="balance", name="bank balance", amount=5000)
+    last = [c for c in rec.calls if c[0] == "upsert"][-1][2]
+    assert last["amount"] == 5000
 
 
 # ------------------------------------------------------------------ remove_item

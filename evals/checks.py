@@ -718,9 +718,119 @@ def state_matches_facts(transcript: dict) -> list[Violation]:
     return out
 
 
+# Verbs that propose a CHANGE to what happens, one family per `ActionType`. Deliberately not
+# "keep", "set aside" or a bare "pay": telling somebody to have the rent ready on the eighteenth
+# describes the plan's own timeline and proposes nothing, and a first cut that counted those
+# failed 41% of post-cut runs on sentences that were doing the job correctly. What is left are
+# the verbs that alter the month -- defer it, cut it, pay only part of it, ask the lender -- and
+# those are exactly what the engine claims the right to decide. "at least" had to narrow to
+# "pay at least" for the same reason: "keep at least 11,000 available for rent" is a due date
+# being explained, not a part payment being proposed.
+PROPOSAL_VERBS = (
+    # DEFER_OPTIONAL
+    "defer",
+    "put off",
+    "move it",
+    "move the",
+    "push it",
+    "push the",
+    "delay",
+    "next month instead",
+    # CUT_OPTIONAL
+    "cut ",
+    "drop ",
+    "cancel",
+    "stop paying",
+    "skip ",
+    # PAY_MIN_DUE
+    "only the minimum",
+    "pay at least",
+    "minimum due",
+    "minimum payment",
+    # ASK_LENDER
+    "ask the lender",
+    "ask your lender",
+    "ask them to move",
+)
+
+PLAN_FINAL_MARKER = "plan final"
+
+
+def _final_plan_result(turns: list[dict]) -> str | None:
+    """The text of the last `finalize_plan` result, or None if the run never planned."""
+    found = None
+    for turn in turns:
+        for tool_call in turn.get("tool_calls", ()):
+            if tool_call.get("name") == "finalize_plan":
+                result = str(tool_call.get("result", ""))
+                if PLAN_FINAL_MARKER in result:
+                    found = result
+    return found
+
+
+def _item_names(state: dict) -> list[str]:
+    return [
+        normalise_name(str(item.get("name", "")))
+        for group, _, _ in _FACT_GROUPS
+        for item in state.get(group, ()) or []
+        if item.get("name")
+    ]
+
+
+def actions_match_plan(transcript: dict) -> list[Violation]:
+    """Every action the assistant proposes was proposed by the engine.
+
+    The gap this was written for: a run whose plan came back with a surplus and NO actions, where
+    the bot went on to propose keeping money aside for rent and paying a card minimum. Both
+    figures were traceable, because both had been recorded earlier in the call, so a run invented
+    an entire course of action and passed every other rule. `numbers_traceable` guards the
+    numbers and nothing guarded the advice.
+
+    Deliberately coarse. It reads only the turns that explain a final plan, only sentences
+    carrying a proposal verb, and asks whether the item named in one appears anywhere in the
+    `finalize_plan` result. Paraphrase is fine and expected -- the model words the action, code
+    never does -- so nothing here matches on a sentence. What it cannot do is judge a proposal
+    that names no item at all; that is the honest limit and it is the reason this is a rule about
+    items rather than about advice.
+    """
+    turns = transcript.get("turns", ())
+    plan = _final_plan_result(list(turns))
+    state = transcript.get("state")
+    if plan is None or not state:
+        return []
+    planned = plan.lower()
+    names = [n for n in _item_names(state) if n]
+    out = []
+    started = False
+    for i, turn in enumerate(turns):
+        if any(c.get("name") == "finalize_plan" for c in turn.get("tool_calls", ())):
+            started = True
+        if not started or turn["role"] != "assistant":
+            continue
+        for sentence in re.split(r"(?<=[.!?])\s+", turn["text"].lower()):
+            if not any(verb in sentence for verb in PROPOSAL_VERBS):
+                continue
+            named = [n for n in names if n in sentence]
+            # One item in the sentence being in the plan authorises the sentence. "If you don't
+            # move it, the streaming payment may be taken before your salary arrives" proposes
+            # the move the plan actually contains, and flagging it for mentioning the salary in
+            # passing punishes a correct explanation for naming a second thing.
+            if not named or any(n in planned for n in named):
+                continue
+            out.append(
+                Violation(
+                    "actions_match_plan",
+                    i,
+                    f"{', '.join(named)}: {sentence.strip()[:80]}",
+                )
+            )
+    return out
+
+
 CHECKS = (
     numbers_traceable,
     state_matches_facts,
+    actions_match_plan,
     changed_value_acknowledged,
     implausible_amount_confirmed,
     one_question_per_turn,

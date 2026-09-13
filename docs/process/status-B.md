@@ -1388,3 +1388,135 @@ mine, is whether a check should fail a run that reaches `plan_final` while categ
 never addressed are still open. It is not written, and no pass rate reflects it.
 
 F3 and F4 are `ledgerline/domain/` and belong to Session A.
+
+## Review 13
+
+Unfrozen for F1 and F2. One matrix cell served both, plus Session A's two knock-ons. Gates:
+`uv run pytest tests/agent` **401 passed, 1 deselected**; `uv run ruff check` clean;
+`uv run ruff format --check .` 89 files already formatted; `uv run lint-imports` 4 contracts.
+Spend: two `fragmented_balance` cells, 5 runs each, about $0.14 of the $0.50 approved.
+
+### F1 · the fragmented balance, both halves
+
+Two defects, and the run says both were real because fixing one exposed the other.
+
+**The code half.** `balance_total` dropped its parts whenever `state.turn` moved. That is the
+commonest case there is and not an edge: VAD cuts the utterance, the model answers the cash, the
+bank fragment lands in the next turn — and the parts had just been thrown away, so it replaced
+the cash instead of adding to it. Parts now live for the whole call, keyed by normalised name; a
+name already seen is that part again however late it comes back; `remove_item(balance)` clears
+them all. No heuristic for a name that sounds like a total: if somebody restates the whole balance
+under a new word the sum is spoken back and they can correct it, which is a better failure than
+silently planning on half. Three tests, including the cross-turn regression.
+
+**The result half**, queued since yesterday and now measured: the balance result asks the model to
+record any other amount before replying. It works — and in the live runs the second call now
+arrives in the *same* turn, so the two fixes are belt and braces rather than duplicates.
+
+**`state_matches_facts` on `fragmented_balance`: 0% before, 100% after.** All five runs store
+40,000. Every one of the fifteen post-cut runs before this stored 20,000.
+
+**The first cell found a regression the fixes caused, which is why cells are run.** With the parts
+adding, the domain reported `opening balance: 20,000 -> 40,000` and `describe` attached `confirm
+which is right before moving on` — so the result asked the person to choose between half and all
+of their own money. `changed_value_acknowledged` went to **0% in 5 of 5**, and the model was right
+to refuse the question. A balance that moved is never a disagreement: the tool owns that
+arithmetic and the figure is the sum of the parts, so there are no two competing values. Balance
+changes carry `say the total back and ask` instead. Back to 100% in the second cell.
+
+### F2 · readiness · no code gate, and why
+
+Recorded as the reasoning, not just the outcome. `blockers` is the opening balance and the income
+question and nothing else, so a call with a balance, an income and one essential is READY — which
+is how `fragmented_balance-20260912-220810` finalised on cash, rent and salary and reported a
+54,000 surplus with the groceries, the card and the gym never asked about.
+
+A category-level gate in code was rejected: the cut put discovery with the model on purpose, and
+"has anybody established whether there are debts" answered in code is a questionnaire wearing a
+different hat. `state_matches_facts` already fails a run that finalises while items the person
+actually stated are missing, which is the real failure in that run. What code knows and the model
+does not is the single turn when nothing is blocking any more, so that turn gets one stateless
+line: `ready to plan; if you have not yet asked whether anything else goes out this month, ask
+once, then finalize_plan`. Emitted only at `Phase.READY`, never while explaining the plan.
+
+Cost nothing: `one_question_per_turn` and `no_question_after_unknown` both 100% in the same cell.
+
+### Session A's knock-ons
+
+- **The longer `missing:` line.** A's `missing_fields` now lists an undated essential's due date,
+  so the line the model reads grows by one item per undated essential. Watched on the same five
+  runs: `one_question_per_turn` 100%, `no_question_after_unknown` 100%. No date-chasing seen; if
+  it appears later the fix is the `spread` field description, not the domain.
+- **The new engine warning.** `describe` passed `plan.warnings[0]` through whole, and A's string
+  is a finished sentence with a full stop — "rent has no date; spread across the month." Every
+  other line in a result is a compact fact behind a label, and the one time a bare label reached
+  the model it was read out verbatim. The carrier changed here rather than the engine string:
+  warnings are prefixed `note:` and lose a trailing stop, so the line reads as something to
+  paraphrase rather than speech ready to say. Two tests.
+
+### Open, found by this cell, not fixed
+
+`numbers_traceable` 80%: one run spoke "paying only the minimum leaves 1,800 rupees still due",
+which is 3,000 minus 1,200. Reading that run, the engine returned a plan with a **surplus of
+63,500 and no actions at all** — and the model invented two actions and the remainder to go with
+them. It is the 13,000 defect's family: a result that says there is nothing to do gives the model
+nothing to explain, and it fills the gap. Distinct enough to be its own case, and it wants the
+same treatment — the figure stated so nothing is derived, which for `PAY_MIN_DUE` means the
+engine naming what stays unpaid. That is Session A's file; written up for the orchestrator rather
+than fixed here.
+
+### B-13 · a plan that needs nothing
+
+My half of the defect the review 13 cell turned up, routed by the orchestrator and recorded in
+`requests.md` under B-13. A's half is the `PAY_MIN_DUE` remainder.
+
+`describe` now says, when `finalize_plan` comes back with no actions **and nothing unpaid**:
+
+    no actions needed: every payment is covered in full; explain the lowest point and propose nothing
+
+The second condition is the boundary the balance regression taught, applied before it could bite:
+an instruction has to be true of the case it rides on, and "every payment is covered in full"
+printed beside a list of unpaid bills is the one lie that matters — it tells somebody who is short
+that they are fine. A plan with no actions because it is UNSOLVABLE gets nothing; the unpaid rows
+already say what is wrong.
+
+`test_a_clean_plan_stays_short` went from 25 words to 35, which is a real budget being spent and
+is noted as such in the test. The budget exists so a result does not become a speech the model
+reads out. The fifteen words bought here are the ones that stop it writing a speech of its own.
+
+**Cell: `fragmented_balance`, five runs. Every check 100%, all five runs clean of every rule.**
+`numbers_traceable` 80% -> 100%. Spend: about $0.07, $0.21 of the $0.50 approved in total.
+
+| check | cell 2 (before) | cell 3 (after) |
+|---|---|---|
+| numbers_traceable | 80% | **100%** |
+| state_matches_facts | 100% | 100% |
+| changed_value_acknowledged | 100% | 100% |
+| every other rule | 100% | 100% |
+
+### `actions_match_plan` · zero spend
+
+`numbers_traceable` guards the numbers; nothing guarded the advice. Written offline, replayed over
+the 103 post-cut saved runs, never run against a live model.
+
+**94% pass.** Two narrowings on the way, both from reading failures rather than from theory: 59%
+when "keep", "set aside" and a bare "pay" counted as proposals — nearly all of those were correct
+sentences, since "keep 11,000 available for rent by the eighteenth" describes the plan's own
+timeline — then 93% with one verb family per `ActionType`, then 94% once a sentence naming any
+item the plan does contain is authorised, which stopped it failing "if you don't move it, the
+500-rupee streaming payment may be taken before your salary arrives" for mentioning the salary.
+
+All six survivors read, all one shape: no actions in the plan, and the bot manufactured an action
+with a consequence. The clearest is independent of the run that prompted the check —
+`one_word_answers-20260912-213637` announced "your top action" and "your second action" against a
+plan whose only content was a 3,600 surplus and nothing to do. So the check has caught a real
+defect it was not written for, which was the bar for leaving the watch list.
+
+Of the five runs recorded after the B-13 no-actions line landed, five are clean. The 94% covers a
+period that contains the defect and not its fix.
+
+Limit worth stating: it judges proposals that name an item. "You should hold some of that back"
+names none and passes, and nothing here can see it.
+
+Gates: tests/agent 410 passed, ruff check clean, ruff format --check clean, lint-imports 4
+contracts. `REPORT.md` §2.3 and §10.5.

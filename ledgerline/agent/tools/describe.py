@@ -19,6 +19,7 @@ from ledgerline.domain.models import (
     FinancialState,
     ItemKind,
     OutcomeStatus,
+    Phase,
     PlanResult,
     PlanStatus,
     Readiness,
@@ -163,7 +164,14 @@ def _change_lines(outcome: Any) -> list[str]:
             continue
         line = f"{label}: {old} -> {new}"
         if not asked:
-            line += f"; {phrases.CONFIRM_CHANGE}"
+            # `getattr`, because this helper is also driven by test doubles that carry only the
+            # changes: anything that is not explicitly a balance is settled the normal way.
+            settle = (
+                phrases.BALANCE_TOTAL
+                if getattr(outcome, "kind", None) is ItemKind.BALANCE
+                else phrases.CONFIRM_CHANGE
+            )
+            line += f"; {settle}"
             asked = True
         lines.append(line)
     return lines
@@ -277,6 +285,8 @@ def _plan_lines(plan: PlanResult, parked: frozenset[str], actions: bool) -> list
         lines.append(shape)
     lines += _summary_lines(plan)
     if actions:
+        if not plan.actions and not plan.unpaid:
+            lines.append(phrases.NO_ACTIONS)
         for action in _top_actions(plan):
             lines.append(_action_phrase(action))
             if action.warning:
@@ -287,7 +297,7 @@ def _plan_lines(plan: PlanResult, parked: frozenset[str], actions: bool) -> list
         if extra > 0:
             lines.append(phrases.MORE_UNPAID.format(count=extra))
         if plan.warnings:
-            lines.append(plan.warnings[0])
+            lines.append(phrases.NOTE + plan.warnings[0].rstrip("."))
     if plan.provisional:
         excluded = ", ".join(plan.excluded_items)
         lines.append(
@@ -333,4 +343,6 @@ def describe(
     # gaps, but the explain-again branch can be reached after a change reopened one.
     if not actions:
         lines.append(_missing_line(readiness))
+        if readiness is not None and readiness.phase is Phase.READY:
+            lines.append(phrases.READY_TO_PLAN)
     return "\n".join(line for line in lines if line)

@@ -41,6 +41,29 @@ verdict. Filled in as each cut lands.
 | A yes is understanding: record_understanding confirmed true | none — acceptance-in-any-shape is luna's strongest measured default (pass^5) | — | 2026-09-11 | **cut candidate (C5)** |
 | Say one goodbye and call end_call in the same reply; never twice | live call 3 turn 22 (goodbye, no `end_call`) and turn 24 ("Goodbye.Goodbye."); matrix passes 1-2 at 16-20% | `one_goodbye_with_the_end_call` | 2026-09-12 | keep |
 
+## Result-carried instructions
+
+Not prompt rules, but rules all the same, and the ledger was misleading without them. Eight
+instructions ride on result strings now, and across every matrix a rule carried by a result has
+held where the same rule in the prompt alone sat between 0% and 80%. One per result, because a
+turn holds one question.
+
+| Instruction | Case that fails without it | Check | Added | Status |
+|---|---|---|---|---|
+| `say one short goodbye now and nothing more` | live call 3 turn 22 (goodbye, no `end_call`) and turn 24 ("Goodbye.Goodbye."); 16-28% before it | `one_goodbye_with_the_end_call` | 2026-09-12 | 100% |
+| `confirm which is right before moving on` | the cut removed the conflict machinery; a changed figure had nothing to make the model ask | `changed_value_acknowledged` | 2026-09-12 | 100% |
+| `say this back, then ask` | the model recorded a figure and went straight to its next question in a third of calls | `amounts_repeated` | 2026-09-12 | 80% -> 96% |
+| `<name> looks small, confirm it before moving on` | `stt_implausible_amount` — "recorded rent 12; say this back, then ask" produced "Your rent is twelve rupees" in 5 of 5 | `implausible_amount_confirmed` | 2026-09-12 | 0% -> 100% |
+| `record any other amount they named before replying, then say the total back and ask` | `fragmented_balance` — one balance call, 20,000 stored where the person has 40,000, 15 post-cut runs | `state_matches_facts` | 2026-09-12 | 0% -> **100%** |
+| `say the total back and ask` (balance changes only) | with `confirm which is right` on a balance the result asked the person to choose between half and all of their own money; `changed_value_acknowledged` 0% in 5 of 5 | `changed_value_acknowledged` | 2026-09-13 | 0% -> **100%** |
+| `ready to plan; if you have not yet asked whether anything else goes out this month, ask once, then finalize_plan` | `fragmented_balance-20260912-220810` — finalised on cash, rent and salary, 54,000 surplus, groceries/card/gym never asked about (review 13 F2) | `state_matches_facts`; watch `one_question_per_turn`, `no_question_after_unknown` | 2026-09-13 | 100%, no rule cost |
+| `no actions needed: every payment is covered in full; explain the lowest point and propose nothing` | `fragmented_balance-20260913-003557` — plan came back with a 63,500 surplus and no actions, and the model invented two actions plus "paying only the minimum leaves 1,800 rupees still due" (B-13) | `numbers_traceable` | 2026-09-13 | 80% -> **100%** |
+
+The counter-example belongs beside them: a card's `min_due` is read back next to its amount and
+always has been, and the model still sent the full balance as the minimum in 4 of 13 post-cut
+runs. The lever works on **what to do next**, not on **what a value means**. That one went to the
+field description.
+
 ## Missing rows
 
 Two additions from `luna-capabilities.md` have a named case but no rule yet:
