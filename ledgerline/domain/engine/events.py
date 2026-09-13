@@ -174,6 +174,11 @@ def _essential_events(
                 excluded.append(essential.name)
             continue
         tier = rank[TierKey.SURVIVAL] if essential.survival else rank[TierKey.RENT]
+        if not essential.spread and essential.due_date is None:
+            # The money is counted either way -- dropping rent out of the maths because nobody has
+            # dated it would show a surplus that is not there -- but the timing is this code's
+            # assumption, not the person's statement, so the plan says so.
+            warnings.append(f"{essential.name} has no date; spread across the month.")
         if essential.spread or essential.due_date is None:
             for when, slice_amount in _spread(essential.amount, window):
                 events.append(

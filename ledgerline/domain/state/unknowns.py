@@ -145,6 +145,14 @@ def missing_fields(state: FinancialState) -> list[str]:
         if d.kind is DebtKind.CREDIT_CARD and d.min_due is None
     ]
     gaps += [field_of(ItemKind.ESSENTIAL, e.name) for e in state.essentials if e.amount is None]
+    # An essential with an amount and no date is prorated across the month by the engine, which is
+    # an assumption about timing rather than anything the person said. A spread essential has no
+    # date by nature, so there is nothing to ask about.
+    gaps += [
+        field_of(ItemKind.ESSENTIAL, e.name, "due_date")
+        for e in state.essentials
+        if e.amount is not None and not e.spread and e.due_date is None
+    ]
     gaps += [field_of(ItemKind.INCOME, i.name) for i in state.incomes if i.amount is None]
     gaps += [field_of(ItemKind.INCOME, i.name, "date") for i in state.incomes if i.date is None]
     gaps += [field_of(ItemKind.OPTIONAL, o.name) for o in state.optionals if o.amount is None]

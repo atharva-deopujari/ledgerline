@@ -539,3 +539,32 @@ def test_the_summary_badge_reflects_the_plan(fixture, status, badge):
 
     assert plan.status == status
     assert card(build_cards(state, plan, version=1, focus="summary"), "summary").status == badge
+
+
+def test_the_pay_minimum_card_row_shows_what_is_still_due():
+    """The rationale said "1,800" out loud but the card showed only the minimum, so the screen and
+    the voice disagreed about what paying the minimum leaves behind."""
+    state = FinancialState.model_validate(
+        {
+            "today": TODAY,
+            "opening_balance": 2000,
+            "incomes": [{"name": "salary", "amount": 10000, "date": "2026-09-15"}],
+            "essentials": [{"name": "rent", "amount": 11000, "due_date": "2026-09-20"}],
+            "debts": [
+                {
+                    "name": "hdfc card",
+                    "kind": "credit_card",
+                    "amount_due": 3000,
+                    "min_due": 1200,
+                    "due_date": "2026-09-18",
+                }
+            ],
+            "unknowns": [{"field": "income", "reason": "not_applicable"}],
+        }
+    )
+    plan = build_plan(state)
+    msg = build_cards(state, plan, version=1, focus="actions")
+
+    row = next(r for r in card(msg, "actions").rows if r[0] == "Pay min")
+    assert row[1] == "HDFC card 1,200"
+    assert row[2] == "1,800 still due"

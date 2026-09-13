@@ -881,3 +881,85 @@ answered before `finalize_plan`, exactly as the income question is. That is a co
 (`models.py`, the tools, the prompt), not a domain patch.
 
 **F1 is `ledgerline/agent/tools/context.py`, not mine.**
+
+## Review 13
+
+Unfrozen for two items after the commit at `a4b4d15`. **348 -> 358 tests**, `uv run pytest
+tests/domain` green, `ruff check` clean, `ruff format --check` 89 files already formatted,
+`lint-imports` 4 kept 0 broken, `frontend/src/mock/snapshots.json` **byte-identical** (863 / 860 /
+1571 / 1570), so the frontend session has nothing to pick up.
+
+### F4 - `remove` keyed its cleanup on the name it was asked with
+
+Mine, introduced with A-10b: `_find` became possessive-aware, so removing `rent` as "my rent"
+found and deleted the item while the unknowns cleanup looked for `essential:my rent.*` and the
+returned field id said the same. The unknown survived its item, and the "Still need" card went on
+showing a field of an essential that no longer existed.
+
+`remove` now takes `stored = normalise_name(existing.name)` after `_find` and uses it for both the
+prefix and `field_of`, which is exactly what `upsert` has done since A-10b; the fix is carrying it
+through to the second caller of `_find`. Three tests: both directions ("rent" removed as
+"my rent", "my rent" removed as "rent"), and a miss still reports the name as asked, since there
+is no stored name to report.
+
+### F3 - an undated essential stays counted, and the assumption is said out loud
+
+Kiro asked for the opposite: exclude an undated essential and mark the plan provisional. The
+orchestrator ruled against it and the ruling is right -- excluding rent from the maths because
+nobody has dated it takes real money out of a survival plan and shows a surplus that is not there.
+A mis-timed 12,000 is a worse plan; a missing 12,000 is a wrong one. So the money stays counted and
+prorated, and the guess stops being silent:
+
+- **`missing_fields` gained `essential:<name>.due_date`** for an essential that has an amount, is
+  not `spread`, and has no date -- after the amount gap (a date for a bill nobody has priced is the
+  wrong question) and before the income date gaps. A spread essential has no date by nature and is
+  never listed. `answered()` already drops it once the person says they do not know, so it is asked
+  exactly once.
+- **The engine names it**: prorating an essential because its date is None, rather than because
+  `spread` is True, appends "<name> has no date; spread across the month." The plan states its own
+  assumption and the model can say it. Both routes are covered -- never asked, and
+  `mark_unknown("essential:rent.due_date")`, which blanks a date the person no longer stands
+  behind.
+
+Seven tests. No fixture moved: all eleven date every non-spread essential, which is why this went
+unnoticed. One existing test changed on purpose --
+`test_readiness_and_the_plan_reconcile_once_a_field_is_filled` filled electricity's amount and
+expected no blockers; the date is now the one question left, so it fills that too and then expects
+none.
+
+F1 is `agent/tools/context.py` and F2 is a contract question (a category answer such as
+`mark_unknown("debt", NOT_APPLICABLE)`), neither dispatched to me.
+
+### B's cell - what is left after the minimum
+
+**358 -> 361 tests.** Snapshots byte-identical again: the mock plan state has no credit card, so
+no PAY_MIN_DUE row exists in any of the four frames.
+
+**The item's premise was off, and the record should say so.** The engine already carried the
+remainder: `_pay_min_due` builds its action from the card's "rest" event, which *is*
+`amount_due - min_due`, and the rationale read "Pay only the minimum due on hdfc card this month
+and carry 1,800." for a 3,000 card with a 1,200 minimum. The model did not derive 1,800; it
+reworded a figure the result had given it, which is why provenance passed. Confirmed by running a
+plan, not by reading the code.
+
+The orchestrator checked B's failing run after I said so: that run had **no actions at all**, and
+the model invented both the pay-minimum action and its arithmetic from card figures it had read
+back earlier. So the fix for the named run is B's (a result that says "no actions needed" in words
+the model can use), not mine.
+
+What my change does close is a real and separate gap: the remainder was spoken but **nowhere on
+screen**. The card row read `Pay min | HDFC card 1,200 | ""`, so the screen and the voice
+disagreed about what paying the minimum leaves behind.
+
+- `Action.remainder: Money | None = None` in `models.py` -- additive, default None, orchestrator
+  authorised. The engine computes it; `types.ts` does not move, since cards render it in the third
+  cell of the row they already have.
+- `_pay_min_due` sets it and words it: "Pay only the minimum due on hdfc card this month; 1,800 is
+  still due after the minimum." The model now has the sentence rather than the subtraction.
+- `cards._action_rows` puts `1,800 still due` in the third cell -- the same cell that carries
+  "to 25 Sep" on a deferral, which a minimum payment never has.
+
+Three tests: the 3,000 / 1,200 action text, the card row, and the guard that a minimum equal to
+the whole balance leaves no remainder to state (with the state-layer refusal of a minimum larger
+than the bill still holding). `tests/agent` run read-only afterwards: 405 passed, 1 deselected --
+only saved eval transcripts carry the old "and carry 1,800" wording, and those are artifacts.

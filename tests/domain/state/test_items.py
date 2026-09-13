@@ -531,3 +531,38 @@ def test_removing_my_rent_removes_the_rent(st):
     upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(11000), day_of_month=5)
     assert remove(st, ItemKind.ESSENTIAL, "my rent").status is OutcomeStatus.REMOVED
     assert st.essentials == []
+
+
+# ------------------------------------------------- review 13, F4: remove keys on the stored name
+
+
+def test_removing_rent_as_my_rent_takes_its_unknowns_with_it(st):
+    """`_find` resolves the alias, so the cleanup has to use the name the item is stored under.
+    Keying it on the name the caller asked with left the unknown behind, and the "Still need" card
+    went on showing a field of an item that no longer exists."""
+    upsert(st, ItemKind.ESSENTIAL, "rent")
+    mark_unknown(st, "essential:rent.amount")
+
+    out = remove(st, ItemKind.ESSENTIAL, "my rent")
+
+    assert out.status is OutcomeStatus.REMOVED
+    assert out.field == "essential:rent.amount"
+    assert st.essentials == []
+    assert st.unknowns == []
+
+
+def test_removing_my_rent_as_rent_takes_its_unknowns_with_it(st):
+    upsert(st, ItemKind.ESSENTIAL, "my rent")
+    mark_unknown(st, "essential:my rent.amount")
+
+    out = remove(st, ItemKind.ESSENTIAL, "rent")
+
+    assert out.status is OutcomeStatus.REMOVED
+    assert out.field == "essential:my rent.amount"
+    assert st.unknowns == []
+
+
+def test_a_removal_that_finds_nothing_still_reports_the_name_as_asked(st):
+    out = remove(st, ItemKind.ESSENTIAL, "my rent")
+    assert out.status is OutcomeStatus.NOOP
+    assert out.name == "my rent"

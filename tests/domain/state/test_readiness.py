@@ -77,6 +77,10 @@ def test_readiness_and_the_plan_reconcile_once_a_field_is_filled(st):
     upsert(st, ItemKind.ESSENTIAL, "electricity", amount=D(1800))
     assert build_plan(st).provisional is False
     assert build_plan(st).excluded_items == []
+    # Priced but undated, so the engine prorates it and the date is the one question left (F3).
+    assert readiness(st).blockers == ["essential:electricity.due_date"]
+
+    upsert(st, ItemKind.ESSENTIAL, "electricity", day_of_month=8)
     assert readiness(st).blockers == []
     assert readiness(st).missing_fields == []
 

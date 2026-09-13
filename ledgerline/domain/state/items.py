@@ -319,9 +319,13 @@ def remove(state: FinancialState, kind: ItemKind, name: str) -> Outcome:
     if existing is None:
         return Outcome(status=OutcomeStatus.NOOP, kind=kind, name=normalise_name(name))
     getattr(state, attribute).remove(existing)
-    prefix = f"{kind.value}:{normalise_name(name)}."
+    # Key on the name the item is stored under, not the one the caller asked with: `_find` resolves
+    # "my rent" to `rent`, and cleaning up `essential:my rent.*` would leave `essential:rent.amount`
+    # behind for a card to go on showing after the item is gone.
+    stored = normalise_name(existing.name)
+    prefix = f"{kind.value}:{stored}."
     state.unknowns = [u for u in state.unknowns if not u.field.startswith(prefix)]
     _unsettle(state)
     return Outcome(
-        status=OutcomeStatus.REMOVED, kind=kind, name=existing.name, field=field_of(kind, name)
+        status=OutcomeStatus.REMOVED, kind=kind, name=existing.name, field=field_of(kind, stored)
     )

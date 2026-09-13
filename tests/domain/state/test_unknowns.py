@@ -473,3 +473,46 @@ def test_the_refusal_names_the_attributes_that_kind_actually_has(st):
 def test_the_refusal_for_a_bad_shape_spells_the_shape_out(st):
     with pytest.raises(ValueError, match="kind:name.attribute"):
         mark_unknown(st, "optional_expenses")
+
+
+# ------------------------------------- review 13, F3: an undated essential is asked about once
+
+
+def test_an_undated_essential_is_a_missing_field(st):
+    """An essential with an amount and no date is prorated across the month by the engine, which
+    is an assumption about timing rather than something the person said. So it is asked about --
+    once -- and the plan says so meanwhile."""
+    upsert(st, ItemKind.BALANCE, "balance", amount=D(30000))
+    upsert(st, ItemKind.INCOME, "salary", amount=D(42000), day_of_month=1)
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000))
+
+    assert missing_fields(st) == ["essential:rent.due_date"]
+
+
+def test_a_spread_essential_has_no_date_to_miss(st):
+    """Groceries are spread through the month by nature: there is no date to ask for."""
+    upsert(st, ItemKind.BALANCE, "balance", amount=D(30000))
+    upsert(st, ItemKind.INCOME, "salary", amount=D(42000), day_of_month=1)
+    upsert(st, ItemKind.ESSENTIAL, "groceries", amount=D(6000), spread=True, survival=True)
+
+    assert missing_fields(st) == []
+
+
+def test_an_essential_with_no_amount_yet_is_asked_for_the_amount_first(st):
+    """The amount gap comes first: a date for a bill nobody has priced is the wrong question."""
+    upsert(st, ItemKind.BALANCE, "balance", amount=D(30000))
+    upsert(st, ItemKind.INCOME, "salary", amount=D(42000), day_of_month=1)
+    upsert(st, ItemKind.ESSENTIAL, "electricity")
+
+    assert missing_fields(st) == ["essential:electricity.amount"]
+
+
+def test_an_undated_essential_is_asked_about_only_once(st):
+    """Once the person says they do not know when it is due, it leaves the queue like any other
+    answered field."""
+    upsert(st, ItemKind.BALANCE, "balance", amount=D(30000))
+    upsert(st, ItemKind.INCOME, "salary", amount=D(42000), day_of_month=1)
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000))
+
+    mark_unknown(st, "essential:rent.due_date")
+    assert missing_fields(st) == []

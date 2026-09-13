@@ -237,8 +237,13 @@ def _action_rows(plan: PlanResult) -> list[list[str]]:
     rows = []
     for action in plan.actions:
         amount = f" {fmt_inr(action.amount)}" if action.amount is not None else ""
-        when = f"to {action.date_to:%-d %b}" if action.date_to else ""
-        rows.append([VERB[action.type], f"{_label(action.target)}{amount}", when])
+        # The third cell says what the action leaves: a date for a deferral, and for a minimum
+        # payment the balance still owed, so the screen and the voice agree.
+        if action.remainder is not None:
+            trailing = f"{fmt_inr(action.remainder)} still due"
+        else:
+            trailing = f"to {action.date_to:%-d %b}" if action.date_to else ""
+        rows.append([VERB[action.type], f"{_label(action.target)}{amount}", trailing])
     return rows
 
 

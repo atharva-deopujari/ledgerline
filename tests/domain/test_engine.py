@@ -17,11 +17,13 @@ from hypothesis import strategies as st
 
 from ledgerline.domain.engine import build_plan
 from ledgerline.domain.models import (
+    ActionType,
     Certainty,
     DebtKind,
     EssentialExpense,
     FinancialState,
     Income,
+    ItemKind,
     OptionalExpense,
     Unknown,
     UnknownReason,
@@ -886,3 +888,134 @@ def test_a_spoken_shortfall_never_exceeds_what_is_owed(scenario):
             continue  # the reserve phrasing, which is explicitly about other obligations
         spoken = said.split(" you are ", 1)[1].split(" short for ")[0]
         assert Decimal(spoken.replace(",", "")) <= unpaid.amount, f"{scenario['name']}: {said}"
+
+
+# ------------------------------------ review 13, F3: a prorated date is an assumption, said aloud
+
+
+def test_an_undated_essential_is_counted_but_the_assumption_is_stated():
+    """Kiro asked for an undated rent to be excluded and the plan marked provisional. Refused:
+    dropping rent out of the maths because nobody has dated it removes real money from a survival
+    plan and shows a surplus that is not there. Mis-timing it is the smaller error. So the money
+    stays counted and prorated, and the plan says out loud that it guessed the timing."""
+    state = state_from(
+        {
+            "opening_balance": 30000,
+            "incomes": [{"name": "salary", "amount": 42000, "date": "2026-10-01"}],
+            "essentials": [{"name": "rent", "amount": 12000}],
+        }
+    )
+    plan = build_plan(state)
+
+    assert plan.excluded_items == []
+    assert plan.provisional is False
+    assert plan.summary.total_out_required == D(12000)
+    assert any("rent has no date" in w for w in plan.warnings)
+
+
+def test_a_spread_essential_says_nothing_about_a_date_it_never_had():
+    """Groceries are spread by nature, not by assumption, so there is nothing to warn about."""
+    state = state_from(
+        {
+            "opening_balance": 30000,
+            "incomes": [{"name": "salary", "amount": 42000, "date": "2026-10-01"}],
+            "essentials": [{"name": "groceries", "amount": 6000, "spread": True}],
+        }
+    )
+    assert not any("no date" in w for w in build_plan(state).warnings)
+
+
+def test_a_due_date_the_person_does_not_know_is_stated_too():
+    """The explicit case: they were asked, they do not know, the date is blanked -- and the plan
+    still says which way it resolved the gap."""
+    from ledgerline.domain.state import mark_unknown
+    from ledgerline.domain.state import upsert as upsert_item
+
+    state = state_from(
+        {
+            "opening_balance": 30000,
+            "incomes": [{"name": "salary", "amount": 42000, "date": "2026-10-01"}],
+        }
+    )
+    upsert_item(state, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+    mark_unknown(state, "essential:rent.due_date")
+
+    plan = build_plan(state)
+    assert state.essentials[0].due_date is None
+    assert any("rent has no date" in w for w in plan.warnings)
+    assert plan.summary.total_out_required == D(12000)
+
+
+# ------------------------------- review 13, B's cell: what is left after the minimum is a figure
+
+
+def _card_shortfall_plan():
+    """A month that cannot be closed by cutting, so the card's minimum-due lever is reached."""
+    return build_plan(
+        state_from(
+            {
+                "opening_balance": 2000,
+                "incomes": [{"name": "salary", "amount": 10000, "date": "2026-09-15"}],
+                "essentials": [{"name": "rent", "amount": 11000, "due_date": "2026-09-20"}],
+                "debts": [
+                    {
+                        "name": "hdfc card",
+                        "kind": "credit_card",
+                        "amount_due": 3000,
+                        "min_due": 1200,
+                        "due_date": "2026-09-18",
+                    }
+                ],
+            }
+        )
+    )
+
+
+def test_the_pay_minimum_action_states_what_is_still_due_after_it():
+    """A run had the bot say "paying only the minimum leaves 1,800 rupees still due" -- 3,000
+    minus 1,200. The subtraction is the engine's to do and the engine's to word, so the figure is
+    in the action rather than in the model's head."""
+    plan = _card_shortfall_plan()
+    action = next(a for a in plan.actions if a.type == ActionType.PAY_MIN_DUE)
+
+    assert action.amount == D(1200)  # the minimum itself is still what the action is for
+    assert "1,800" in action.rationale
+    assert "still due after the minimum" in action.rationale
+
+
+def test_a_minimum_that_is_the_whole_balance_leaves_nothing_to_state():
+    """The refusal that guards this: a minimum larger than the bill is refused at the state layer,
+    and a minimum equal to it leaves no remainder, so there is no second figure to speak."""
+    from ledgerline.domain.state import upsert as upsert_item
+
+    state = state_from({"opening_balance": 2000})
+    with pytest.raises(ValueError, match="more than the total due"):
+        upsert_item(
+            state,
+            ItemKind.DEBT,
+            "hdfc card",
+            debt_kind=DebtKind.CREDIT_CARD,
+            amount=D(3000),
+            min_due=D(4000),
+            day_of_month=18,
+        )
+
+    plan = build_plan(
+        state_from(
+            {
+                "opening_balance": 2000,
+                "incomes": [{"name": "salary", "amount": 10000, "date": "2026-09-15"}],
+                "essentials": [{"name": "rent", "amount": 11000, "due_date": "2026-09-20"}],
+                "debts": [
+                    {
+                        "name": "hdfc card",
+                        "kind": "credit_card",
+                        "amount_due": 3000,
+                        "min_due": 3000,
+                        "due_date": "2026-09-18",
+                    }
+                ],
+            }
+        )
+    )
+    assert not any(a.type == ActionType.PAY_MIN_DUE for a in plan.actions)

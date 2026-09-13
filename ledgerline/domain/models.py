@@ -188,6 +188,10 @@ class Action(BaseModel):
     date_to: dt.date | None = None
     rationale: str  # speakable
     warning: str | None = None  # "interest accrues on the card balance"
+    # What the action leaves behind: on PAY_MIN_DUE, the card balance still owed after the
+    # minimum (amount_due - min_due). Additive with a default; the cards render it in the row
+    # they already have, so no other layer changes. The engine computes it, never the model.
+    remainder: Money | None = None
 
 
 class Unpaid(BaseModel):

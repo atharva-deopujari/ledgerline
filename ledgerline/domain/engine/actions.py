@@ -145,9 +145,13 @@ def _pay_min_due(
                 target=event.source,
                 amount=minimum.amount if minimum else None,
                 date_from=event.date,
+                # The subtraction the person will ask about next -- what is left after the
+                # minimum -- is the engine's to do and the engine's to word, so the model never
+                # has to work it out from two figures it read back earlier.
+                remainder=event.amount,
                 rationale=(
-                    f"Pay only the minimum due on {event.source} this month and carry "
-                    f"{group_inr(event.amount)}."
+                    f"Pay only the minimum due on {event.source} this month; "
+                    f"{group_inr(event.amount)} is still due after the minimum."
                 ),
                 warning=(
                     f"Carrying {group_inr(event.amount)} means interest runs on it from the date "
