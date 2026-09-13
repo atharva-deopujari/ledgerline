@@ -20,7 +20,7 @@ from playwright.sync_api import Browser, Page, sync_playwright
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DIST = REPO_ROOT / "frontend" / "dist"
-SCREENS = REPO_ROOT / "docs" / "plans" / "screens"
+SCREENS = REPO_ROOT / "docs" / "process" / "screens"
 
 PHONE = {"width": 420, "height": 900}
 DESKTOP = {"width": 1280, "height": 900}
@@ -55,8 +55,8 @@ def _start(page: Page) -> None:
     page.get_by_role("button", name="Start the call").click()
 
 
-def _wait_focus(page: Page, title: str) -> None:
-    page.wait_for_selector(f".card--focus:has-text('{title}')", timeout=WAIT_MS)
+def _wait_card(page: Page, card_id: str) -> None:
+    page.wait_for_selector(f"[data-card='{card_id}']", timeout=WAIT_MS)
 
 
 def main() -> None:
@@ -72,7 +72,7 @@ def main() -> None:
             _shot(page, "1-start-phone.png")
             _start(page)
             _shot(page, "7-connecting-phone.png")
-            _wait_focus(page, "Essentials")
+            _wait_card(page, "essentials")
             _shot(page, "2-gathering-phone.png")
             page.wait_for_selector(".plan", timeout=WAIT_MS)
             _shot(page, "3-plan-phone.png")
@@ -84,7 +84,7 @@ def main() -> None:
                 theme = "dark" if dark else "light"
                 page = _open(browser, url, DESKTOP, dark=dark)
                 _start(page)
-                _wait_focus(page, "This month")
+                page.wait_for_selector(".totals", timeout=WAIT_MS)
                 _shot(page, f"4-board-{theme}.png")
                 page.wait_for_selector(".plan", timeout=WAIT_MS)
                 _shot(page, f"5-plan-{theme}.png")

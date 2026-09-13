@@ -58,7 +58,9 @@ describe('a call that ended before it ever joined', () => {
       daily.last.emit('participant-left', { participant: { local: false } })
     })
 
-    expect(screen.getByRole('heading', { name: /talk through your month/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /talk through your next thirty days/i }),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/listening\. start whenever/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /start another call/i })).not.toBeInTheDocument()
     expect(screen.queryByTestId('state-pill')).not.toBeInTheDocument()
@@ -79,7 +81,9 @@ describe('a call that ended before it ever joined', () => {
     })
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/no microphone found/i)
-    expect(screen.getByRole('heading', { name: /talk through your month/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /talk through your next thirty days/i }),
+    ).toBeInTheDocument()
 
     await act(async () => {
       open()
@@ -100,7 +104,7 @@ describe('a call that did go live', () => {
     })
 
     expect(
-      await screen.findByRole('heading', { name: /talk through your month/i }),
+      await screen.findByRole('heading', { name: /talk through your next thirty days/i }),
     ).toBeInTheDocument()
     expect(screen.queryByText(/listening\. start whenever/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /start another call/i })).not.toBeInTheDocument()
@@ -118,7 +122,7 @@ describe('a call that did go live', () => {
 
     expect(await screen.findByRole('button', { name: /start another call/i })).toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { name: /talk through your month/i }),
+      screen.queryByRole('heading', { name: /talk through your next thirty days/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -135,7 +139,7 @@ describe('a call that did go live', () => {
 
     expect(await screen.findByRole('heading', { name: 'Essentials' })).toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { name: /talk through your month/i }),
+      screen.queryByRole('heading', { name: /talk through your next thirty days/i }),
     ).not.toBeInTheDocument()
 
     await act(async () => {

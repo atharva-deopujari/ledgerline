@@ -60,6 +60,7 @@ whole picture.
 | **B · agent** | `ledgerline/agent/tools.py`, `prompt.py`, `prompts/*.md`; `tests/agent/**`; `evals/**` | `ledgerline/domain/**` |
 | **C · voice + api** | `ledgerline/config.py`, `main.py`, `voice/**`, `api/**`; `tests/voice/**`, `tests/api/**`; `spike/**` (throwaway) | `ledgerline/agent/**`, `ledgerline/domain/**` |
 | **D · frontend** | `frontend/**` except `frontend/src/protocol/types.ts` and `sample.json` (contract) ; `tests/e2e/**` | `ledgerline/domain/cards.py` |
+| **frontend (redesign, from 13 Sep)** | `frontend/src/App.tsx`, `main.tsx`, `components/**`, `styles/**`, `test/**`, `index.html`, `public/**`; `tests/e2e/**`; `docs/process/screens/**` | `frontend/src/protocol/**`, `call/**`, `state/**`, `mock/**` (request changes via `requests.md`) |
 | **Orchestrator** | `pyproject.toml`, `uv.lock`, `Dockerfile`, `docker-compose.yml`, `.env.example`, `README.md`, `tests/conftest.py`, `docs/**`, all contracts | everything |
 
 Sessions A and B can start immediately. C and D can start immediately too: they code against the contracts and

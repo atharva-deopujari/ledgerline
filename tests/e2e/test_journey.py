@@ -47,13 +47,17 @@ def test_journey_from_first_question_to_final_plan(page: Page, frontend_url: str
     expect(page.get_by_test_id("state-pill")).to_be_visible()
 
     # --- gathering: one figure is still unknown, so the month is not settled yet ---------
-    focus = page.locator(".card--focus")
-    expect(focus).to_be_visible(timeout=SETTLE_MS)
-    expect(focus).to_contain_text("Essentials", timeout=SETTLE_MS)
+    # The card the bot is working on is marked, not opened: every account is on the board
+    # with its rows, so a figure the person gave is always one they can see and correct.
+    essentials = page.locator('[data-card="essentials"]')
+    expect(essentials).to_be_visible(timeout=SETTLE_MS)
+    expect(essentials).to_contain_text("Essentials", timeout=SETTLE_MS)
+    expect(page.locator("[data-focused]")).to_have_count(1)
+    expect(page.locator("[data-focused]")).to_have_attribute("data-card", "essentials")
 
     # A figure the bot has not got yet stays a question on the card; nothing is guessed at.
-    expect(focus).to_contain_text("Electricity", timeout=SETTLE_MS)
-    expect(focus).to_contain_text("amount?")
+    expect(essentials).to_contain_text("Electricity", timeout=SETTLE_MS)
+    expect(essentials).to_contain_text("amount?")
 
     # A figure left out of the maths keeps the month's total provisional rather than
     # passing it off as settled.
@@ -63,9 +67,24 @@ def test_journey_from_first_question_to_final_plan(page: Page, frontend_url: str
     expect(page.locator(".chip").first).to_be_visible(timeout=SETTLE_MS)
 
     # --- ready: the salary is corrected and every number moves with it -----------------
-    expect(page.get_by_text("72,000").first).to_be_visible(timeout=SETTLE_MS)
-    # the overwritten figure is gone from the page, not shown alongside the new one
-    expect(page.get_by_text("45,000")).to_have_count(0, timeout=SETTLE_MS)
+    salary = page.get_by_test_id("value-Salary")
+    expect(salary).to_contain_text("72,000", timeout=SETTLE_MS)
+
+    # The correction is shown happening: the figure it replaced is struck through beside
+    # the live one. It may exist only as that retired mark — never as a live value, and
+    # never as something assistive tech could read as the current amount.
+    # Two figures moved on this snapshot — the salary and the rent — and each row carries
+    # its own retired mark, so the strike is scoped to the row that actually changed.
+    expect(page.locator("[data-retired]")).to_have_count(2)
+    retired = salary.locator("[data-retired]")
+    expect(retired).to_have_count(1)
+    expect(retired).to_have_attribute("data-retired", "45,000")
+    expect(retired).to_have_attribute("aria-hidden", "true")
+    expect(salary.locator(".row__live")).to_have_text("72,000")
+    expect(page.locator(".row__live", has_text="45,000")).to_have_count(0)
+    # What a screen reader hears instead: one correction, not two competing amounts.
+    expect(salary).to_contain_text("was 45,000, now")
+
     expect(page.locator('[data-status="provisional"]')).to_have_count(0)
 
     # The thirty-day line, with its lowest day called out.
@@ -106,13 +125,20 @@ def test_journey_from_first_question_to_final_plan(page: Page, frontend_url: str
     expect(page.locator("[aria-current='step']")).to_have_count(0)
 
 
-def test_a_collapsed_card_can_be_opened(page: Page, frontend_url: str) -> None:
-    _start(page, frontend_url)
-    expect(page.locator(".card--collapsed").first).to_be_visible(timeout=SETTLE_MS)
+def test_every_account_is_readable_without_opening_anything(page: Page, frontend_url: str) -> None:
+    """Nothing on the ledger is collapsed, behind a click, or behind a hover.
 
-    card = page.get_by_role("button", name="Income").first
-    card.click()
-    expect(page.locator(".card--focus")).to_contain_text("Income")
+    The board is read while the person is talking, often without a hand on the mouse, so a
+    figure they gave has to be on screen to be correctable. This replaces the old
+    click-to-focus check: there is no longer a collapsed state to open.
+    """
+    _start(page, frontend_url)
+    expect(page.locator('[data-card="income"]')).to_be_visible(timeout=SETTLE_MS)
+
+    income = page.get_by_role("article", name="Income")
+    expect(income).to_contain_text("Salary")
+    expect(income).to_contain_text("45,000")
+    expect(page.get_by_role("article", name="Essentials")).to_contain_text("Rent")
 
 
 def test_ending_the_call_keeps_the_plan_readable(page: Page, frontend_url: str) -> None:
@@ -159,7 +185,9 @@ def test_a_second_call_can_be_started_after_ending_the_first(page: Page, fronten
     # script replays from its first snapshot rather than being dropped as stale.
     expect(page.get_by_test_id("state-pill")).to_be_visible(timeout=SETTLE_MS)
     expect(page.locator(".plan")).to_have_count(0)
-    expect(page.locator(".card--focus")).to_contain_text("Essentials", timeout=SETTLE_MS)
+    expect(page.locator('[data-card="essentials"]')).to_contain_text(
+        "Essentials", timeout=SETTLE_MS
+    )
     expect(page.locator(".plan")).to_have_count(0)
 
 
@@ -185,34 +213,57 @@ def _marks_lowest(snapshot: dict) -> bool:
     )
 
 
-def test_the_chart_prints_a_figure_only_when_the_backend_names_the_lowest_day(
+def test_the_board_prints_the_low_once_and_only_where_the_backend_named_it(
     page: Page, frontend_url: str
 ) -> None:
     """The chart plots event days only, so the dip in the line need not be the month's low.
 
-    It may therefore print a figure only for a day the backend has marked `e: "lowest"`;
-    otherwise `summary.lowest` is the single number on screen for the low. This reads the
-    fixture rather than hard-coding either outcome, so it keeps checking the rule as the
-    generated snapshots change.
+    The figure therefore belongs to whoever the backend told: `summary.lowest` when it sends
+    one, which the panel sets large, and the chart's own label only for a day marked
+    `e: "lowest"`. Whichever it is, it is printed once — two figures on one panel read as
+    two findings. This reads the fixture rather than hard-coding either outcome, so it keeps
+    checking the rule as the generated snapshots change.
     """
     snapshots = json.loads(SNAPSHOTS.read_text())
-    expected = any(_marks_lowest(snap) for snap in snapshots.values())
+    named_day = next(
+        (
+            point
+            for snap in snapshots.values()
+            for point in snap.get("timeline", [])
+            if "lowest" in [p.strip().lower() for p in (point.get("e") or "").split(",")]
+        ),
+        None,
+    )
+    lowest_kv = next(
+        (
+            card["kv"]["lowest"]
+            for snap in snapshots.values()
+            for card in snap["cards"]
+            if card["id"] == "summary" and card["kv"].get("lowest")
+        ),
+        None,
+    )
 
     _start(page, frontend_url)
     expect(page.locator(".timeline polyline")).to_be_visible(timeout=SETTLE_MS)
     expect(page.get_by_test_id("timeline-low")).to_have_count(1)
 
-    if expected:
-        # Wait for the snapshot that carries the marker, then read the labelled figure.
-        label = page.locator(".timeline__low-label")
-        expect(label).to_be_visible(timeout=SETTLE_MS)
-        named = next(
-            point
-            for snap in snapshots.values()
-            for point in snap.get("timeline", [])
-            if "lowest" in [p.strip().lower() for p in (point.get("e") or "").split(",")]
+    if named_day is not None:
+        # The chart marks the day the backend named, not merely the dip it happened to draw.
+        expect(page.get_by_test_id("timeline-low")).to_have_attribute(
+            "data-date", named_day["d"], timeout=SETTLE_MS
         )
-        expect(page.get_by_test_id("timeline-low")).to_have_attribute("data-date", named["d"])
+
+    if lowest_kv is not None:
+        # The summary said it, so the panel sets it large and the chart stays quiet.
+        figure, _, when = lowest_kv.partition(" on ")
+        panel_low = page.locator(".lowest")
+        expect(panel_low).to_contain_text(figure, timeout=SETTLE_MS)
+        expect(panel_low).to_contain_text(when)
+        expect(page.locator(".timeline__low-label")).to_have_count(0)
+    elif named_day is not None:
+        # Nothing summarised it, so the chart's own label is the one place it is written.
+        expect(page.locator(".timeline__low-label")).to_be_visible(timeout=SETTLE_MS)
     else:
-        # No snapshot names it, so the chart must stay silent about the figure.
+        # Neither named it, so nothing on the board may claim a figure for the low.
         expect(page.locator(".timeline__low-label")).to_have_count(0)

@@ -4,18 +4,23 @@ import { describe, expect, it, vi } from 'vitest'
 import sampleJson from '../protocol/sample.json'
 import { parseIncoming } from '../protocol/parse'
 import type { Card, CardsMessage, TimelinePoint } from '../protocol/types'
+import { CardRows } from './CardRows'
 import { CardStack } from './CardStack'
 import { ErrorBanner } from './ErrorBanner'
-import { FocusCard } from './FocusCard'
+import { LedgerCard } from './LedgerCard'
+import { LowestPoint } from './LowestPoint'
 import { MissingChips } from './MissingChips'
 import { PhaseStrip } from './PhaseStrip'
 import { PlanPanel } from './PlanPanel'
 import { QuestionHeadline } from './QuestionHeadline'
 import { Timeline } from './Timeline'
+import { TotalsBar } from './TotalsBar'
 import { VoiceBar } from './VoiceBar'
+import { SPEAK_LABEL, STATUS_LABEL } from './format'
 
 const sample = parseIncoming(sampleJson) as CardsMessage
 const cardById = (id: string): Card => sample.cards.find((c) => c.id === id)!
+const NOTHING_RETIRED = new Map<string, string>()
 
 describe('PhaseStrip', () => {
   it('fills every segment up to the current phase', () => {
@@ -56,11 +61,11 @@ describe('QuestionHeadline', () => {
   })
 })
 
-describe('FocusCard', () => {
-  it('renders the title, a status badge and every row', () => {
-    render(<FocusCard card={cardById('essentials')} />)
+describe('LedgerCard', () => {
+  it('renders the title, a status word and every row', () => {
+    render(<LedgerCard card={cardById('essentials')} />)
     expect(screen.getByRole('heading')).toHaveTextContent('Essentials')
-    expect(screen.getByText(cardById('essentials').status)).toBeInTheDocument()
+    expect(screen.getByText(STATUS_LABEL[cardById('essentials').status])).toBeInTheDocument()
     expect(screen.getByText('Rent')).toBeInTheDocument()
     expect(screen.getByText('Groceries')).toBeInTheDocument()
     expect(screen.getByText('Electricity')).toBeInTheDocument()
@@ -68,21 +73,22 @@ describe('FocusCard', () => {
   })
 
   it('renders a trailing " ?" as a muted question mark beside the value', () => {
-    render(<FocusCard card={cardById('essentials')} />)
+    render(<LedgerCard card={cardById('essentials')} />)
     const value = screen.getByTestId('value-Rent')
     expect(value).toHaveTextContent('12')
     expect(within(value).getByTitle(/not confirmed/i)).toHaveTextContent('?')
   })
 
   it('shows the note when the card carries one', () => {
-    render(<FocusCard card={cardById('essentials')} />)
+    render(<LedgerCard card={cardById('essentials')} />)
     expect(screen.getByText(/Did you mean 12,000/)).toBeInTheDocument()
   })
 
-  it('renders kv cards as a summary grid', () => {
-    render(<FocusCard card={cardById('summary')} />)
-    expect(screen.getByText('42,000')).toBeInTheDocument()
-    expect(screen.getByText('-1,800 on 5 Oct')).toBeInTheDocument()
+  it('marks the card the bot last touched, and leaves the others unmarked', () => {
+    const { container, rerender } = render(<LedgerCard card={cardById('income')} focused />)
+    expect(container.querySelector('[data-focused]')).toBeInTheDocument()
+    rerender(<LedgerCard card={cardById('income')} />)
+    expect(container.querySelector('[data-focused]')).not.toBeInTheDocument()
   })
 
   it.each(['ok', 'warn', 'provisional', 'final', 'blocked'] as const)(
@@ -90,40 +96,129 @@ describe('FocusCard', () => {
     (status) => {
       // Read from the card rather than hard-coding a fixture's status: which status the
       // sample happens to carry is the backend's business, not this test's.
-      const { container } = render(<FocusCard card={{ ...cardById('summary'), status }} />)
+      const { container } = render(<LedgerCard card={{ ...cardById('income'), status }} />)
       expect(container.querySelector(`[data-status="${status}"]`)).toBeInTheDocument()
-      expect(screen.getByText(status)).toBeInTheDocument()
+      expect(screen.getByText(STATUS_LABEL[status])).toBeInTheDocument()
     },
   )
 })
 
+describe('a corrected figure', () => {
+  const ROWS = [['Salary', '72,000', '1 Oct']]
+
+  it('strikes the figure it replaced beside the live one', () => {
+    render(<CardRows rows={ROWS} retired={new Map([['Salary', '45,000']])} />)
+    const value = screen.getByTestId('value-Salary')
+    expect(value).toHaveTextContent('72,000')
+    expect(within(value).getByText('45,000')).toHaveAttribute('data-retired', '45,000')
+  })
+
+  it('keeps the retired figure out of reach of assistive tech, as one spoken correction', () => {
+    render(<CardRows rows={ROWS} retired={new Map([['Salary', '45,000']])} />)
+    const struck = screen.getByText('45,000')
+    // Hidden, so a screen reader never reads two figures and has to guess which is current.
+    expect(struck).toHaveAttribute('aria-hidden', 'true')
+    expect(struck.tagName).toBe('S')
+    // What it reads instead: one sentence, the old figure named as old, so the correction
+    // is heard as "was 45,000, now 72,000" and not as two competing amounts.
+    const value = screen.getByTestId('value-Salary')
+    expect(within(value).getByText('was 45,000, now')).toHaveClass('visually-hidden')
+    expect(within(value).getByText('72,000')).toHaveClass('row__live')
+  })
+
+  it('strikes nothing when the backend sent the same figure again', () => {
+    render(<CardRows rows={ROWS} retired={NOTHING_RETIRED} />)
+    expect(screen.queryByText('45,000')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-changed]')).toBeNull()
+  })
+})
+
 describe('CardStack', () => {
-  it('excludes the focused card and the cards other panels own', () => {
-    render(<CardStack cards={sample.cards} focus="essentials" onFocus={() => {}} />)
-    const titles = screen.getAllByRole('button').map((b) => b.textContent ?? '')
-    expect(titles.some((t) => t.includes('Essentials'))).toBe(false)
-    expect(titles.some((t) => t.includes('Still need'))).toBe(false)
-    expect(titles.some((t) => t.includes('Income'))).toBe(true)
-    expect(titles.some((t) => t.includes('Loans & cards'))).toBe(true)
+  it('shows every account open, including the one in focus', () => {
+    render(<CardStack cards={sample.cards} focus="essentials" retired={NOTHING_RETIRED} />)
+    // Nothing is collapsed and nothing is behind a click: a figure the person gave has to
+    // be on the board, or they cannot correct it.
+    expect(screen.getByRole('article', { name: 'Essentials' })).toBeInTheDocument()
+    expect(screen.getByRole('article', { name: 'Income' })).toBeInTheDocument()
+    expect(screen.getByRole('article', { name: 'Loans & cards' })).toBeInTheDocument()
+    expect(screen.getByText('Salary')).toBeInTheDocument()
+    expect(screen.getByText('Bike EMI')).toBeInTheDocument()
   })
 
-  it('collapses each card to its title and a one-line summary', () => {
-    render(<CardStack cards={sample.cards} focus="essentials" onFocus={() => {}} />)
-    const income = screen.getByRole('button', { name: /Income/ })
-    expect(income).toHaveTextContent('Salary')
+  it('leaves out the cards another part of the board owns', () => {
+    render(<CardStack cards={sample.cards} focus="essentials" retired={NOTHING_RETIRED} />)
+    // `missing` is the chip row, `summary` is the totals bar; printing them here would be
+    // the same figures twice.
+    expect(screen.queryByRole('article', { name: 'Still need' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('article', { name: 'This month' })).not.toBeInTheDocument()
   })
 
-  it('reports a click so the card can be focused locally', async () => {
-    const onFocus = vi.fn()
-    render(<CardStack cards={sample.cards} focus="essentials" onFocus={onFocus} />)
-    await userEvent.click(screen.getByRole('button', { name: /Income/ }))
-    expect(onFocus).toHaveBeenCalledWith('income')
+  it('marks the focused card only', () => {
+    const { container } = render(
+      <CardStack cards={sample.cards} focus="essentials" retired={NOTHING_RETIRED} />,
+    )
+    const focused = container.querySelectorAll('[data-focused]')
+    expect(focused).toHaveLength(1)
+    expect(focused[0]).toHaveAttribute('data-card', 'essentials')
   })
 
   it('renders nothing when every card is spoken for', () => {
     const { container } = render(
-      <CardStack cards={[cardById('missing')]} focus={null} onFocus={() => {}} />,
+      <CardStack cards={[cardById('missing')]} focus={null} retired={NOTHING_RETIRED} />,
     )
+    expect(container).toBeEmptyDOMElement()
+  })
+})
+
+describe('TotalsBar', () => {
+  it('prints the summary card’s own figures under readable labels', () => {
+    render(<TotalsBar card={cardById('summary')} />)
+    expect(screen.getByText('In')).toBeInTheDocument()
+    expect(screen.getByText('42,000')).toBeInTheDocument()
+    expect(screen.getByText('Out')).toBeInTheDocument()
+    expect(screen.getByText('25,400')).toBeInTheDocument()
+  })
+
+  it('leaves the lowest to the panel rather than printing it twice', () => {
+    render(<TotalsBar card={cardById('summary')} />)
+    expect(screen.queryByText(/-1,800/)).not.toBeInTheDocument()
+  })
+
+  it('carries the summary status, so a provisional month says so', () => {
+    const { container } = render(
+      <TotalsBar card={{ ...cardById('summary'), status: 'provisional' }} />,
+    )
+    expect(container.querySelector('[data-status="provisional"]')).toBeInTheDocument()
+  })
+
+  it('never drops a key it has no label for', () => {
+    const card = { ...cardById('summary'), kv: { in: '42,000', unpaid_total: '3,200' } }
+    render(<TotalsBar card={card} />)
+    // A field the engine adds later must appear under its own name, not vanish.
+    expect(screen.getByText('unpaid total')).toBeInTheDocument()
+    expect(screen.getByText('3,200')).toBeInTheDocument()
+  })
+
+  it('renders nothing without a summary card', () => {
+    const { container } = render(<TotalsBar card={undefined} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+})
+
+describe('LowestPoint', () => {
+  it('splits the delivered sentence into a figure and a day', () => {
+    render(<LowestPoint card={cardById('summary')} />)
+    expect(screen.getByText('-1,800')).toBeInTheDocument()
+    expect(screen.getByText('on 5 Oct')).toBeInTheDocument()
+  })
+
+  it('says so while the month is still provisional', () => {
+    render(<LowestPoint card={{ ...cardById('summary'), status: 'provisional' }} />)
+    expect(screen.getByText(/still provisional/i)).toBeInTheDocument()
+  })
+
+  it('renders nothing when the summary carries no lowest', () => {
+    const { container } = render(<LowestPoint card={{ ...cardById('summary'), kv: {} }} />)
     expect(container).toBeEmptyDOMElement()
   })
 })
@@ -152,6 +247,13 @@ describe('Timeline', () => {
     expect(low).toHaveAttribute('data-date', '2026-10-05')
   })
 
+  it('draws one bar per day of the window, not one per point', () => {
+    const { container } = render(<Timeline points={sample.timeline} />)
+    // 11 Sep to 10 Oct inclusive. The backend sends six points; the month has thirty days,
+    // and the balance on a day with no events is the last one it sent.
+    expect(container.querySelectorAll('.timeline__bar')).toHaveLength(30)
+  })
+
   it('labels the first and last dates, and claims no figure of its own', () => {
     render(<Timeline points={sample.timeline} />)
     expect(screen.getByText('11 Sep')).toBeInTheDocument()
@@ -159,6 +261,14 @@ describe('Timeline', () => {
     // The summary card owns the month's lowest; the chart must not print a rival number,
     // because it plots event days only and can miss the real low.
     expect(screen.queryByText(/-1,800/)).not.toBeInTheDocument()
+  })
+
+  it('reads out a day only when that day is pointed at', async () => {
+    const { container } = render(<Timeline points={sample.timeline} />)
+    expect(screen.queryByText('3,000')).not.toBeInTheDocument()
+    await userEvent.hover(container.querySelectorAll('.timeline__bar')[0])
+    // The figure shown is the balance the backend sent for that day, not a derived one.
+    expect(screen.getByText('3,000')).toBeInTheDocument()
   })
 
   it('marks the earliest day when the lowest balance repeats', () => {
@@ -221,6 +331,14 @@ describe('PlanPanel', () => {
     expect(screen.queryByText(/^done$|already paid/i)).not.toBeInTheDocument()
   })
 
+  it('numbers the proposed changes as steps still to take', () => {
+    const { container } = render(<PlanPanel snapshot={planCard(ACTIONS_AND_UNPAID)} />)
+    // An ordered list, so they read as a sequence to work through — and nothing in it is
+    // ever ticked, because none of it has happened yet.
+    expect(container.querySelector('ol.plan__actions')).toBeInTheDocument()
+    expect(container.querySelectorAll('.plan__action')).toHaveLength(2)
+  })
+
   it('splits proposed changes from what is left unpaid', () => {
     render(<PlanPanel snapshot={planCard(ACTIONS_AND_UNPAID)} />)
     const proposed = screen.getByTestId('plan-proposed')
@@ -257,18 +375,25 @@ describe('PlanPanel', () => {
 })
 
 describe('VoiceBar', () => {
-  it('follows the speak state in the pill text', () => {
+  it('follows the speak state in words, not only in the wave', () => {
     const { rerender } = render(
       <VoiceBar speak="idle" micOn onToggleMic={() => {}} onEnd={() => {}} />,
     )
     const pill = () => screen.getByTestId('state-pill')
-    expect(pill()).toHaveTextContent(/idle/i)
+    expect(pill()).toHaveTextContent(SPEAK_LABEL.idle)
     rerender(<VoiceBar speak="listening" micOn onToggleMic={() => {}} onEnd={() => {}} />)
-    expect(pill()).toHaveTextContent(/listening/i)
+    expect(pill()).toHaveTextContent(SPEAK_LABEL.listening)
     rerender(<VoiceBar speak="speaking" micOn onToggleMic={() => {}} onEnd={() => {}} />)
-    expect(pill()).toHaveTextContent(/speaking/i)
+    expect(pill()).toHaveTextContent(SPEAK_LABEL.speaking)
     rerender(<VoiceBar speak="thinking" micOn onToggleMic={() => {}} onEnd={() => {}} />)
-    expect(pill()).toHaveTextContent(/thinking/i)
+    expect(pill()).toHaveTextContent(SPEAK_LABEL.thinking)
+  })
+
+  it('hides the wave from assistive tech, since the words already carry the state', () => {
+    const { container } = render(
+      <VoiceBar speak="speaking" micOn onToggleMic={() => {}} onEnd={() => {}} />,
+    )
+    expect(container.querySelector('.voicebar__wave')).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('toggles the mic and ends the call', async () => {

@@ -1,22 +1,68 @@
 /** Shared row/value shaping. The bot sends display strings; we only split off its hedges. */
-import { PROVISIONAL_SUFFIX, isMoreRow } from '../protocol/markers'
-import type { CardId, Phase } from '../protocol/types'
+import { PROVISIONAL_SUFFIX } from '../protocol/markers'
+import type { CardId, CardStatus, Phase, SpeakState } from '../protocol/types'
 
 /**
- * The strip's three segments. `done` is deliberately not one of them: it is not a fourth
- * step, it is every step finished, so it fills the whole strip instead of adding to it.
+ * The three words across the masthead. `done` is deliberately not a fourth: it is not
+ * another step, it is every step finished, so it marks all three and leaves none current.
  */
 export const PHASE_ORDER: Phase[] = ['gathering', 'ready', 'plan']
 
 export const PHASE_LABEL: Record<Phase, string> = {
-  gathering: 'Gathering',
-  ready: 'Ready',
-  plan: 'Plan',
-  done: 'Done',
+  gathering: 'gathering',
+  ready: 'ready',
+  plan: 'plan',
+  done: 'done',
 }
 
-/** Cards that have a panel of their own and must not appear twice. */
-export const CARDS_SHOWN_ELSEWHERE: CardId[] = ['missing', 'plan', 'timeline']
+/**
+ * Cards with a place of their own on the board, so the ledger stack must not print them a
+ * second time: `summary` is the totals bar, `plan` and `actions` the panel, `missing` the
+ * chips, `timeline` the chart.
+ */
+export const CARDS_SHOWN_ELSEWHERE: CardId[] = ['missing', 'plan', 'timeline', 'summary']
+
+/**
+ * The status word a card shows beside its title. The enum is the contract; these are the
+ * same five states said in the board's own voice, and each is still a word rather than a
+ * colour, so the colour only ever seconds what is already written.
+ *
+ * Nothing here reads the figures: `warn` says attention is needed, not *why* — the card's
+ * own note is where the backend explains itself.
+ */
+export const STATUS_LABEL: Record<CardStatus, string> = {
+  ok: 'confirmed',
+  warn: 'needs attention',
+  provisional: 'not confirmed',
+  final: 'settled',
+  blocked: 'blocked',
+}
+
+/** What the voice bar says the bot is doing. */
+export const SPEAK_LABEL: Record<SpeakState, string> = {
+  idle: 'not speaking',
+  listening: 'listening',
+  speaking: 'speaking',
+  thinking: 'working it out',
+}
+
+/**
+ * The summary card's keys, in the order the totals bar prints them. `lowest` is not here:
+ * it is the big figure on the panel, and printing it twice would read as two findings.
+ * Anything the backend adds later is unknown to this map and falls through to its own key,
+ * so a new field appears on the board rather than disappearing from it.
+ */
+export const TOTAL_LABEL: Record<string, string> = {
+  in: 'In',
+  out: 'Out',
+  unpaid: 'Unpaid if nothing changes',
+}
+
+/** Shown on the panel, not in the totals bar. */
+export const PANEL_KEYS = ['lowest']
+
+/** Backend field names read as words: `unpaid_total` is two of them. */
+export const keyAsWords = (key: string): string => key.replace(/_/g, ' ')
 
 /**
  * A value the bot is not sure about arrives as "12 ?". Split the mark off so it can be
@@ -48,25 +94,13 @@ export function groupIndian(amount: number): string {
   return sign + head.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + tail
 }
 
-/** One line that stands in for a collapsed card. */
-export function oneLineSummary(rows: string[][], kv: Record<string, string>): string {
-  const items = rows.filter((r) => !isMoreRow(r))
-  if (items.length > 0) {
-    const parts = items.slice(0, 2).map(([label, value]) => {
-      const shown = splitProvisional(value ?? '').value
-      return shown ? `${label} ${shown}` : label
-    })
-    return parts.join(' · ') + (items.length > 2 ? ` · +${items.length - 2}` : '')
-  }
-  const entries = Object.entries(kv)
-  if (entries.length > 0) {
-    // Same rule as rows: show a few and say how many were left, so a field the backend
-    // adds later (an unpaid total, say) can never vanish from this line unannounced.
-    const shown = entries
-      .slice(0, 3)
-      .map(([k, v]) => `${k.replace(/_/g, ' ')} ${v}`)
-      .join(' · ')
-    return shown + (entries.length > 3 ? ` · +${entries.length - 3}` : '')
-  }
-  return 'Nothing yet'
+/**
+ * `summary.lowest` arrives as one delivered sentence, "2,000 on 30 Sep". The panel sets the
+ * figure large and the day under it, so the string is split for layout — never re-derived.
+ * A string that is not in that shape stays whole and becomes the figure, unlabelled.
+ */
+export function splitLowest(lowest: string): { figure: string; when: string } {
+  const at = lowest.indexOf(' on ')
+  if (at === -1) return { figure: lowest, when: '' }
+  return { figure: lowest.slice(0, at), when: lowest.slice(at + 1) }
 }

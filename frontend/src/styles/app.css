@@ -1,14 +1,37 @@
+/**
+ * The board.
+ *
+ * It is drawn as a ledger page, not as a dashboard: hairline rules instead of cards with
+ * shadows, one column of figures set in tabular lining numerals, a hard rule where a column
+ * is totalled. Two type families do all the work — Archivo for anything that labels
+ * (columns, keys, buttons) and Source Serif 4 for anything that is said (the question, the
+ * card names, the notes, the plan). If a thing is spoken aloud on the call, it is set in
+ * the serif.
+ *
+ * Every colour is a token from `tokens.css`, so light and dark are one design read twice.
+ * Every animation is short, moves one thing, and is switched off entirely under
+ * `prefers-reduced-motion`.
+ */
+
+/* --- base ------------------------------------------------------------------------- */
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui);
   font-size: var(--t-md);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -18,15 +41,15 @@ h1,
 h2,
 h3,
 p,
-dl,
-dd,
+ul,
 ol,
-ul {
+dl,
+dd {
   margin: 0;
 }
 
-ol,
-ul {
+ul,
+ol {
   padding: 0;
   list-style: none;
 }
@@ -40,690 +63,32 @@ button {
 :focus-visible {
   outline: none;
   box-shadow: var(--ring);
-  border-radius: var(--radius-sm);
 }
 
-/* ---------- shell ---------- */
-
-.app {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s4);
-  padding: var(--s4);
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-.app__top {
-  display: flex;
-  align-items: center;
-  gap: var(--s4);
-}
-
-.app__brand {
-  font-size: var(--t-sm);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  white-space: nowrap;
-}
-
-.app__bottom {
-  position: sticky;
-  bottom: 0;
-  padding: var(--s4) 0 var(--s2);
-  margin-top: auto;
-  background: linear-gradient(to top, var(--bg) 72%, transparent);
-}
-
-/* Room for the sticky bar so the last card is always reachable. */
-.board {
-  padding-bottom: var(--s6);
-}
-
-/* ---------- start screen ---------- */
-
-.start {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s4);
-  align-items: flex-start;
-  padding-top: var(--s7);
-}
-
-.start__title {
-  font-size: var(--t-2xl);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  font-weight: 640;
-}
-
-.start__line {
-  color: var(--text-muted);
-  max-width: 34ch;
-}
-
-.start__button {
-  margin-top: var(--s2);
-  padding: var(--s3) var(--s5);
-  border: none;
-  border-radius: var(--radius-pill);
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-weight: 600;
-  box-shadow: var(--shadow);
-}
-
-.start__button:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-/* ---------- phase strip ---------- */
-
-.phase-strip {
-  display: flex;
-  gap: var(--s2);
-  flex: 1;
-}
-
-.phase-strip li {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s1);
-  min-width: 0;
-}
-
-.phase-strip__bar {
-  height: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--border-strong);
-  transition: background 240ms ease;
-}
-
-.phase-strip li[data-filled='true'] .phase-strip__bar {
-  background: var(--accent);
-}
-
-.phase-strip__label {
-  font-size: var(--t-xs);
-  color: var(--text-faint);
-  letter-spacing: 0.02em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.phase-strip li[aria-current='step'] .phase-strip__label {
-  color: var(--text);
-  font-weight: 600;
-}
-
-/* ---------- headline ---------- */
-
-.headline {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
-  min-height: 4.5rem;
-}
-
-.headline__question {
-  font-size: var(--t-xl);
-  line-height: 1.2;
-  letter-spacing: -0.015em;
-  font-weight: 620;
-  text-wrap: balance;
-}
-
-.headline__stream {
-  color: var(--text-muted);
-  font-size: var(--t-sm);
-  border-left: 2px solid var(--accent);
-  padding-left: var(--s3);
-  animation: fade-in 200ms ease both;
-}
-
-.headline__stream[data-speaking='true']::after {
-  content: '';
-  display: inline-block;
-  width: 0.4em;
-  height: 1em;
-  margin-left: 2px;
-  vertical-align: -0.15em;
-  background: var(--accent);
-  animation: blink 1.1s steps(2, start) infinite;
-}
-
-/* ---------- cards ---------- */
-
-.card {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--s4);
-  box-shadow: var(--shadow);
-  position: relative;
-  overflow: hidden;
-}
-
-.card::before {
-  content: '';
+.visually-hidden {
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--status, var(--border-strong));
-}
-
-.card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s3);
-  margin-bottom: var(--s3);
-}
-
-.card__title {
-  font-size: var(--t-md);
-  font-weight: 620;
-  letter-spacing: -0.005em;
-}
-
-.card__note {
-  margin-top: var(--s3);
-  padding-top: var(--s3);
-  border-top: 1px dashed var(--border);
-  color: var(--text-muted);
-  font-size: var(--t-sm);
-  text-wrap: pretty;
-}
-
-.card--focus {
-  animation: rise 220ms ease both;
-}
-
-/* A card can carry both; without this the kv grid lands on the last row's date. */
-.rows + .kv {
-  margin-top: var(--s4);
-}
-
-.card--collapsed {
-  padding: var(--s3) var(--s4);
-  cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    transform 160ms ease;
-}
-
-.card--collapsed .card__head {
-  margin-bottom: var(--s1);
-}
-
-.card--collapsed:hover {
-  border-color: var(--border-strong);
-}
-
-.card__summary {
-  display: block;
-  color: var(--text-muted);
-  font-size: var(--t-sm);
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 
-/* Status drives the rail colour and the badge; the badge also says the word. */
-[data-status='ok'] {
-  --status: var(--ok);
-  --status-soft: var(--ok-soft);
-}
-[data-status='warn'] {
-  --status: var(--warn);
-  --status-soft: var(--warn-soft);
-}
-[data-status='provisional'] {
-  --status: var(--provisional);
-  --status-soft: var(--provisional-soft);
-}
-[data-status='final'] {
-  --status: var(--final);
-  --status-soft: var(--final-soft);
-}
-[data-status='blocked'] {
-  --status: var(--blocked);
-  --status-soft: var(--blocked-soft);
+/* Figures are money: same width per digit, so a column of them lines up and a correction
+   does not shuffle the ones below it sideways. */
+.row__value,
+.totals__value,
+.lowest__figure,
+.timeline__readout-balance,
+.timeline__axis,
+.plan__owed-value,
+.kv dd {
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
-.badge {
-  flex: none;
-  font-size: var(--t-xs);
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 2px var(--s2);
-  border-radius: var(--radius-pill);
-  color: var(--status, var(--text-muted));
-  background: var(--status-soft, var(--surface-sunk));
-}
-
-/* ---------- rows ---------- */
-
-.rows {
-  display: flex;
-  flex-direction: column;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: 'label value' 'when value';
-  column-gap: var(--s3);
-  align-items: baseline;
-  padding: var(--s2) 0;
-  border-bottom: 1px solid var(--border);
-  animation: highlight 900ms ease both;
-}
-
-.row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.row__label {
-  grid-area: label;
-}
-
-/* The "+N more" marker is a count of what was trimmed, not an item. */
-.row--more {
-  grid-template-columns: 1fr;
-  color: var(--text-faint);
-  font-size: var(--t-sm);
-  font-style: italic;
-}
-
-.row__value {
-  grid-area: value;
-  font-family: var(--font-num);
-  font-size: var(--t-md);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.row__uncertain {
-  margin-left: 2px;
-  color: var(--pending);
-  font-weight: 700;
-}
-
-.row__when {
-  grid-area: when;
-  font-size: var(--t-xs);
-  color: var(--text-faint);
-}
-
-/* ---------- kv ---------- */
-
-.kv {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
-  gap: var(--s3);
-}
-
-.kv__pair dt {
-  font-size: var(--t-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-faint);
-}
-
-.kv__pair dd {
-  font-family: var(--font-num);
-  font-variant-numeric: tabular-nums;
-  font-size: var(--t-lg);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-/* ---------- missing chips ---------- */
-
-.missing {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
-}
-
-.missing__title {
-  font-size: var(--t-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-faint);
-  font-weight: 600;
-}
-
-.missing__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s2);
-}
-
-.chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--s1);
-  padding: var(--s1) var(--s3);
-  border: 1px dashed var(--warn);
-  border-radius: var(--radius-pill);
-  background: var(--warn-soft);
-  color: var(--warn);
-  font-size: var(--t-sm);
-}
-
-.chip__hint {
-  font-size: var(--t-xs);
-  opacity: 0.75;
-}
-
-/* Parked, not pending: the user does not know this one, so it stops looking like a question. */
-.chip[data-known='false'] {
-  border-style: solid;
-  border-color: var(--border);
-  background: var(--surface-sunk);
-  color: var(--text-faint);
-}
-
-.missing__note {
-  margin-top: var(--s2);
-  color: var(--text-muted);
-  font-size: var(--t-sm);
-  text-wrap: pretty;
-}
-
-/* ---------- timeline ---------- */
-
-.timeline {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--s3) var(--s4) var(--s2);
-  box-shadow: var(--shadow);
-}
-
-.timeline__chart {
-  display: block;
-  width: 100%;
-  height: 96px;
-  overflow: visible;
-}
-
-.timeline__line {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 1.5;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.timeline__zero {
-  stroke: var(--border-strong);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-  vector-effect: non-scaling-stroke;
-}
-
-.timeline__dot {
-  fill: var(--accent);
-}
-
-.timeline__low {
-  fill: none;
-  stroke: var(--warn);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-}
-
-.timeline__low-label {
-  font-family: var(--font-num);
-  color: var(--text-muted);
-}
-
-.timeline__low-label[data-negative='true'] {
-  color: var(--warn);
-  font-weight: 600;
-}
-
-.timeline__axis {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--s2);
-  margin-top: var(--s2);
-  font-size: var(--t-xs);
-  color: var(--text-faint);
-}
-
-/* ---------- plan ---------- */
-
-.plan {
-  background: var(--surface);
-  border: 1px solid var(--status, var(--border));
-  border-radius: var(--radius);
-  padding: var(--s4);
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s4);
-  animation: rise 260ms ease both;
-}
-
-.plan .card__head {
-  margin-bottom: 0;
-}
-
-.plan__group-title {
-  font-size: var(--t-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-faint);
-  font-weight: 600;
-  margin-bottom: var(--s1);
-}
-
-.plan__group--unpaid .row__value {
-  color: var(--warn);
-}
-
-.plan__confirm[data-ended='true'] {
-  background: var(--surface-sunk);
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-.plan__confirm[data-confirmed='true'] {
-  background: var(--ok-soft);
-  color: var(--ok);
-}
-
-.plan__confirm {
-  padding: var(--s3);
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
-  color: var(--text);
-  font-size: var(--t-sm);
-  font-weight: 560;
-}
-
-/* ---------- voice bar ---------- */
-
-.voicebar {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-  padding: var(--s2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.voicebar__mic,
-.voicebar__end {
-  padding: var(--s2) var(--s4);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
-  background: var(--surface-sunk);
-  font-size: var(--t-sm);
-  font-weight: 560;
-  white-space: nowrap;
-}
-
-.voicebar__end {
-  margin-left: auto;
-  border-color: transparent;
-  background: var(--blocked-soft);
-  color: var(--blocked);
-}
-
-.voicebar__mic[aria-pressed='true'] {
-  background: var(--warn-soft);
-  color: var(--warn);
-  border-color: transparent;
-}
-
-.voicebar__pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s2);
-  font-size: var(--t-sm);
-  color: var(--text-muted);
-  min-width: 6.5rem;
-}
-
-.voicebar__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-faint);
-}
-
-.voicebar__pill[data-state='listening'] .voicebar__dot {
-  background: var(--ok);
-  animation: pulse 1.6s ease-in-out infinite;
-}
-
-.voicebar__pill[data-state='speaking'] .voicebar__dot {
-  background: var(--accent);
-  animation: pulse 900ms ease-in-out infinite;
-}
-
-.voicebar__pill[data-state='thinking'] .voicebar__dot {
-  background: var(--pending);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-
-/* ---------- error ---------- */
-
-.error {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  padding: var(--s3) var(--s4);
-  border: 1px solid var(--blocked);
-  border-radius: var(--radius);
-  background: var(--blocked-soft);
-  color: var(--blocked);
-  font-size: var(--t-sm);
-}
-
-.error__text {
-  flex: 1;
-  text-wrap: pretty;
-}
-
-.error__retry {
-  flex: none;
-  padding: var(--s1) var(--s3);
-  border: 1px solid currentcolor;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  font-weight: 600;
-}
-
-/* ---------- board ---------- */
-
-.board {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s5);
-}
-
-.board__lead,
-.board__rest {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s4);
-}
-
-.board__waiting {
-  color: var(--text-faint);
-  padding: var(--s5) 0;
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
-}
-
-/* ---------- wide ---------- */
-
-@media (min-width: 960px) {
-  .app {
-    max-width: 960px;
-  }
-
-  .board {
-    flex-direction: row;
-    align-items: start;
-    gap: var(--s6);
-  }
-
-  .board__lead {
-    flex: 1 1 60%;
-    min-width: 0;
-    position: sticky;
-    top: var(--s4);
-  }
-
-  .board__rest {
-    flex: 1 1 40%;
-    min-width: 0;
-  }
-
-  .headline__question {
-    font-size: var(--t-2xl);
-  }
-}
-
-/* ---------- motion ---------- */
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+/* --- motion ----------------------------------------------------------------------- */
 
 @keyframes rise {
   from {
@@ -736,31 +101,984 @@ button:disabled {
   }
 }
 
-/* A changed row tints and settles; nothing on the page moves. */
-@keyframes highlight {
+@keyframes wash {
   from {
-    background: var(--accent-soft);
+    background: var(--accent-wash);
   }
   to {
     background: transparent;
   }
 }
 
-@keyframes blink {
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
   50% {
-    opacity: 0;
+    transform: scaleY(1);
   }
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
+/* --- shell ------------------------------------------------------------------------ */
+
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ground);
+}
+
+.app > audio {
+  display: none;
+}
+
+/* --- masthead --------------------------------------------------------------------- */
+
+.masthead {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.375rem;
+  padding: 1.25rem var(--gut) 0.75rem;
+  border-bottom: 1px solid var(--rule-hard);
+}
+
+.masthead__brand {
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-right: auto;
+}
+
+.phases {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+}
+
+.phases__word {
+  display: block;
+  font-size: var(--t-sm);
+  color: var(--ink-ghost);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  transition: color var(--dur) var(--ease);
+}
+
+/* Been through it: the word settles back and keeps a rule under it. */
+.phases__step[data-filled='true'] .phases__word {
+  color: var(--ink-muted);
+  border-bottom-color: var(--rule-hard);
+}
+
+/* In it now: the serif, and the rule turns to the colour of something still open. */
+.phases__step[data-current='true'] .phases__word {
+  font-family: var(--font-text);
+  font-style: italic;
+  color: var(--ink);
+  border-bottom-color: var(--warn);
+}
+
+.masthead__clear {
+  font-family: var(--font-text);
+  font-style: italic;
+  font-size: var(--t-sm);
+  color: var(--ink-muted);
+}
+
+/* --- the opening screen ----------------------------------------------------------- */
+
+.opening {
+  flex: 1;
+  padding: clamp(3rem, 12vh, 6rem) var(--gut) 7.5rem;
+  max-width: 34ch;
+}
+
+.opening__kicker {
+  font-size: var(--t-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 1.25rem;
+}
+
+.opening__title {
+  font-family: var(--font-text);
+  font-size: clamp(2rem, 8vw, var(--t-3xl));
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  margin-bottom: 1.125rem;
+}
+
+.opening__line {
+  font-family: var(--font-text);
+  font-size: var(--t-lg);
+  line-height: 1.6;
+  color: var(--ink-muted);
+  text-wrap: pretty;
+  margin-bottom: 1.875rem;
+}
+
+.opening__button {
+  padding: 0.6875rem 1.375rem;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--ground);
+  font-size: var(--t-md);
+  letter-spacing: 0.01em;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+.opening__button:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.opening__button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* --- board -------------------------------------------------------------------------- */
+
+.board {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.ledger {
+  flex: 1 1 34rem;
+  min-width: min(100%, 20rem);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--rule);
+}
+
+/* --- the question ------------------------------------------------------------------- */
+
+.headline {
+  padding: 1.625rem var(--gut) 1.375rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.headline__question {
+  font-family: var(--font-text);
+  font-size: clamp(1.375rem, 5.2vw, var(--t-2xl));
+  font-weight: 400;
+  line-height: 1.34;
+  letter-spacing: -0.008em;
+  max-width: 38ch;
+  min-height: 2.7em;
+  text-wrap: pretty;
+  animation: rise var(--dur) var(--ease) both;
+}
+
+.headline__stream {
+  margin-top: 0.5rem;
+  max-width: 46ch;
+  font-family: var(--font-text);
+  font-size: var(--t-md);
+  color: var(--ink-muted);
+  text-wrap: pretty;
+}
+
+.headline__stream[data-speaking='true'] {
+  color: var(--accent);
+}
+
+.ledger__waiting {
+  padding: 1.25rem var(--gut);
+  font-family: var(--font-text);
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+/* --- the ledger stack ----------------------------------------------------------------- */
+
+.ledger__colheads {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.875rem var(--gut) 0.375rem;
+  font-size: var(--t-micro);
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.ledger__colheads span:first-child {
+  margin-left: auto;
+  width: var(--col-when);
+}
+
+.ledger__colheads span:last-child {
+  width: var(--col-amount);
+  text-align: right;
+}
+
+.card {
+  display: block;
+  padding: 0 var(--gut);
+  border-top: 1px solid var(--rule);
+  /* The status rule down the left edge. Transparent when there is nothing to say. */
+  border-left: 3px solid transparent;
+  animation: rise var(--dur) var(--ease) both;
+  transition:
+    background var(--dur) var(--ease),
+    border-left-color var(--dur) var(--ease);
+}
+
+.card[data-status='warn'],
+.card[data-status='blocked'] {
+  border-left-color: var(--warn);
+}
+
+.card[data-status='provisional'] {
+  border-left-color: var(--pending-edge);
+}
+
+.card[data-status='final'] {
+  border-left-color: var(--final);
+}
+
+/* The card the bot's last tool call landed on. */
+.card[data-focused] {
+  background: var(--ground-raised);
+  border-left-color: var(--accent);
+}
+
+.card__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.6875rem 0 0.3125rem;
+}
+
+.card__title {
+  font-family: var(--font-text);
+  font-style: italic;
+  font-size: var(--t-lg);
+  font-weight: 400;
+}
+
+.status {
+  margin-left: auto;
+  font-size: var(--t-sm);
+  color: var(--ok);
+  white-space: nowrap;
+}
+
+.status[data-status='warn'],
+.status[data-status='blocked'] {
+  color: var(--warn);
+}
+
+.status[data-status='provisional'] {
+  color: var(--pending);
+}
+
+.status[data-status='final'] {
+  color: var(--final);
+}
+
+.card__note {
+  padding: 0.5625rem 0 0.75rem;
+  max-width: 56ch;
+  font-family: var(--font-text);
+  font-size: var(--t-md);
+  line-height: 1.55;
+  color: var(--ink-muted);
+  text-wrap: pretty;
+}
+
+/* --- rows ---------------------------------------------------------------------------- */
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  min-height: 2.125rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--rule-hair);
+}
+
+/* A figure the backend just moved: one wash of the accent, then it settles. */
+.row[data-changed] {
+  animation: wash 900ms var(--ease) both;
+}
+
+.row__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.row[data-known='false'] .row__label,
+.row--more .row__label {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.row__when {
+  width: var(--col-when);
+  flex: none;
+  font-size: var(--t-sm);
+  color: var(--ink-muted);
+}
+
+.row__value {
+  width: var(--col-amount);
+  flex: none;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.row__live {
+  font-size: var(--t-xl);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* The figure that was replaced. Struck, muted, smaller, and hidden from assistive tech —
+   the live value is the only one that can be read as current. */
+.row__retired {
+  margin-right: 0.375rem;
+  font-size: var(--t-sm);
+  color: var(--ink-faint);
+  text-decoration-thickness: 1px;
+  animation: rise var(--dur) var(--ease) both;
+}
+
+.row__uncertain {
+  margin-left: 0.1875rem;
+  font-size: var(--t-sm);
+  color: var(--pending);
+}
+
+.row--more {
+  color: var(--ink-faint);
+  font-size: var(--t-sm);
+}
+
+/* --- still needed --------------------------------------------------------------------- */
+
+.missing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem var(--gut);
+  border-top: 1px solid var(--rule);
+}
+
+.missing__title {
+  font-family: var(--font-text);
+  font-style: italic;
+  font-size: var(--t-md);
+  font-weight: 400;
+  color: var(--pending);
+}
+
+.missing__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid var(--pending-edge);
+  background: var(--pending-wash);
+  color: var(--pending-deep);
+  font-size: var(--t-sm);
+  animation: rise 280ms var(--ease) both;
+}
+
+/* Parked, not outstanding: the person said they do not know, and it is not being chased. */
+.chip[data-known='false'] {
+  border-style: dashed;
+  background: transparent;
+  color: var(--ink-faint);
+}
+
+.chip__hint {
+  color: var(--ink-faint);
+}
+
+.missing__note {
+  flex-basis: 100%;
+  font-family: var(--font-text);
+  font-size: var(--t-md);
+  color: var(--ink-muted);
+  text-wrap: pretty;
+}
+
+/* Ruled paper: the page has room left on it. */
+.ledger__rule {
+  flex: 1;
+  min-height: 3.375rem;
+  border-top: 1px solid var(--rule);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2.0625rem,
+    var(--rule-hair) 2.0625rem 2.125rem
+  );
+}
+
+/* --- totals --------------------------------------------------------------------------- */
+
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--rule-hard);
+}
+
+.totals__cell {
+  flex: 1 1 8rem;
+  padding: 0.75rem 1rem 0.875rem;
+  border-left: 1px solid var(--rule);
+}
+
+.totals__cell:first-child {
+  border-left: none;
+  padding-left: var(--gut);
+}
+
+.totals__cell:last-child {
+  padding-right: var(--gut);
+}
+
+.totals__label {
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 2px;
+}
+
+.totals__value {
+  font-size: var(--t-xl);
+  font-weight: 500;
+}
+
+/* What the plan cannot cover. The one figure on the ledger that is allowed to be red. */
+.totals__cell[data-key='unpaid'] {
+  flex-grow: 1.4;
+}
+
+.totals__cell[data-key='unpaid'] .totals__label,
+.totals__cell[data-key='unpaid'] .totals__value {
+  color: var(--warn);
+}
+
+/* --- the panel -------------------------------------------------------------------------- */
+
+.panel {
+  flex: 1 1 22rem;
+  min-width: min(100%, 18rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  color: var(--panel-ink);
+}
+
+.panel :focus-visible {
+  box-shadow: var(--ring-on-panel);
+}
+
+.panel__note {
+  margin-top: auto;
+  padding: 1.125rem 1.75rem;
+  border-top: 1px solid var(--panel-rule);
+  background: var(--panel-raised);
+  font-family: var(--font-text);
+  font-size: var(--t-lg);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* --- the lowest point --------------------------------------------------------------------- */
+
+.lowest {
+  padding: 1.625rem 1.75rem 1.25rem;
+  border-bottom: 1px solid var(--panel-rule);
+}
+
+.lowest__label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: var(--t-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--panel-faint);
+  margin-bottom: 0.5rem;
+}
+
+.lowest__caveat {
+  color: var(--pending-edge);
+  letter-spacing: 0.08em;
+}
+
+.lowest__figure {
+  font-family: var(--font-text);
+  font-size: clamp(2.25rem, 10vw, var(--t-4xl));
+  line-height: 1;
+  letter-spacing: -0.02em;
+  transition: color var(--dur) var(--ease);
+}
+
+/* The plan leaves something unpaid, so this is not merely small — it is short. */
+.lowest[data-alarm] .lowest__figure {
+  color: var(--lowest-alarm);
+}
+
+.lowest__when {
+  margin-top: 0.625rem;
+  font-family: var(--font-text);
+  font-style: italic;
+  font-size: var(--t-lg);
+  color: var(--panel-muted);
+}
+
+/* --- the chart ------------------------------------------------------------------------------ */
+
+.timeline {
+  padding: 1.125rem 1.75rem 0.875rem;
+  border-bottom: 1px solid var(--panel-rule);
+}
+
+.timeline__readout {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-height: 1.25rem;
+  font-size: var(--t-sm);
+  color: var(--panel-muted);
+}
+
+.timeline__readout-date {
+  color: var(--panel-ink);
+}
+
+.timeline__readout-balance {
+  font-weight: 500;
+  color: var(--panel-ink);
+}
+
+.timeline__readout-event {
+  font-family: var(--font-text);
+  font-style: italic;
+  color: var(--panel-faint);
+}
+
+.timeline__plot {
+  height: 10.625rem;
+  margin-top: 0.625rem;
+}
+
+.timeline__chart {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.timeline__lowband {
+  fill: var(--bar-low);
+  opacity: 0.16;
+  pointer-events: none;
+  transition: x var(--dur-slow) var(--ease);
+}
+
+.timeline__readout-dash {
+  color: var(--panel-faint);
+}
+
+.timeline__bar {
+  fill: var(--bar);
+  cursor: crosshair;
+  transition:
+    y var(--dur-slow) var(--ease),
+    height var(--dur-slow) var(--ease),
+    fill var(--dur-fast) var(--ease);
+}
+
+.timeline__bar[data-event] {
+  fill: var(--bar-event);
+}
+
+.timeline__bar[data-low] {
+  fill: var(--bar-low);
+}
+
+.timeline__bar[data-hovered] {
+  fill: var(--bar-hover);
+}
+
+.timeline__line {
+  fill: none;
+  stroke: var(--chart-line);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.timeline__zero {
+  stroke: var(--panel-faint);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.timeline__low {
+  fill: var(--panel);
+  stroke: var(--chart-low-ring);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  transition: cy var(--dur-slow) var(--ease);
+}
+
+.timeline__axis {
+  display: flex;
+  gap: 2px;
+  margin-top: 0.4375rem;
+  font-size: var(--t-micro);
+  color: var(--chart-axis);
+}
+
+.timeline__axis span {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.timeline__axis span[data-low] {
+  color: var(--chart-axis-low);
+}
+
+.timeline__low-label {
+  margin-top: 0.5rem;
+  font-family: var(--font-text);
+  font-style: italic;
+  font-size: var(--t-md);
+  color: var(--panel-muted);
+}
+
+.timeline__low-label[data-negative='true'] {
+  color: var(--warn-on-panel);
+}
+
+/* --- the plan ---------------------------------------------------------------------------------- */
+
+.plan {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1.25rem 1.75rem 0;
+}
+
+.plan__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.plan__title {
+  font-size: var(--t-micro);
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--panel-faint);
+}
+
+.plan .status {
+  color: var(--panel-faint);
+}
+
+.plan .status[data-status='final'] {
+  color: var(--accent-on-panel);
+}
+
+.plan .status[data-status='warn'],
+.plan .status[data-status='blocked'] {
+  color: var(--warn-on-panel);
+}
+
+.plan__group-title {
+  font-size: var(--t-micro);
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--panel-faint);
+  margin-bottom: 0.5rem;
+}
+
+/* Numbered because they are steps still to take. Nothing here is ever ticked. */
+.plan__actions {
+  list-style: lower-roman;
+  padding-left: 1.5rem;
+}
+
+.plan__actions::marker,
+.plan__action::marker {
+  color: var(--warn-on-panel);
+}
+
+.plan__action {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  animation: rise 380ms var(--ease) both;
+}
+
+.plan__what {
+  flex: 1;
+  font-family: var(--font-text);
+  font-size: var(--t-lg);
+  line-height: 1.4;
+}
+
+.plan__when {
+  font-size: var(--t-sm);
+  color: var(--panel-muted);
+  white-space: nowrap;
+}
+
+.plan__group--unpaid .plan__group-title {
+  color: var(--warn-on-panel);
+}
+
+.plan__owed {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  border-top: 1px solid var(--panel-rule);
+}
+
+.plan__owed-label {
+  flex: 1;
+  font-family: var(--font-text);
+  font-size: var(--t-lg);
+}
+
+.plan__owed-value {
+  font-size: var(--t-lg);
+  font-weight: 500;
+  color: var(--warn-on-panel);
+}
+
+.plan__consequence {
+  font-family: var(--font-text);
+  font-size: var(--t-md);
+  line-height: 1.55;
+  color: var(--panel-muted);
+  text-wrap: pretty;
+}
+
+.plan__confirm {
+  margin: 0.875rem -1.75rem 0;
+  padding: 1.125rem 1.75rem;
+  border-top: 1px solid var(--panel-rule);
+  background: var(--panel-raised);
+  font-family: var(--font-text);
+  font-size: var(--t-lg);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* The one green on the board, and only once the person has actually agreed. */
+.plan__confirm[data-confirmed] {
+  border-top-color: var(--agreed-rule);
+  background: var(--agreed-bg);
+  color: var(--agreed-fg);
+}
+
+.plan__confirm[data-ended] {
+  color: var(--panel-muted);
+}
+
+.kv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  font-size: var(--t-sm);
+}
+
+.kv__pair {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.kv dt {
+  color: var(--panel-faint);
+}
+
+/* --- the call ------------------------------------------------------------------------------------ */
+
+.app__foot {
+  display: flex;
+  align-items: center;
+  padding: 0.8125rem var(--gut);
+  border-top: 1px solid var(--rule-hard);
+  background: var(--ground-sunk);
+}
+
+.app__foot--again {
+  justify-content: flex-start;
+}
+
+.voicebar {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.voicebar__wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 1rem;
+}
+
+.voicebar__wave i {
+  display: block;
+  width: 3px;
+  height: 100%;
+  background: var(--ink-ghost);
+  transform: scaleY(0.25);
+  animation: wave 2.6s var(--ease) infinite;
+}
+
+.voicebar__wave i:nth-child(2) {
+  animation-delay: 160ms;
+}
+
+.voicebar__wave i:nth-child(3) {
+  animation-delay: 320ms;
+}
+
+.voicebar[data-state='listening'] .voicebar__wave i {
+  background: var(--ok);
+  animation-duration: 1.6s;
+}
+
+.voicebar[data-state='speaking'] .voicebar__wave i {
+  background: var(--accent);
+  animation-duration: 1s;
+}
+
+.voicebar[data-state='thinking'] .voicebar__wave i {
+  background: var(--pending);
+  animation-duration: 1.6s;
+}
+
+.voicebar__state {
+  font-family: var(--font-text);
+  font-style: italic;
+  color: var(--ink-muted);
+}
+
+.voicebar__spacer {
+  flex: 1;
+}
+
+.voicebar__mic,
+.voicebar__end {
+  padding: 0.375rem 0.9375rem;
+  border: 1px solid var(--rule);
+  background: transparent;
+  font-size: var(--t-sm);
+  color: var(--ink-muted);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.voicebar__mic:hover {
+  background: var(--ground-hover);
+  color: var(--ink);
+}
+
+.voicebar__end {
+  border-color: var(--warn-edge);
+  color: var(--warn);
+}
+
+.voicebar__end:hover {
+  background: var(--warn-wash);
+}
+
+/* --- errors --------------------------------------------------------------------------------------- */
+
+.error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem var(--gut);
+  border-bottom: 1px solid var(--warn-edge);
+  background: var(--warn-wash);
+  color: var(--warn);
+  animation: rise var(--dur) var(--ease) both;
+}
+
+.error__text {
+  flex: 1;
+  min-width: 12rem;
+  font-family: var(--font-text);
+}
+
+.error__retry {
+  padding: 0.375rem 0.9375rem;
+  border: 1px solid var(--warn);
+  background: transparent;
+  color: var(--warn);
+  font-size: var(--t-sm);
+}
+
+.error__retry:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* --- phone ------------------------------------------------------------------------------------------ */
+
+@media (max-width: 52rem) {
+  .ledger {
+    border-right: none;
   }
-  50% {
-    opacity: 0.35;
+
+  /* The panel is the summing-up, so on one column it comes after the ledger it sums. */
+  .panel {
+    border-top: 1px solid var(--rule-hard);
+  }
+
+  .ledger__rule {
+    min-height: 1.5rem;
+  }
+
+  .totals__cell {
+    flex-basis: 6rem;
   }
 }
+
+/* --- reduced motion --------------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
   *,

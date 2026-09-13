@@ -1,35 +1,33 @@
-import { useCallback, useReducer, useState } from 'react'
+import { useCallback, useReducer } from 'react'
 import { useDailyCall } from './call/useDailyCall'
 import { CardStack } from './components/CardStack'
 import { ErrorBanner } from './components/ErrorBanner'
-import { FocusCard } from './components/FocusCard'
+import { LowestPoint } from './components/LowestPoint'
 import { MissingChips } from './components/MissingChips'
 import { PhaseStrip } from './components/PhaseStrip'
 import { PlanPanel } from './components/PlanPanel'
 import { QuestionHeadline } from './components/QuestionHeadline'
 import { Timeline } from './components/Timeline'
+import { TotalsBar } from './components/TotalsBar'
 import { VoiceBar } from './components/VoiceBar'
-import { CARDS_SHOWN_ELSEWHERE } from './components/format'
-import type { CardId } from './protocol/types'
+import { useChangedRows } from './components/useChangedRows'
 import { initialSession, sessionReducer } from './state/sessionReducer'
 
+const OPENING_TITLE = 'Talk through your next thirty days.'
 const OPENING_LINE =
-  'A short call about your next thirty days. Say what comes in, what goes out, and when.'
+  'Say what comes in, what goes out, and when. Nothing to type — the page keeps up with you.'
+const CONNECTING_LINE =
+  'Allow the microphone when your browser asks. Start speaking as soon as you hear the first question.'
 
 export default function App() {
   const [session, dispatch] = useReducer(sessionReducer, initialSession)
   const { start, starting, stop, toggleMic, micOn, audioRef } = useDailyCall(dispatch)
-  // A card the user tapped open. Cleared whenever the bot moves the focus itself.
-  const [pinned, setPinned] = useState<CardId | null>(null)
 
   const snapshot = session.cards
-  const focusId = pinned ?? snapshot?.focus ?? null
-  // The bot can focus a card that has a panel of its own (the plan, the chips, the
-  // timeline). Showing it in the focus slot too would print it twice.
-  const focusCard =
-    focusId && !CARDS_SHOWN_ELSEWHERE.includes(focusId)
-      ? (snapshot?.cards.find((c) => c.id === focusId) ?? null)
-      : null
+  // What each corrected row used to say, so the board can show the correction happening.
+  const retired = useChangedRows(snapshot)
+
+  const summary = snapshot?.cards.find((c) => c.id === 'summary')
   const missingCard = snapshot?.cards.find((c) => c.id === 'missing')
   const hasPlan = Boolean(snapshot?.cards.some((c) => c.id === 'plan'))
   // Once the plan exists it carries the action rows itself, so the `actions` card would be
@@ -37,6 +35,8 @@ export default function App() {
   const stackCards = hasPlan
     ? (snapshot?.cards.filter((c) => c.id !== 'actions') ?? [])
     : (snapshot?.cards ?? [])
+  const nothingMissing = Boolean(snapshot) && !missingCard?.rows.length
+
   const connecting = session.call === 'connecting'
   const inCall = connecting || session.call === 'live'
   // `starting` outlives `connecting`: after a terminal event the reducer says the call is
@@ -54,30 +54,28 @@ export default function App() {
   // for an attempt that never joined at all.
   const started = session.call === 'live' || (!!snapshot && session.call !== 'idle')
 
-  const onFocus = useCallback((id: CardId) => setPinned(id), [])
-  const onStart = useCallback(() => {
-    setPinned(null)
-    void start()
-  }, [start])
+  const onStart = useCallback(() => void start(), [start])
 
   return (
     <div className="app" data-call={session.call}>
       <audio ref={audioRef} playsInline />
 
-      <header className="app__top">
-        <p className="app__brand">Ledgerline</p>
+      <header className="masthead">
+        <p className="masthead__brand">Ledgerline</p>
         {snapshot && <PhaseStrip phase={snapshot.phase} />}
+        {nothingMissing && <p className="masthead__clear">nothing still needed</p>}
       </header>
 
       <ErrorBanner message={session.error} onRetry={onStart} disabled={busy} />
 
       {!started ? (
-        <main className="start">
-          <h1 className="start__title">Talk through your month.</h1>
-          <p className="start__line">{OPENING_LINE}</p>
+        <main className="opening">
+          <p className="opening__kicker">{connecting ? 'connecting' : 'about four minutes'}</p>
+          <h1 className="opening__title">{OPENING_TITLE}</h1>
+          <p className="opening__line">{connecting ? CONNECTING_LINE : OPENING_LINE}</p>
           <button
             type="button"
-            className="start__button"
+            className="opening__button"
             onClick={onStart}
             disabled={busy}
             aria-busy={busy}
@@ -87,33 +85,52 @@ export default function App() {
         </main>
       ) : (
         <main className="board">
-          <div className="board__lead">
+          <section className="ledger" aria-label="Your month">
             <QuestionHeadline
               settled={session.lastQuestion}
               streaming={session.question}
               speaking={session.speak === 'speaking'}
             />
-            {hasPlan && snapshot ? (
-              <PlanPanel snapshot={snapshot} ended={callOver} />
-            ) : focusCard ? (
-              <FocusCard card={focusCard} />
+
+            {snapshot && stackCards.length > 0 ? (
+              <>
+                <p className="ledger__colheads" aria-hidden="true">
+                  <span>when</span>
+                  <span>amount</span>
+                </p>
+                <CardStack cards={stackCards} focus={snapshot.focus} retired={retired} />
+              </>
             ) : (
-              <p className="board__waiting">
-                {session.call === 'connecting' ? 'Connecting…' : 'Listening. Start whenever.'}
+              <p className="ledger__waiting">
+                {connecting ? 'Connecting…' : 'Listening. Start whenever.'}
               </p>
             )}
-            {missingCard && <MissingChips card={missingCard} />}
-          </div>
 
-          <div className="board__rest">
-            {snapshot && snapshot.timeline.length > 0 && <Timeline points={snapshot.timeline} />}
-            {snapshot && <CardStack cards={stackCards} focus={focusId} onFocus={onFocus} />}
-          </div>
+            <MissingChips card={missingCard} />
+
+            {/* Ruled paper under the last card, so the ledger reads as a page with room
+                left on it rather than as a list that happens to stop. */}
+            <div className="ledger__rule" aria-hidden="true" />
+
+            <TotalsBar card={summary} />
+          </section>
+
+          <aside className="panel" aria-label="The month ahead">
+            <LowestPoint card={summary} />
+            {snapshot && snapshot.timeline.length > 0 && (
+              <Timeline points={snapshot.timeline} showLow={!summary?.kv.lowest} />
+            )}
+            {hasPlan && snapshot ? (
+              <PlanPanel snapshot={snapshot} ended={callOver} />
+            ) : (
+              summary?.note && <p className="panel__note">{summary.note}</p>
+            )}
+          </aside>
         </main>
       )}
 
       {session.call === 'live' && (
-        <footer className="app__bottom">
+        <footer className="app__foot">
           <VoiceBar
             speak={session.speak}
             micOn={micOn}
@@ -126,10 +143,10 @@ export default function App() {
       {/* Only under the board. Without the board the start screen's own button is the way
           back, and showing both would be two controls for one action. */}
       {started && session.call === 'ended' && (
-        <footer className="app__bottom">
+        <footer className="app__foot app__foot--again">
           <button
             type="button"
-            className="start__button"
+            className="opening__button"
             onClick={onStart}
             disabled={busy}
             aria-busy={busy}

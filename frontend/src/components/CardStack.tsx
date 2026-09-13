@@ -1,37 +1,35 @@
 import type { Card, CardId } from '../protocol/types'
-import { CARDS_SHOWN_ELSEWHERE, oneLineSummary } from './format'
-import { StatusBadge } from './StatusBadge'
+import { CARDS_SHOWN_ELSEWHERE } from './format'
+import { LedgerCard } from './LedgerCard'
+import { changedLabels } from './useChangedRows'
 
 interface Props {
   cards: Card[]
+  /** The card the snapshot says the bot last touched. */
   focus: CardId | null
-  onFocus: (id: CardId) => void
+  /** `cardId|label` -> the figure the last snapshot replaced, for every row it moved. */
+  retired: Map<string, string>
 }
 
 /**
- * Everything not in focus, collapsed to one line each, so a correction upstream is
- * visibly a correction to the whole picture rather than to one card.
+ * The ledger: every account, open, in the order the backend sent them.
+ *
+ * Cards with a place of their own elsewhere on the board are left out here rather than
+ * printed twice — the totals bar is the summary card, the panel is the plan, the chips are
+ * what is still missing, the chart is the timeline.
  */
-export function CardStack({ cards, focus, onFocus }: Props) {
-  const rest = cards.filter((c) => c.id !== focus && !CARDS_SHOWN_ELSEWHERE.includes(c.id))
-  if (rest.length === 0) return null
+export function CardStack({ cards, focus, retired }: Props) {
+  const shown = cards.filter((c) => !CARDS_SHOWN_ELSEWHERE.includes(c.id))
+  if (shown.length === 0) return null
   return (
     <ul className="stack">
-      {rest.map((card) => (
+      {shown.map((card) => (
         <li key={card.id}>
-          <button
-            type="button"
-            className="card card--collapsed"
-            data-status={card.status}
-            data-card={card.id}
-            onClick={() => onFocus(card.id)}
-          >
-            <span className="card__head">
-              <span className="card__title">{card.title}</span>
-              <StatusBadge status={card.status} />
-            </span>
-            <span className="card__summary">{oneLineSummary(card.rows, card.kv)}</span>
-          </button>
+          <LedgerCard
+            card={card}
+            focused={card.id === focus}
+            retired={changedLabels(retired, card.id)}
+          />
         </li>
       ))}
     </ul>

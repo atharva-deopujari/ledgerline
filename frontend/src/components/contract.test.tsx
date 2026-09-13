@@ -8,31 +8,34 @@ import sampleJson from '../protocol/sample.json'
 import { parseIncoming } from '../protocol/parse'
 import type { Card, CardsMessage } from '../protocol/types'
 import { CardStack } from './CardStack'
-import { FocusCard } from './FocusCard'
+import { LedgerCard } from './LedgerCard'
 import { MissingChips } from './MissingChips'
 import { PlanPanel } from './PlanPanel'
-import { oneLineSummary } from './format'
+import { TotalsBar } from './TotalsBar'
 
 const sample = parseIncoming(sampleJson) as CardsMessage
 const without = (id: string): Card[] => sample.cards.filter((c) => c.id !== id)
+const NOTHING_RETIRED = new Map<string, string>()
 
 describe('omitted cards', () => {
   it('drops a card from the stack as soon as the snapshot stops sending it', () => {
     const { rerender } = render(
-      <CardStack cards={sample.cards} focus="essentials" onFocus={() => {}} />,
+      <CardStack cards={sample.cards} focus="essentials" retired={NOTHING_RETIRED} />,
     )
-    expect(screen.getByRole('button', { name: /Optional/ })).toBeInTheDocument()
-    rerender(<CardStack cards={without('optionals')} focus="essentials" onFocus={() => {}} />)
-    expect(screen.queryByRole('button', { name: /Optional/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Income/ })).toBeInTheDocument()
+    expect(screen.getByRole('article', { name: 'Optional' })).toBeInTheDocument()
+    rerender(
+      <CardStack cards={without('optionals')} focus="essentials" retired={NOTHING_RETIRED} />,
+    )
+    expect(screen.queryByRole('article', { name: 'Optional' })).not.toBeInTheDocument()
+    expect(screen.getByRole('article', { name: 'Income' })).toBeInTheDocument()
   })
 
-  it('renders an empty stack rather than placeholders when only the focus card is left', () => {
+  it('renders an empty stack rather than placeholders when the snapshot has nothing for it', () => {
     const { container } = render(
       <CardStack
-        cards={sample.cards.filter((c) => c.id === 'essentials')}
-        focus="essentials"
-        onFocus={() => {}}
+        cards={sample.cards.filter((c) => c.id === 'summary')}
+        focus={null}
+        retired={NOTHING_RETIRED}
       />,
     )
     expect(container).toBeEmptyDOMElement()
@@ -53,18 +56,14 @@ describe('the "+N more" trim marker', () => {
   }
 
   it('renders as a muted line with no value column', () => {
-    render(<FocusCard card={trimmed} />)
+    render(<LedgerCard card={trimmed} />)
     const marker = screen.getByText('+3 more')
     expect(marker.closest('li')).toHaveClass('row--more')
     expect(screen.queryByTestId('value-+3 more')).not.toBeInTheDocument()
   })
 
-  it('is not counted as an item in a collapsed summary', () => {
-    expect(oneLineSummary(trimmed.rows, {})).toBe('Bike EMI 4,200')
-  })
-
   it('leaves an ordinary row that merely starts with a plus alone', () => {
-    render(<FocusCard card={{ ...trimmed, rows: [['+900 buffer', '900', '5 Oct']] }} />)
+    render(<LedgerCard card={{ ...trimmed, rows: [['+900 buffer', '900', '5 Oct']] }} />)
     expect(screen.getByTestId('value-+900 buffer')).toHaveTextContent('900')
   })
 })
@@ -175,12 +174,12 @@ describe('conflict notes are shown, never interpreted', () => {
     'The card minimum was 3,200, then 4,000. Which is right?',
     'Opening balance was 3,000, then 800. Which is right?',
   ])('prints %s verbatim', (note) => {
-    render(<FocusCard card={conflicted(note)} />)
+    render(<LedgerCard card={conflicted(note)} />)
     expect(screen.getByText(note)).toBeInTheDocument()
   })
 
   it('leaves a non-money value alone rather than trying to read it', () => {
-    render(<FocusCard card={conflicted('any note')} />)
+    render(<LedgerCard card={conflicted('any note')} />)
     // "10th" is a date in the "when" column; it is printed as sent, not parsed.
     expect(screen.getByText('10th')).toBeInTheDocument()
     expect(screen.getByTestId('value-Salary')).toHaveTextContent('42,000')
@@ -188,36 +187,49 @@ describe('conflict notes are shown, never interpreted', () => {
 })
 
 describe('summary keys are backend field names', () => {
+  const summary = (kv: Record<string, string>): Card => ({
+    id: 'summary',
+    title: 'This month',
+    status: 'ok',
+    rows: [],
+    kv,
+    note: null,
+  })
+
   it('renders an underscored key as words, and keeps its value untouched', () => {
-    render(
-      <FocusCard
-        card={{
-          id: 'summary',
-          title: 'This month',
-          status: 'ok',
-          rows: [],
-          kv: { in: '72,000', out: '32,200', unpaid_total: '4,500' },
-          note: null,
-        }}
-      />,
-    )
+    render(<TotalsBar card={summary({ in: '72,000', out: '32,200', unpaid_total: '4,500' })} />)
     expect(screen.getByText('unpaid total')).toBeInTheDocument()
     expect(screen.queryByText('unpaid_total')).not.toBeInTheDocument()
     expect(screen.getByText('4,500')).toBeInTheDocument()
   })
 })
 
-describe('a collapsed card never drops a field silently', () => {
-  it('counts the kv entries it could not fit', () => {
-    const kv = { in: '72,000', out: '27,700', lowest: '2,000 on 30 Sep', unpaid: '4,500' }
-    expect(oneLineSummary([], kv)).toBe('in 72,000 · out 27,700 · lowest 2,000 on 30 Sep · +1')
+describe('the totals bar never drops a field silently', () => {
+  const summary = (kv: Record<string, string>): Card => ({
+    id: 'summary',
+    title: 'This month',
+    status: 'ok',
+    rows: [],
+    kv,
+    note: null,
   })
 
-  it('says nothing extra when everything fits', () => {
-    expect(oneLineSummary([], { in: '72,000', out: '27,700' })).toBe('in 72,000 · out 27,700')
+  it('prints every key the snapshot carries, labelled or not', () => {
+    const kv = { in: '72,000', out: '27,700', unpaid: '4,500', buffer_left: '900' }
+    const { container } = render(<TotalsBar card={summary(kv)} />)
+    // One cell per key. A figure the engine starts sending cannot slip off the board
+    // merely because this build has no nice label for it.
+    expect(container.querySelectorAll('.totals__cell')).toHaveLength(4)
+    for (const value of Object.values(kv)) {
+      expect(screen.getByText(value)).toBeInTheDocument()
+    }
   })
 
-  it('reads an underscored key as words here too', () => {
-    expect(oneLineSummary([], { unpaid_total: '4,500' })).toBe('unpaid total 4,500')
+  it('hands `lowest` to the panel instead, so the figure is printed once', () => {
+    const { container } = render(
+      <TotalsBar card={summary({ in: '72,000', lowest: '2,000 on 30 Sep' })} />,
+    )
+    expect(container.querySelectorAll('.totals__cell')).toHaveLength(1)
+    expect(screen.queryByText('2,000 on 30 Sep')).not.toBeInTheDocument()
   })
 })

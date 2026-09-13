@@ -1,97 +1,171 @@
 /**
- * One place for colour, space and type. Status colours are deliberately a separate family
- * from the accent: a card is never "branded", it is ok / warn / provisional / final /
- * blocked, and each of those also says its own name in the badge.
+ * One token set, read twice: once for light, once for dark. Every rule in `app.css` uses
+ * these names and never a literal colour, so the two themes cannot drift apart.
  *
- * `--pending` is the amber both "not settled yet" marks share: the "?" on a provisional
- * value, and the thinking dot on the state pill.
+ * The board has two grounds, not one. `--ground` is the ledger side — paper, ruled, ink on
+ * light. `--panel` is the standing side that holds the low point, the chart and the plan;
+ * it is dark in both themes, because it is the part you look up at while you talk. In dark
+ * mode the ledger comes down to meet it and the panel lifts a step, so the two never merge.
+ *
+ * Status colours are their own family and are never the accent: a card is ok / warn /
+ * provisional / final / blocked, each says its own name in words, and colour only seconds it.
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
-  /* Neutrals — a cool paper, not pure white, so the cards can be white and still sit up. */
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --surface-sunk: #eceef1;
-  --border: #dfe2e7;
-  --border-strong: #c6ccd4;
-  --text: #16191d;
-  --text-muted: #5d656f;
-  --text-faint: #8b939d;
+  /* --- the ledger side ------------------------------------------------------------ */
+  --ground: #f3f4f6;
+  --ground-sunk: #eceef1;
+  --ground-raised: #eef1f6;
+  --ground-hover: #eaedf1;
+  --ground-pinned: #e4e7ec;
+  --ink: #14161a;
+  --ink-muted: #545a63;
+  --ink-faint: #8a919c;
+  --ink-ghost: #aab1bb;
+  /* Two weights of rule: the hard one closes a section, the hair one separates rows. */
+  --rule-hard: #14161a;
+  --rule: #e1e4e9;
+  --rule-hair: #e8eaee;
 
-  /* Accent — one colour, used for the call to action and the live line. */
-  --accent: #2f4dd0;
-  --accent-ink: #ffffff;
-  --accent-soft: #e7ebfb;
+  /* --- the standing panel ---------------------------------------------------------- */
+  --panel: #1b1f26;
+  --panel-raised: #222733;
+  --panel-ink: #e8eaee;
+  --panel-muted: #b6bdc7;
+  --panel-faint: #9aa2ae;
+  --panel-rule: #2c323b;
 
-  /* Status — semantic, never the accent. */
-  --ok: #1f7a4d;
-  --ok-soft: #e2f3ea;
-  --pending: #9a6200;
-  --pending-soft: #fbf0d9;
-  --warn: #a4451a;
-  --warn-soft: #fceadf;
-  --provisional: #5b5470;
-  --provisional-soft: #eeecf4;
-  --final: #16665f;
-  --final-soft: #dff1ef;
-  --blocked: #a3242c;
-  --blocked-soft: #fbe4e5;
+  /* --- accent: one blue, for the live line and the primary action ------------------ */
+  --accent: #2b4ac9;
+  --accent-ink: #f3f4f6;
+  --accent-wash: rgb(43 74 201 / 11%);
+  --accent-on-panel: #93aceb;
 
-  /* Space — a 4px base; everything is a multiple so rhythm survives editing. */
-  --s1: 0.25rem;
-  --s2: 0.5rem;
-  --s3: 0.75rem;
-  --s4: 1rem;
-  --s5: 1.5rem;
-  --s6: 2rem;
-  --s7: 3rem;
+  /* --- status --------------------------------------------------------------------- */
+  --ok: #17765a;
+  --warn: #a32f26;
+  --warn-wash: #fbeceb;
+  --warn-edge: #d8a9a3;
+  --warn-on-panel: #e8897f;
+  --pending: #8a6d16;
+  --pending-deep: #7a5f10;
+  --pending-edge: #c8a52c;
+  --pending-wash: #fcf3dc;
+  --final: #1f6472;
+  --blocked: #a32f26;
 
-  /* Type */
-  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-num: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
-  --t-xs: 0.6875rem;
-  --t-sm: 0.8125rem;
-  --t-md: 0.9375rem;
-  --t-lg: 1.125rem;
-  --t-xl: 1.5rem;
-  --t-2xl: 1.875rem;
+  /* Confirmed: the one green ground on the board, and only once the person has agreed. */
+  --agreed-bg: #133026;
+  --agreed-fg: #7fd2ad;
+  --agreed-rule: #235240;
 
-  --radius: 12px;
-  --radius-sm: 8px;
-  --radius-pill: 999px;
-  --shadow: 0 1px 2px rgb(16 19 24 / 6%), 0 4px 12px rgb(16 19 24 / 5%);
-  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  /* --- chart ---------------------------------------------------------------------- */
+  --bar: #626f82;
+  --bar-event: #8ba0c4;
+  --bar-hover: #a8bdf0;
+  --bar-low: #b4483a;
+  --chart-line: #93aceb;
+  --chart-low-ring: #e8897f;
+  --chart-axis: #a7aeb9;
+  --chart-axis-low: #ef9d90;
+  --lowest-alarm: #f0a99c;
+
+  /* --- type ----------------------------------------------------------------------- */
+  --font-ui:
+    'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-text: 'Source Serif 4', Georgia, 'Times New Roman', Times, serif;
+
+  --t-micro: 0.71875rem; /* 11.5px — labels, axis, the replayed small caps */
+  --t-sm: 0.8125rem; /* 13px — when column, status words */
+  --t-md: 0.9375rem; /* 15px — row labels, notes */
+  --t-lg: 1.0625rem; /* 17px — card titles, plan lines */
+  --t-xl: 1.3125rem; /* 21px — money */
+  --t-2xl: 1.875rem; /* 30px — the question */
+  --t-3xl: 2.5rem; /* 40px — the opening line */
+  --t-4xl: 3rem; /* 48px — the lowest point */
+
+  /* --- measure --------------------------------------------------------------------- */
+  --gut: 1.125rem; /* the side gutter; widens with the viewport */
+  --col-when: 4.5rem;
+  --col-amount: 6.5rem;
+
+  /* --- motion ---------------------------------------------------------------------- */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 180ms;
+  --dur: 300ms;
+  --dur-slow: 620ms;
+
+  --ring: 0 0 0 2px var(--ground), 0 0 0 4px var(--accent);
+  --ring-on-panel: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent-on-panel);
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --gut: 1.875rem;
+    --col-when: 5.375rem;
+    --col-amount: 7rem;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #101216;
-    --surface: #191c22;
-    --surface-sunk: #14171c;
-    --border: #282d36;
-    --border-strong: #3a414d;
-    --text: #eef0f3;
-    --text-muted: #a3abb7;
-    --text-faint: #767e8a;
+    color-scheme: dark;
 
-    --accent: #8ea4ff;
-    --accent-ink: #10131a;
-    --accent-soft: #1e2540;
+    /* The ledger comes down; the panel lifts, so the board still reads as two surfaces. */
+    --ground: #101317;
+    --ground-sunk: #0c0e12;
+    --ground-raised: #191d24;
+    --ground-hover: #171b21;
+    --ground-pinned: #1d222a;
+    --ink: #e8eaee;
+    --ink-muted: #a3abb6;
+    --ink-faint: #7b838e;
+    --ink-ghost: #5c646f;
+    --rule-hard: #55606f;
+    --rule: #262b33;
+    --rule-hair: #1e232a;
 
-    --ok: #6ddaa3;
-    --ok-soft: #14281f;
-    --pending: #e8b451;
-    --pending-soft: #2c2415;
-    --warn: #f0997a;
-    --warn-soft: #2e1d16;
-    --provisional: #b4aace;
-    --provisional-soft: #221f2d;
-    --final: #6fd4c8;
-    --final-soft: #12272a;
-    --blocked: #f28b91;
-    --blocked-soft: #2d1719;
+    --panel: #1b212a;
+    --panel-raised: #232a35;
+    --panel-ink: #e8eaee;
+    --panel-muted: #b6bdc7;
+    --panel-faint: #9aa2ae;
+    --panel-rule: #333b47;
 
-    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 4px 14px rgb(0 0 0 / 30%);
+    /* Blue at 4.5:1 on the new ground; the light-mode blue goes muddy down here. */
+    --accent: #93aceb;
+    --accent-ink: #0d1016;
+    --accent-wash: rgb(147 172 235 / 14%);
+    --accent-on-panel: #93aceb;
+
+    --ok: #62c39f;
+    --warn: #ef9d90;
+    --warn-wash: #2a1815;
+    --warn-edge: #6b352f;
+    --warn-on-panel: #e8897f;
+    --pending: #d9b45c;
+    --pending-deep: #e6c87a;
+    --pending-edge: #8a6d16;
+    --pending-wash: #2a2211;
+    --final: #6fb6c4;
+    --blocked: #ef9d90;
+
+    --agreed-bg: #12291f;
+    --agreed-fg: #7fd2ad;
+    --agreed-rule: #27503e;
+
+    --bar: #4a5261;
+    --bar-event: #7f93b8;
+    --bar-hover: #a8bdf0;
+    --bar-low: #c2564a;
+    --chart-line: #93aceb;
+    --chart-low-ring: #e8897f;
+    --chart-axis: #8c95a1;
+    --chart-axis-low: #ef9d90;
+    --lowest-alarm: #f0a99c;
+
+    --ring: 0 0 0 2px var(--ground), 0 0 0 4px var(--accent);
   }
 }

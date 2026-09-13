@@ -1,7 +1,6 @@
 import { isUnpaidRow } from '../protocol/markers'
 import type { CardsMessage } from '../protocol/types'
 import { CardKv } from './CardKv'
-import { CardRows } from './CardRows'
 import { StatusBadge } from './StatusBadge'
 
 /**
@@ -20,13 +19,13 @@ const CONFIRMED = 'Plan confirmed.'
 const ENDED = 'Call ended. This is where the plan was left.'
 
 /**
- * The end of the journey: what the plan asks the user to change, and what it still cannot
- * cover.
+ * The end of the journey: what the plan asks the person to change, and what it still cannot
+ * cover, on the panel where the low point and the month's shape already are.
  *
  * `build_cards` sets the plan card's rows to exactly `action_rows + unpaid`. Every one of
- * them is outstanding — nothing here has been done — so no group may read as "covered", and
- * the separate `actions` card is deliberately not read: its rows are these same rows, and
- * rendering both showed every deferral twice.
+ * them is outstanding — nothing here has been done — so the proposed changes are numbered
+ * as things still to do and never ticked, and the separate `actions` card is deliberately
+ * not read: its rows are these same rows, and rendering both showed every deferral twice.
  */
 interface Props {
   snapshot: CardsMessage
@@ -44,42 +43,60 @@ export function PlanPanel({ snapshot, ended = false }: Props) {
   if (!plan) return null
   const proposed = plan.rows.filter((r) => !isUnpaidRow(r))
   const unpaid = plan.rows.filter(isUnpaidRow)
+  const confirmed = snapshot.phase === 'done'
+  const over = ended || snapshot.ended
 
   return (
     <section className="plan" data-status={plan.status} aria-label={plan.title}>
-      <header className="card__head">
-        <h2 className="card__title">{plan.title}</h2>
+      <header className="plan__head">
+        <h2 className="plan__title">{plan.title}</h2>
         <StatusBadge status={plan.status} />
       </header>
 
       <CardKv kv={plan.kv} />
-      {plan.note && <p className="card__note">{plan.note}</p>}
 
       {proposed.length > 0 && (
         <div className="plan__group" data-testid="plan-proposed">
           <h3 className="plan__group-title">Proposed changes</h3>
-          <CardRows rows={proposed} />
+          <ol className="plan__actions">
+            {proposed.map(([what, detail = '', when = ''], i) => (
+              <li className="plan__action" key={`${what}-${i}`}>
+                <span className="plan__what">
+                  {what}
+                  {detail && <span className="plan__detail"> {detail}</span>}
+                </span>
+                {when && <span className="plan__when">{when}</span>}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
       {unpaid.length > 0 && (
         <div className="plan__group plan__group--unpaid" data-testid="plan-unpaid">
           <h3 className="plan__group-title">Left unpaid this month</h3>
-          <CardRows rows={unpaid} />
+          <ul className="plan__unpaid">
+            {unpaid.map(([label, value = '', when = ''], i) => (
+              <li className="plan__owed" key={`${label}-${i}`}>
+                <span className="plan__owed-label">{label}</span>
+                <span className="plan__owed-value">{value}</span>
+                {when && <span className="plan__when">{when}</span>}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      {snapshot.phase === 'done' ? (
-        <p className="plan__confirm" data-confirmed="true">
-          {CONFIRMED}
-        </p>
-      ) : ended || snapshot.ended ? (
-        <p className="plan__confirm" data-ended="true">
-          {ENDED}
-        </p>
-      ) : (
-        <p className="plan__confirm">{CONFIRM}</p>
-      )}
+      {/* What it costs if the plan does not come off. Never an action without its price. */}
+      {plan.note && <p className="plan__consequence">{plan.note}</p>}
+
+      <p
+        className="plan__confirm"
+        data-confirmed={confirmed || undefined}
+        data-ended={!confirmed && over ? true : undefined}
+      >
+        {confirmed ? CONFIRMED : over ? ENDED : CONFIRM}
+      </p>
     </section>
   )
 }

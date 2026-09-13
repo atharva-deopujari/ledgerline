@@ -6,6 +6,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- The two faces the first paint actually sets: the serif the question is in, and the
+         sans the labels are in. Self-hosted, so this is a same-origin fetch and the page
+         needs no network beyond its own assets. -->
+    <link
+      rel="preload"
+      href="/fonts/source-serif-4-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="preload" href="/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
     <title>Ledgerline — talk through your month</title>
   </head>
   <body>

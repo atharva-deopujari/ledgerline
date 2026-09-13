@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Archivo:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body { margin: 0; background: #f3f4f6; }
+@keyframes lgRise { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+@keyframes lgWave { 0%, 100% { transform: scaleX(0.2) } 50% { transform: scaleX(1) } }
+a { color: #2b4ac9; }
+a:hover { color: #1d3459; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#f3f4f6;color:#14161a;font-family:Archivo,system-ui,sans-serif;display:flex;flex-direction:column;">
+
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:7px 22px;background:#1b1f26;color:#8a919c;font-size:11.5px;letter-spacing:0.02em;">
+    <span style="font-variant-numeric:tabular-nums;">Replay</span>
+    <sc-for list="{{ chrome.states }}" as="s" hint-placeholder-count="6">
+      <button type="button" onClick="{{ s.pick }}" style="padding:0;border:none;background:none;font-family:Archivo,sans-serif;font-size:11.5px;letter-spacing:0.02em;color:{{ s.fg }};border-bottom:1px solid {{ s.bd }};padding-bottom:1px;">{{ s.label }}</button>
+    </sc-for>
+    <span style="flex:1;"></span>
+    <button type="button" onClick="{{ chrome.togglePlay }}" style="padding:0;border:none;background:none;font-family:Archivo,sans-serif;font-size:11.5px;color:#e8eaee;border-bottom:1px solid #3a4150;padding-bottom:1px;">{{ chrome.playLabel }}</button>
+    <button type="button" onClick="{{ chrome.toggleWidth }}" style="padding:0;border:none;background:none;font-family:Archivo,sans-serif;font-size:11.5px;color:#e8eaee;border-bottom:1px solid #3a4150;padding-bottom:1px;">{{ chrome.widthLabel }}</button>
+  </div>
+
+  <div style="flex:1;display:flex;justify-content:center;">
+    <div style="width:100%;max-width:{{ chrome.frameMax }};display:flex;flex-direction:column;border-left:1px solid #e1e4e9;border-right:1px solid #e1e4e9;background:#f3f4f6;">
+
+      <div style="display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;padding:20px 30px 12px;border-bottom:1px solid #14161a;">
+        <span style="font-size:11.5px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;">Ledgerline</span>
+        <span style="flex:1;"></span>
+        <div style="display:flex;align-items:baseline;gap:10px;">
+          <sc-for list="{{ phase.words }}" as="w" hint-placeholder-count="3">
+            <span style="font-size:13px;font-family:{{ w.family }};font-style:{{ w.style }};color:{{ w.color }};border-bottom:2px solid {{ w.rule }};padding-bottom:2px;">{{ w.label }}</span>
+          </sc-for>
+        </div>
+        <span style="font-size:13px;color:#545a63;font-family:'Source Serif 4',Georgia,serif;font-style:italic;">{{ phase.stillNeed }}</span>
+      </div>
+
+      <sc-if value="{{ isOpening }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:96px 30px 120px;max-width:30ch;">
+          <p style="margin:0 0 20px;font-size:11.5px;letter-spacing:0.14em;text-transform:uppercase;color:#545a63;">{{ opening.kicker }}</p>
+          <h1 style="margin:0 0 18px;font-family:'Source Serif 4',Georgia,serif;font-size:40px;line-height:1.1;letter-spacing:-0.015em;font-weight:400;">{{ opening.title }}</h1>
+          <p style="margin:0 0 30px;font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.6;color:#545a63;text-wrap:pretty;">{{ opening.line }}</p>
+          <button type="button" style="padding:11px 22px;border:1px solid #14161a;background:#14161a;color:#f3f4f6;font-family:Archivo,sans-serif;font-size:15px;letter-spacing:0.01em;opacity:{{ opening.buttonOpacity }};">{{ opening.buttonLabel }}</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-wrap:wrap;align-items:stretch;flex:1;">
+
+          <div style="flex:1 1 560px;min-width:320px;display:flex;flex-direction:column;border-right:1px solid #e1e4e9;">
+
+            <div style="padding:26px 30px 22px;border-bottom:1px solid #e1e4e9;">
+              <p style="margin:0;font-family:'Source Serif 4',Georgia,serif;font-size:30px;line-height:1.34;letter-spacing:-0.008em;max-width:38ch;min-height:3.3em;text-wrap:pretty;opacity:{{ questionOpacity }};">{{ question }}</p>
+            </div>
+
+            <div style="display:flex;align-items:baseline;gap:12px;padding:14px 30px 6px;">
+              <span style="flex:1;"></span>
+              <span style="font-size:11.5px;letter-spacing:0.06em;color:#545a63;width:86px;">when</span>
+              <span style="font-size:11.5px;letter-spacing:0.06em;color:#545a63;width:112px;text-align:right;">amount</span>
+            </div>
+
+            <sc-for list="{{ cards }}" as="c" hint-placeholder-count="3">
+              <div onClick="{{ c.onClick }}" onMouseEnter="{{ c.onEnter }}" onMouseLeave="{{ c.onLeave }}" style="padding:0 30px;background:{{ c.ground }};border-top:1px solid #e1e4e9;border-left:3px solid {{ c.mark }};cursor:pointer;transition:background 200ms ease, border-color 200ms ease;animation:lgRise 300ms ease both;">
+                <div style="display:flex;align-items:baseline;gap:12px;padding:11px 0 5px;">
+                  <span style="font-family:'Source Serif 4',Georgia,serif;font-size:17px;font-style:italic;">{{ c.title }}</span>
+                  <span style="flex:1;"></span>
+                  <span style="font-size:13px;color:{{ c.statusColor }};">{{ c.statusWord }}</span>
+                </div>
+                <sc-for list="{{ c.rows }}" as="r" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:baseline;gap:12px;height:34px;line-height:34px;border-bottom:1px solid #e8eaee;background:{{ r.flash }};opacity:{{ r.opacity }};">
+                    <span style="font-size:15px;color:{{ r.labelColor }};flex:1;">{{ r.label }}</span>
+                    <span style="font-size:13px;color:#545a63;width:86px;">{{ r.when }}</span>
+                    <span style="width:112px;text-align:right;white-space:nowrap;">
+                      <span style="font-size:13px;color:#545a63;text-decoration:line-through;margin-right:6px;display:{{ r.oldShown }};">{{ r.old }}</span>
+                      <span style="font-size:21px;font-weight:500;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-0.01em;color:{{ r.valueColor }};">{{ r.value }}</span>
+                    </span>
+                  </div>
+                </sc-for>
+                <p style="margin:0;padding:9px 0 12px;max-width:56ch;font-family:'Source Serif 4',Georgia,serif;font-size:15px;line-height:1.55;color:#545a63;text-wrap:pretty;display:{{ c.noteShown }};">{{ c.note }}</p>
+              </div>
+            </sc-for>
+
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 30px;border-top:1px solid #e1e4e9;display:{{ missing.shown }};">
+              <span style="font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:15px;color:#8a6d16;">Still need</span>
+              <sc-for list="{{ missing.chips }}" as="m" hint-placeholder-count="1">
+                <span style="padding:2px 10px;border:1px solid #c8a52c;background:#fcf3dc;color:#7a5f10;font-size:13px;animation:lgRise 280ms ease both;">{{ m.label }}</span>
+              </sc-for>
+            </div>
+
+            <div style="flex:1;min-height:54px;border-top:1px solid #e1e4e9;background-image:repeating-linear-gradient(to bottom,transparent 0 33px,#e8eaee 33px 34px);"></div>
+
+            <div style="display:flex;border-top:1px solid #14161a;">
+              <div style="flex:1;padding:12px 16px 14px 30px;">
+                <p style="margin:0 0 2px;font-size:11.5px;letter-spacing:0.12em;text-transform:uppercase;color:#545a63;">In</p>
+                <p style="margin:0;font-size:21px;font-weight:500;font-variant-numeric:tabular-nums lining-nums;">{{ totals.in }}</p>
+              </div>
+              <div style="flex:1;padding:12px 16px 14px;border-left:1px solid #e1e4e9;">
+                <p style="margin:0 0 2px;font-size:11.5px;letter-spacing:0.12em;text-transform:uppercase;color:#545a63;">Out</p>
+                <p style="margin:0;font-size:21px;font-weight:500;font-variant-numeric:tabular-nums lining-nums;">{{ totals.out }}</p>
+              </div>
+              <div style="flex:1.4;padding:12px 30px 14px 16px;border-left:1px solid #e1e4e9;display:{{ totals.unpaidShown }};">
+                <p style="margin:0 0 2px;font-size:11.5px;letter-spacing:0.12em;text-transform:uppercase;color:#a32f26;">Unpaid if nothing changes</p>
+                <p style="margin:0;font-size:21px;font-weight:500;font-variant-numeric:tabular-nums lining-nums;color:#a32f26;">{{ totals.unpaid }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:1 1 372px;min-width:300px;background:#1b1f26;color:#e8eaee;display:flex;flex-direction:column;">
+            <div style="padding:26px 28px 20px;border-bottom:1px solid #2c323b;">
+              <p style="margin:0 0 8px;font-size:11.5px;letter-spacing:0.14em;text-transform:uppercase;color:#9aa2ae;">{{ right.lowestLabel }}</p>
+              <p style="margin:0;font-family:'Source Serif 4',Georgia,serif;font-size:48px;line-height:1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums lining-nums;color:{{ right.lowestColor }};">{{ right.lowest }}</p>
+              <p style="margin:10px 0 0;font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:17px;color:#b6bdc7;">{{ right.lowestWhen }}</p>
+            </div>
+
+            <div onMouseLeave="{{ chart.clearHover }}" style="padding:18px 28px 14px;border-bottom:1px solid #2c323b;">
+              <div style="display:flex;align-items:baseline;gap:8px;height:20px;font-size:13px;color:#b6bdc7;">
+                <span style="color:#e8eaee;font-variant-numeric:tabular-nums;">{{ chart.readoutDate }}</span>
+                <span style="font-variant-numeric:tabular-nums lining-nums;font-weight:500;">{{ chart.readoutBalance }}</span>
+                <span style="font-family:'Source Serif 4',Georgia,serif;font-style:italic;color:#9aa2ae;">{{ chart.readoutEvent }}</span>
+              </div>
+              <div style="position:relative;height:170px;margin-top:10px;">
+                <div style="position:absolute;inset:0;display:flex;align-items:flex-end;gap:2px;">
+                  <sc-for list="{{ chart.bars }}" as="b" hint-placeholder-count="30">
+                    <span onMouseEnter="{{ b.onEnter }}" style="flex:1;height:{{ b.h }};background:{{ b.bg }};transition:height 620ms cubic-bezier(.2,.7,.2,1), background 180ms ease;cursor:crosshair;"></span>
+                  </sc-for>
+                </div>
+                <svg viewBox="0 0 300 170" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;">
+                  <polyline points="{{ chart.line }}" style="fill:none;stroke:#93aceb;stroke-width:1.25;stroke-linejoin:round;vector-effect:non-scaling-stroke;"></polyline>
+                  <circle cx="{{ chart.lowX }}" cy="{{ chart.lowY }}" r="3.5" style="fill:#1b1f26;stroke:#e8897f;stroke-width:1.5;vector-effect:non-scaling-stroke;"></circle>
+                </svg>
+              </div>
+              <div style="display:flex;gap:2px;margin-top:7px;">
+                <sc-for list="{{ chart.axis }}" as="a" hint-placeholder-count="30">
+                  <span style="flex:1;text-align:center;font-size:11.5px;font-variant-numeric:tabular-nums;color:{{ a.color }};white-space:nowrap;">{{ a.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="padding:20px 28px;border-bottom:1px solid #2c323b;display:{{ right.planShown }};flex-direction:column;gap:14px;">
+              <p style="margin:0;font-size:11.5px;letter-spacing:0.14em;text-transform:uppercase;color:#9aa2ae;">{{ right.planTitle }}</p>
+              <sc-for list="{{ right.actions }}" as="a" hint-placeholder-count="2">
+                <div style="display:flex;align-items:baseline;gap:12px;animation:lgRise 380ms ease both;">
+                  <span style="font-family:'Source Serif 4',Georgia,serif;font-size:13px;color:#e8897f;font-variant-numeric:lining-nums;">{{ a.n }}</span>
+                  <span style="font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.4;flex:1;">{{ a.text }}</span>
+                  <span style="font-size:13px;color:#b6bdc7;white-space:nowrap;">{{ a.when }}</span>
+                </div>
+              </sc-for>
+              <p style="margin:0;font-family:'Source Serif 4',Georgia,serif;font-size:15px;line-height:1.55;color:#aeb5bf;text-wrap:pretty;display:{{ right.consequenceShown }};">{{ right.consequence }}</p>
+            </div>
+
+            <div style="margin-top:auto;padding:18px 28px;border-top:1px solid {{ right.confirmRule }};background:{{ right.confirmBg }};">
+              <p style="margin:0;font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.45;color:{{ right.confirmFg }};text-wrap:pretty;">{{ right.confirmText }}</p>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;align-items:center;gap:14px;padding:13px 30px;border-top:1px solid #14161a;background:#eceef1;">
+        <span style="display:block;width:38px;height:2px;background:{{ voice.color }};transform-origin:left center;animation:lgWave {{ voice.speed }} ease-in-out infinite;"></span>
+        <span style="font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:15px;color:#3b414a;">{{ voice.label }}</span>
+        <span style="flex:1;"></span>
+        <button type="button" style="padding:6px 15px;border:1px solid #cbd0d8;background:transparent;font-family:Archivo,sans-serif;font-size:13px;color:#3b414a;" style-hover="background:#e2e5ea">Mute</button>
+        <button type="button" style="padding:6px 15px;border:1px solid #d8a9a3;background:transparent;font-family:Archivo,sans-serif;font-size:13px;color:#a32f26;" style-hover="background:#fbeceb">End call</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900}}">
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const DAY = 86400000
+const START = Date.UTC(2026, 8, 11)
+const N = 30
+
+const groupIndian = (n) => {
+  const sign = n < 0 ? '-' : ''
+  const digits = String(Math.abs(Math.round(n)))
+  if (digits.length <= 3) return sign + digits
+  const head = digits.slice(0, -3)
+  return sign + head.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + digits.slice(-3)
+}
+const num = (s) => {
+  const v = parseFloat(String(s).replace(/,/g, ''))
+  return isNaN(v) ? null : v
+}
+const shortDate = (iso) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  return m ? Number(m[3]) + ' ' + MONTHS[Number(m[2]) - 1] : iso
+}
+const STATUS = {
+  ok: ['confirmed', '#17765a'],
+  warn: ['due before pay', '#a32f26'],
+  provisional: ['not confirmed', '#8a6d16'],
+  final: ['settled', '#1f6472'],
+  blocked: ['blocked', '#a32f26'],
+}
+const MARK = { ok: 'transparent', warn: '#a32f26', provisional: '#c8a52c', final: '#1f6472', blocked: '#a32f26' }
+
+const T_GATHER = [
+  { d: '2026-09-11', b: 7700, e: 'start' },
+  { d: '2026-09-30', b: 2000, e: 'lowest' },
+  { d: '2026-10-01', b: 46700, e: 'salary' },
+  { d: '2026-10-05', b: 33500, e: 'rent' },
+  { d: '2026-10-10', b: 32000, e: null },
+]
+const T_READY = [
+  { d: '2026-09-11', b: 7700, e: 'start' },
+  { d: '2026-09-14', b: 6100, e: 'streaming' },
+  { d: '2026-09-30', b: 1300, e: 'lowest' },
+  { d: '2026-10-01', b: 73000, e: 'salary' },
+  { d: '2026-10-05', b: 53800, e: 'rent' },
+  { d: '2026-10-10', b: 52300, e: null },
+]
+const T_PLAN = [
+  { d: '2026-09-11', b: 7700, e: 'start' },
+  { d: '2026-09-20', b: 3200, e: 'bike EMI' },
+  { d: '2026-09-30', b: 2000, e: 'lowest' },
+  { d: '2026-10-01', b: 73000, e: 'salary, streaming' },
+  { d: '2026-10-05', b: 53800, e: 'rent' },
+  { d: '2026-10-10', b: 52300, e: null },
+]
+
+const C = {
+  incomeA: { id: 'income', title: 'Income', status: 'ok', rows: [['Salary', '45,000', '1 Oct']], note: null },
+  incomeB: { id: 'income', title: 'Income', status: 'ok', rows: [['Salary', '72,000', '1 Oct']], note: null },
+  essA: { id: 'essentials', title: 'Essentials', status: 'provisional', rows: [['Groceries', '9,000', 'spread'], ['Rent', '12,000', '5 Oct'], ['Electricity', 'amount?', '']], note: 'Electricity has no amount yet, so the lowest day below is provisional.' },
+  essB: { id: 'essentials', title: 'Essentials', status: 'ok', rows: [['Groceries', '9,000', 'spread'], ['Rent', '18,000', '5 Oct']], note: 'Rent moved from 12,000 to 18,000 on your correction. Everything below was recomputed.' },
+  opt: { id: 'optionals', title: 'Optional', status: 'ok', rows: [['Streaming', '700', '14 Sep']], note: 'Optional outgoings are the first thing a plan will move.' },
+  debts: { id: 'debts', title: 'Loans and cards', status: 'warn', rows: [['Bike EMI', '4,500', '20 Sep']], note: 'Due eleven days before the salary lands. Nothing here is deferred without saying what it costs.' },
+}
+
+const STATES = [
+  {
+    key: 'start', mode: 'opening', phase: null, speak: 'idle',
+    opening: { kicker: 'about four minutes', title: 'Talk through your next thirty days.', line: 'Say what comes in, what goes out, and when. Nothing to type — the page keeps up with you.', buttonLabel: 'Start the call' },
+  },
+  {
+    key: 'connecting', mode: 'opening', phase: null, speak: 'thinking',
+    opening: { kicker: 'connecting', title: 'Talk through your next thirty days.', line: 'Allow the microphone when your browser asks. Start speaking as soon as you hear the first question.', buttonLabel: 'Starting', dim: true },
+  },
+  {
+    key: 'gathering', mode: 'board', phase: 'gathering', focus: 'essentials', speak: 'speaking',
+    question: 'Forty-five thousand in, rent twelve thousand, groceries nine thousand spread across the month. What does electricity usually come to?',
+    cards: [C.incomeA, C.essA],
+    missing: ['Electricity amount'],
+    kv: { in: '45,000', out: '21,000', lowest: '2,000 on 30 Sep' },
+    lowestLabel: 'Lowest point, provisional',
+    timeline: T_GATHER,
+    confirm: 'Electricity is still missing, so the lowest day can still move.',
+  },
+  {
+    key: 'correction', mode: 'board', phase: 'ready', focus: 'essentials', speak: 'speaking',
+    question: 'Seventy-two thousand in, twenty-seven thousand seven hundred out. The next thirty days are covered.',
+    cards: [C.incomeB, C.essB, C.opt],
+    missing: [],
+    kv: { in: '72,000', out: '27,700', lowest: '1,300 on 30 Sep' },
+    lowestLabel: 'Lowest point in the next thirty days',
+    timeline: T_READY,
+    confirm: 'The next thirty days are covered.',
+  },
+  {
+    key: 'plan', mode: 'board', phase: 'plan', focus: 'debts', speak: 'thinking',
+    question: 'The bike EMI is due on the twentieth, and the money does not arrive until the first. Ask the lender to move it, and hold the streaming payment.',
+    cards: [C.incomeB, C.debts, C.essB, C.opt],
+    missing: [],
+    kv: { in: '72,000', out: '27,700', lowest: '2,000 on 30 Sep', unpaid: '4,500' },
+    lowestLabel: 'Lowest point in the next thirty days',
+    timeline: T_PLAN,
+    actions: [['i', 'Ask the lender to move the bike EMI', 'to 1 Oct'], ['ii', 'Hold the streaming payment', 'to 1 Oct']],
+    consequence: 'If the lender says no, 4,500 stays unpaid this month. A missed secured instalment adds penal charges and is reported to the credit bureaus after thirty days.',
+    confirm: 'Does this work for you? Say so, or tell me what to change.',
+  },
+  {
+    key: 'confirmed', mode: 'board', phase: 'done', focus: null, speak: 'idle',
+    question: 'Good. That is your plan for the next thirty days.',
+    cards: [C.incomeB, C.debts, C.essB, C.opt],
+    missing: [],
+    kv: { in: '72,000', out: '27,700', lowest: '2,000 on 30 Sep', unpaid: '4,500' },
+    lowestLabel: 'Lowest point in the next thirty days',
+    timeline: T_PLAN,
+    actions: [['i', 'Ask the lender to move the bike EMI', 'to 1 Oct'], ['ii', 'Hold the streaming payment', 'to 1 Oct']],
+    consequence: 'If the lender says no, 4,500 stays unpaid this month.',
+    confirm: 'Plan confirmed. The call has ended.',
+    done: true,
+  },
+]
+
+const series = (points) => {
+  const by = {}
+  points.forEach((p) => { by[p.d] = p })
+  const out = []
+  let held = points[0].b
+  for (let i = 0; i < N; i++) {
+    const t = new Date(START + i * DAY)
+    const iso = t.toISOString().slice(0, 10)
+    const hit = by[iso]
+    if (hit) held = hit.b
+    out.push({ b: held, e: hit && hit.e !== 'start' ? hit.e : '', iso: iso, day: t.getUTCDate(), month: t.getUTCMonth() })
+  }
+  return out
+}
+
+class Component extends DCLogic {
+  state = { idx: 2, prev: 2, t: 1, playing: false, wide: true, pinned: null, hover: null, day: null }
+
+  componentDidMount() {
+    let saved = null
+    try { saved = JSON.parse(localStorage.getItem('ledgerline-board-v2') || 'null') } catch (e) { saved = null }
+    if (saved && typeof saved.idx === 'number') {
+      this.setState({ idx: saved.idx, prev: Math.max(0, saved.idx - 1) })
+    }
+    this.play()
+  }
+  componentWillUnmount() {
+    cancelAnimationFrame(this.raf)
+    clearTimeout(this.timer)
+    clearTimeout(this.floor)
+  }
+  save(idx) {
+    try { localStorage.setItem('ledgerline-board-v2', JSON.stringify({ idx: idx })) } catch (e) {}
+  }
+
+  go(idx) {
+    if (idx === this.state.idx) return
+    cancelAnimationFrame(this.raf)
+    clearTimeout(this.floor)
+    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    // The settled snapshot is authoritative: t always lands on 1, whether or not a single
+    // animation frame ever arrives (backgrounded tab, throttled rAF, capture).
+    this.setState({ prev: this.state.idx, idx: idx, t: still ? 1 : 0, pinned: null, day: null })
+    this.save(idx)
+    if (still) return
+    this.floor = setTimeout(() => this.setState({ t: 1 }), 760)
+    const t0 = performance.now()
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / 700)
+      this.setState({ t: 1 - Math.pow(1 - p, 3) })
+      if (p < 1) this.raf = requestAnimationFrame(step)
+    }
+    this.raf = requestAnimationFrame(step)
+  }
+  play() {
+    clearTimeout(this.timer)
+    this.setState({ playing: true })
+    const tick = () => {
+      const next = this.state.idx + 1
+      if (next >= STATES.length) { this.setState({ playing: false }); return }
+      this.go(next)
+      this.timer = setTimeout(tick, 4200)
+    }
+    this.timer = setTimeout(tick, 3200)
+  }
+  pause() {
+    clearTimeout(this.timer)
+    this.setState({ playing: false })
+  }
+
+  renderVals() {
+    const s = this.state
+    const cur = STATES[s.idx]
+    const prev = STATES[s.prev]
+    const t = s.t
+    const mix = (a, b) => a + (b - a) * t
+
+    const chrome = {
+      states: STATES.map((st, i) => ({
+        label: st.key,
+        fg: i === s.idx ? '#e8eaee' : '#8a919c',
+        bd: i === s.idx ? '#e8eaee' : 'transparent',
+        pick: () => { this.pause(); this.go(i) },
+      })),
+      playLabel: s.playing ? 'pause' : 'play the call',
+      togglePlay: () => (s.playing ? this.pause() : (s.idx >= STATES.length - 1 ? (this.go(0), this.play()) : this.play())),
+      widthLabel: s.wide ? 'desktop' : 'phone',
+      toggleWidth: () => this.setState({ wide: !s.wide }),
+      frameMax: s.wide ? '1180px' : '420px',
+    }
+
+    const order = ['gathering', 'ready', 'plan']
+    const ph = cur.phase
+    const done = ph === 'done'
+    const ci = done ? 3 : order.indexOf(ph)
+
+    const base = {
+      chrome: chrome,
+      isOpening: cur.mode === 'opening',
+      isBoard: cur.mode === 'board',
+      phase: {
+        words: order.map((name, i) => ({
+          label: name,
+          family: i === ci ? "'Source Serif 4',Georgia,serif" : 'Archivo,sans-serif',
+          style: i === ci ? 'italic' : 'normal',
+          color: i === ci ? '#14161a' : i < ci || done ? '#545a63' : '#aab1bb',
+          rule: i < ci || done ? '#14161a' : i === ci ? '#a32f26' : 'transparent',
+        })),
+        stillNeed: cur.mode !== 'board' ? 'not started' : (cur.missing && cur.missing.length ? cur.missing.length + ' thing still needed' : 'nothing still needed'),
+      },
+      voice: {
+        label: { idle: 'not speaking', listening: 'listening', speaking: 'speaking', thinking: 'working it out' }[cur.speak],
+        heard: { idle: 'It said', listening: 'It asked', speaking: 'It is saying', thinking: 'It said' }[cur.speak],
+        color: { idle: '#aab1bb', listening: '#17765a', speaking: '#2b4ac9', thinking: '#8a6d16' }[cur.speak],
+        speed: cur.speak === 'speaking' ? '1s' : cur.speak === 'thinking' ? '1.6s' : '2.6s',
+      },
+      questionOpacity: cur.mode === 'board' ? 0.4 + 0.6 * t : 1,
+      question: cur.question || '',
+      opening: cur.opening
+        ? Object.assign({ buttonOpacity: cur.opening.dim ? 0.55 : 1 }, cur.opening)
+        : { kicker: '', title: '', line: '', buttonLabel: '', buttonOpacity: 1 },
+    }
+    if (cur.mode !== 'board') return base
+
+    const prevRows = {}
+    const prevIds = {}
+    if (prev.mode === 'board') {
+      prev.cards.forEach((c) => {
+        prevIds[c.id] = true
+        c.rows.forEach((r) => { prevRows[c.id + '|' + r[0]] = r[1] })
+      })
+    }
+
+    const cards = cur.cards.map((c) => {
+      const st = STATUS[c.status] || STATUS.ok
+      const isFocus = cur.focus === c.id
+      const isPinned = s.pinned === c.id
+      const isHover = s.hover === c.id
+      const isNew = !prevIds[c.id]
+      return {
+        title: c.title,
+        statusWord: st[0],
+        statusColor: st[1],
+        ground: isPinned ? '#e4e7ec' : isHover ? '#eaedf1' : isFocus ? '#eef1f6' : 'transparent',
+        mark: isPinned ? '#14161a' : isFocus ? '#2b4ac9' : MARK[c.status],
+        noteShown: (isPinned || isHover) && c.note ? 'block' : 'none',
+        note: c.note || '',
+        onClick: () => this.setState({ pinned: isPinned ? null : c.id }),
+        onEnter: () => this.setState({ hover: c.id }),
+        onLeave: () => this.setState({ hover: null }),
+        rows: c.rows.map((r) => {
+          const before = prevRows[c.id + '|' + r[0]]
+          const nv = num(r[1])
+          const pv = before === undefined ? null : num(before)
+          const changed = pv !== null && nv !== null && pv !== nv
+          const fresh = before === undefined && !isNew
+          return {
+            label: r[0],
+            when: r[2] || '',
+            value: nv === null ? r[1] : changed ? groupIndian(mix(pv, nv)) : groupIndian(nv),
+            old: changed ? before : '',
+            // The struck old value appears as the roll settles, never beside its own value.
+            oldShown: changed && t > 0.15 ? 'inline' : 'none',
+            valueColor: changed ? '#2b4ac9' : nv === null ? '#545a63' : '#14161a',
+            labelColor: c.id === 'optionals' ? '#545a63' : '#14161a',
+            flash: changed || fresh ? 'rgba(43,74,201,' + (0.13 * (1 - t)).toFixed(3) + ')' : 'transparent',
+            opacity: fresh ? (0.35 + 0.65 * t).toFixed(2) : 1,
+          }
+        }),
+      }
+    })
+
+    const curS = series(cur.timeline)
+    const prevS = prev.mode === 'board' ? series(prev.timeline) : curS
+    const bal = curS.map((d, i) => mix(prevS[i] ? prevS[i].b : d.b, d.b))
+    const top = Math.max.apply(null, bal) || 1
+    const lowIdx = bal.indexOf(Math.min.apply(null, bal))
+
+    const bars = bal.map((b, i) => ({
+      h: Math.max(2, (b / top) * 170).toFixed(1) + 'px',
+      bg: s.day === i ? '#a8bdf0' : i === lowIdx ? '#b4483a' : curS[i].e ? '#8ba0c4' : '#626f82',
+      onEnter: () => this.setState({ day: i }),
+    }))
+    const line = bal.map((b, i) => ((i + 0.5) * 10).toFixed(1) + ',' + (170 - (b / top) * 170).toFixed(1)).join(' ')
+
+    const hov = s.day === null ? null : curS[s.day]
+    const kv = cur.kv
+    const lowSplit = (kv.lowest || '').split(' on ')
+    const prevLow = prev.mode === 'board' && prev.kv.lowest ? num(prev.kv.lowest.split(' on ')[0]) : num(lowSplit[0])
+
+    return Object.assign(base, {
+      cards: cards,
+      missing: {
+        shown: cur.missing && cur.missing.length ? 'flex' : 'none',
+        chips: (cur.missing || []).map((m) => ({ label: m })),
+      },
+      totals: {
+        in: kv.in || '',
+        out: kv.out || '',
+        unpaid: kv.unpaid || '',
+        unpaidShown: kv.unpaid ? 'block' : 'none',
+      },
+      chart: {
+        bars: bars,
+        line: line,
+        lowX: ((lowIdx + 0.5) * 10).toFixed(1),
+        lowY: (170 - (bal[lowIdx] / top) * 170).toFixed(1),
+        axis: curS.map((d, i) => ({
+          label: i === 0 || d.day % 5 === 0 ? d.day + ' ' + MONTHS[d.month] : '·',
+          color: i === lowIdx ? '#ef9d90' : '#a7aeb9',
+        })),
+        readoutDate: hov ? shortDate(hov.iso) : shortDate(curS[0].iso) + ' — ' + shortDate(curS[N - 1].iso),
+        readoutBalance: hov ? groupIndian(hov.b) : '',
+        readoutEvent: hov ? hov.e : '',
+        clearHover: () => this.setState({ day: null }),
+      },
+      right: {
+        lowestLabel: cur.lowestLabel,
+        lowest: groupIndian(mix(prevLow, num(lowSplit[0]))),
+        lowestColor: kv.unpaid ? '#f0a99c' : '#e8eaee',
+        lowestWhen: lowSplit[1] ? 'on ' + lowSplit[1] + (kv.unpaid ? ', the bike EMI lands first' : '') : '',
+        planShown: cur.actions ? 'flex' : 'none',
+        planTitle: cur.done ? 'Your plan, confirmed' : 'Two things to do',
+        actions: (cur.actions || []).map((a) => ({ n: a[0], text: a[1], when: a[2] })),
+        consequence: cur.consequence || '',
+        consequenceShown: cur.consequence ? 'block' : 'none',
+        confirmText: cur.confirm,
+        confirmBg: cur.done ? '#133026' : '#222733',
+        confirmFg: cur.done ? '#7fd2ad' : '#e8eaee',
+        confirmRule: cur.done ? '#235240' : '#2c323b',
+      },
+    })
+  }
+}
+</script>
+</body>
+</html>

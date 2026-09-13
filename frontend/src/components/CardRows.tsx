@@ -1,8 +1,25 @@
-import { isMoreRow } from '../protocol/markers'
+import { isMoreRow, isNotKnownRow } from '../protocol/markers'
 import { splitProvisional } from './format'
 
-/** [label, value, when] rows, shared by the focus card and the plan panel. */
-export function CardRows({ rows }: { rows: string[][] }) {
+interface Props {
+  rows: string[][]
+  /** For rows the last snapshot moved: the figure it replaced, by row label. */
+  retired?: Map<string, string>
+}
+
+/**
+ * `[label, value, when]` in three columns — label left, when and amount to the right,
+ * tabular figures so the column of money lines up digit for digit.
+ *
+ * When a figure is corrected, the one it replaced is struck through beside it for that
+ * snapshot: the correction is the moment the person most needs to see, and a number that
+ * simply changes while they are talking is a number they cannot check. Both figures came
+ * from the backend — the retired one is the string it sent a moment ago, not a step
+ * computed on the way — and the struck one can never be mistaken for the live one: it is
+ * marked `data-retired`, hidden from assistive tech, and replaced there by a spoken "was
+ * 45,000, now 72,000" so a screen reader hears one current figure, not two.
+ */
+export function CardRows({ rows, retired }: Props) {
   if (rows.length === 0) return null
   return (
     <ul className="rows">
@@ -17,22 +34,41 @@ export function CardRows({ rows }: { rows: string[][] }) {
           )
         }
         const { value, uncertain } = splitProvisional(rawValue)
+        const was = retired?.get(label ?? '')
         return (
-          <li className="row" key={`${label}-${i}`}>
+          <li
+            className="row"
+            /* Keyed on the value as well as the label: when a figure is corrected the row
+               is a new node, so the wash actually replays instead of the browser reusing an
+               element whose animation has already finished. */
+            key={`${label}-${i}-${rawValue}`}
+            data-changed={was === undefined ? undefined : true}
+            data-known={isNotKnownRow(row) ? 'false' : undefined}
+          >
             <span className="row__label">{label}</span>
-            <span className="row__value" data-testid={`value-${label}`}>
-              {value}
-              {uncertain && (
-                <span
-                  className="row__uncertain"
-                  title="Not confirmed yet"
-                  aria-label="not confirmed"
-                >
-                  ?
-                </span>
-              )}
-            </span>
             {when && <span className="row__when">{when}</span>}
+            <span className="row__value" data-testid={`value-${label}`}>
+              {was !== undefined && (
+                <>
+                  <span className="visually-hidden">{`was ${was}, now `}</span>
+                  <s className="row__retired" data-retired={was} aria-hidden="true">
+                    {was}
+                  </s>
+                </>
+              )}
+              <span className="row__live">
+                {value}
+                {uncertain && (
+                  <span
+                    className="row__uncertain"
+                    title="Not confirmed yet"
+                    aria-label="not confirmed"
+                  >
+                    ?
+                  </span>
+                )}
+              </span>
+            </span>
           </li>
         )
       })}

@@ -74,9 +74,11 @@ describe('App', () => {
     await startCall()
     send(planned)
     await waitFor(() => expect(screen.getAllByText('Your plan')).toHaveLength(1))
-    // and the plan leads the column rather than sitting below the stack
-    const lead = document.querySelector('.board__lead')!
-    expect(within(lead as HTMLElement).getByText('Your plan')).toBeInTheDocument()
+    // and the plan closes the panel, under the low point and the month it is answering,
+    // rather than being dealt into the ledger as one more account
+    const panel = document.querySelector('.panel')!
+    expect(within(panel as HTMLElement).getByText('Your plan')).toBeInTheDocument()
+    expect(document.querySelector('.stack .plan')).toBeNull()
   })
 
   it('shows a proposed action once, not again as a collapsed actions card', async () => {
@@ -89,13 +91,13 @@ describe('App', () => {
     })
     await screen.findByText('Your plan')
     expect(screen.getAllByText('Defer')).toHaveLength(1)
-    expect(screen.queryByRole('button', { name: /Proposed/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('article', { name: 'Proposed' })).not.toBeInTheDocument()
   })
 
   it('keeps the actions card in the stack while there is no plan yet', async () => {
     await startCall()
     send(sampleJson)
-    expect(await screen.findByRole('button', { name: /Proposed/ })).toBeInTheDocument()
+    expect(await screen.findByRole('article', { name: 'Proposed' })).toBeInTheDocument()
   })
 
   it('keeps the missing chips out of the focus slot', async () => {
@@ -105,13 +107,20 @@ describe('App', () => {
     expect(screen.getAllByText('Still need')).toHaveLength(1)
   })
 
-  it('lets a click focus another card, and keeps it focused', async () => {
+  it('puts every account on the board at once, with no click needed to read one', async () => {
     await startCall()
     send(sampleJson)
-    await userEvent.click(await screen.findByRole('button', { name: /Income/ }))
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Income' })).toBeInTheDocument())
-    // the previously focused card falls back into the stack
-    expect(screen.getByRole('button', { name: /Essentials/ })).toBeInTheDocument()
+    // The card the bot is working on is marked, not opened: a figure the person gave is a
+    // figure they have to be able to see, or they cannot correct it.
+    expect(await screen.findByRole('article', { name: 'Income' })).toBeInTheDocument()
+    expect(screen.getByRole('article', { name: 'Essentials' })).toBeInTheDocument()
+    expect(screen.getByRole('article', { name: 'Loans & cards' })).toBeInTheDocument()
+    expect(screen.getByText('Salary')).toBeInTheDocument()
+    expect(screen.getByText('HDFC card min')).toBeInTheDocument()
+
+    const focused = document.querySelectorAll('[data-focused]')
+    expect(focused).toHaveLength(1)
+    expect(focused[0]).toHaveAttribute('data-card', 'essentials')
   })
 
   it('puts the user back on the start screen when the call never began', async () => {
