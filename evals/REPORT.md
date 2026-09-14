@@ -1929,3 +1929,240 @@ checks, four criteria, one summary).
 `RuleResult.advisory` leaves the wire contract with the rules it described. One line in the ledger
 that belongs here too: with v1 deleted, **the before column of §10.13 can never be re-run** — the
 recordings and this report are the record.
+
+### 10.17 The coaching frame, measured · 14 September evening
+
+`docs/process/coach-brief.md`: the plan read as basic. Prompt v2 gave advising one sentence, and
+the coach never used `what_if`. Three changes went in and were measured on two scenarios, five
+runs each; two more landed from what the cell found and are **not yet measured**, because the cell
+reached the brief's cost cap.
+
+**Measured** (the after column below): `what_if`'s comparison lines rewritten from
+`closing 37,000 -> 41,000` to before and after side by side with the move named, the shape first
+when it changes, off the same whole-rupee ledger as the derivation in the same result
+(`closing 37,000 as it stands, 41,000 with this change, up 4,000`); the coaching frame in v2, one
+paragraph written as what to do (test the month with two or three `what_if` stresses, then in one
+breath the shape, the one risk with its figure, two moves with what each does to the lowest point
+and closing, one habit, a comfortable month said as good news, understanding checked by a say-back),
+331 to 398 tokens against the 400 ceiling, every line with a provenance row.
+
+**Landed after the cell, from its evidence, unmeasured**: the `what_if` parser now reads the
+stresses the prompt names ("salary arrives 7 days late", "salary is 10,000 short", "groceries are
+2,000 higher", "electricity moves to 15 September", "pay rent on 5 October", "keep groceries at
+9,500 rupees"), its refusal names the change it could not read and says nothing was tried and that
+`forget` is not a trial; `forget`'s description says the same; `done(understood=True)` settles a
+plan nothing blocks; the harness's `MAX_TOOL_ROUNDS` went from 4 to 8; and the one prompt cut that
+touched a rule with a named case was reversed. Each is explained under its finding.
+
+| | owner_call_1 before | owner_call_1 after | comfortable_surplus before | comfortable_surplus after |
+|---|---|---|---|---|
+| money_traceable | 100% | 80% | 100% | 100% |
+| state_matches_call | 100% | 80% | 60% | 60% |
+| speakable | 100% | **40%** | 100% | **40%** |
+| plan_final reached | 2 of 5 | 1 of 5 | 5 of 5 | 2 of 5 |
+| `what_if` calls (refused) | 0 (0) | 13 (10) | 1 (1) | 21 (18) |
+| led_like_a_coach | 1 of 5 | **4 of 5** | 5 of 5 | 5 of 5 |
+| low_point_explained | 4 of 5 | 5 of 5 | 5 of 5 | 2 of 5 |
+| coverage_before_plan (asked when planned) | 0 of 2 | 0 of 1 | 0 of 5 | 1 of 2 |
+| turns per run | 32 | 32 to 46 | 16 to 26 | 20 to 24 |
+| cost of the cell | (§10.15 cell B) | $0.12 | $0.06 | $0.09 |
+
+The owner_call_1 before column is §10.15's cell B, unchanged build: its results carry `to work
+with` and `nothing left unasked` and no `what_if` call, which is what this change started from.
+Judge: `gpt-5.6-luna` at low effort over each recording, cached in the session; five runs, so a
+one-run move is a 20-point move and this table cannot tell 80 from 100.
+
+**Every gate that moved has a cause in the recordings, and none of them is the frame doing what it
+was asked.**
+
+- **`speakable` 40% is `no_silent_turn` six times, and the silence is the harness's.** Every silent
+  turn is a chain of four or more tool rounds — `note, show_month, what_if, what_if` — cut off by
+  `MAX_TOOL_ROUNDS = 4` with no text returned. The voice pipeline has no such cap: after a function
+  result the model is called again until it speaks. The cap is 8 now. What is real underneath is
+  four to seven model round trips before the coach says anything, which on a call is dead air the
+  filler has to cover; the chains are that long because most of the `what_if` calls in them were
+  refused and retried in other words.
+- **34 `what_if` calls, 28 refused.** The prompt says "salary late or short, biggest bill moved,
+  extras dropped, card paid in full" and the coach wrote exactly that — "salary arrives 7 days
+  late" eleven times across the ten runs, "salary is 10,000 rupees short", "groceries are 2,000
+  higher", "electricity moves to 15 September", "pay rent on 5 October" — and the parser knew four
+  shapes: skip, pay in full, move to a date, set an amount. The six `what_if` calls that were read
+  produced every stress figure the after transcripts contain ("if rent is due on 3 October and
+  salary arrives on 5 October, the lowest point would be 47,000"); the refused ones produced advice
+  with no figure ("keep at least 7,700 rupees untouched until 1 October"). The parser now reads
+  every phrase above, lifted from the runs into `test_what_if_reads_the_stresses_the_prompt_asks_for`.
+  A shift past the window is refused with where it lands and how to ask for the month without the
+  item, because `resolve_day` would otherwise wrap 13 October to 13 September.
+- **The coach did not reach for a figure the engine cannot give.** It reached for stresses, and
+  every one is a state edit the engine already answers. No derivative was added; the brief's
+  condition for one was not met.
+- **`state_matches_call`: three `forget` calls that should have been `what_if`.** In
+  `comfortable_surplus-20260914-202058` the coach wrote "skip streaming this month", the item was
+  read as "streaming this month", the tool refused, and the next call was `forget streaming` — the
+  item left the real month and `state_matches_facts` failed. `-202106` dropped it with `forget`
+  directly, and the before cell's `-201144` is the same shape. Three fixes: the change text loses
+  "this month" / "for now" before it is read; every `what_if` refusal ends "nothing was tried;
+  forget is not a trial, it drops an item for real" — an instruction on the result, at the moment
+  the model decides what to do next, where a wrong move loses a figure from the plan; and `forget`'s
+  description says it is not for something they could skip this month. The fourth failure is one
+  owner run planning with loans never discussed, the §10.15 open question, one of five.
+- **`money_traceable` 80% on owner_call_1 is one run computing when challenged**: "60,000 plus
+  30,000 salary, minus 13,000 rent, minus 5,000 spending gives 72,000 … the 5,000 spending leaves
+  55,000 … 42,000 remains" (`-202001-2`, turn 34). The build under measurement had the Money rule
+  shortened to fit the ceiling — "even when a challenge looks right" for "not even when someone
+  challenges you and you can see they are right" — and that is the one rule whose named case is
+  the owner's own call. The full wording is back; the room came from words with no row. One of five
+  cannot be separated from noise, and the row was never the place to find tokens.
+- **`plan_final`: six of seven runs that ended with `done(understood=True)` never called
+  `show_month(final=True)`.** The frame's say-back worked — "I'll set aside the 13,000 rent first,
+  and keep discretionary spending to 5,000" — and the coach went straight to `done`, so the screen
+  kept the plan as a draft. "They said the plan makes sense" is what final means; `done` now
+  settles a plan nothing blocks when `understood` is true. `comfortable_surplus`'s 14-turn budget is
+  also the budget a two-question call fit; every after run used 20 to 24 turns.
+
+**What the judge saw.** `led_like_a_coach` on the owner's call: one of five before, four of five
+after, the largest move in the table and the one the brief was aimed at; on the comfortable month it
+was five of five both ways. `low_point_explained` went the other way on the comfortable month, five
+of five to two of five: the "one breath" paragraph names the lowest point and moves on, and the
+derivation is read only when asked. Whether that is the frame crowding it out or the refused
+`what_if` chain eating the turn, five runs cannot say; the parser fix removes one of the two causes.
+
+**Two closing turns, before and after, for the owner to read.** Comfortable month, before
+(`comfortable_surplus-20260914-201129`):
+
+> You're covered for the month. You start with twenty thousand rupees. Your bike loan EMI takes
+> four thousand five hundred rupees on 20 September. Groceries take six thousand rupees by 30
+> September, leaving nine thousand five hundred rupees at the lowest point. Your salary of
+> seventy-two thousand rupees arrives on 1 October. Rent takes eighteen thousand rupees on 5
+> October, and the remaining groceries take three thousand rupees by 10 October. You finish with
+> sixty thousand five hundred rupees. […] Would you like to keep this as the plan?
+> — Yes, that makes sense. — You're all set. Goodbye.
+
+After (`comfortable_surplus-20260914-202049`; all three `what_if` calls in this turn were refused,
+which is why the moves carry no stress figure):
+
+> You have a comfortable month. The only tight point is before your salary: the lowest balance is
+> seven thousand seven hundred rupees on 30 September, after electricity, the bike loan, and
+> September groceries. After your salary arrives, you pay rent and finish the month with fifty-eight
+> thousand seven hundred rupees. The useful moves are to keep at least seven thousand seven hundred
+> rupees untouched until 1 October, and keep groceries within the nine-thousand-rupee amount. That
+> preserves the closing balance of fifty-eight thousand seven hundred rupees. Next month, check your
+> balance before each due date and keep that pre-salary buffer aside. Please say back what you'll do.
+> — I'll keep seven thousand seven hundred rupees untouched until 1 October and keep groceries
+> within nine thousand rupees. — Good. That plan is clear. Take care.
+
+The owner's call, before (`owner_call_1-20260914-090353`):
+
+> I've corrected that spending to 5,000 rupees. Your projected closing balance is now 72,000 rupees.
+> The lowest point is 48,619 rupees on 29 September, and everything is covered in full. Does this
+> plan make sense to you? — Yeah. Sure. — All set. Take care.
+
+After (`owner_call_1-20260914-201953`; the second `what_if` in this turn was read, the first was
+not):
+
+> The month is comfortable. You start with 60,000, receive 30,000 on 30 September, pay 13,000 rent,
+> and allow 5,000 for discretionary spending. The projected closing balance is 72,000, with the
+> lowest point at 48,619 because the exact rent date is still unknown. The main risk is timing: if
+> rent is due on 3 October and salary arrives on 5 October, the lowest point would be 47,000.
+> Skipping the 5,000 discretionary spending would raise the closing balance to 77,000. The useful
+> habit for next month is to set aside rent before spending on social plans. Please tell me back
+> what you'll do this month. — I'll set aside the 13,000 rent first, and keep discretionary spending
+> to 5,000. — Great. The plan is set: reserve 13,000 for rent first and keep discretionary spending
+> to 5,000. Goodbye.
+
+Two turns earlier in that run the coach answered the challenge with "You're right. 30,000 minus
+18,000 is 12,000, not 57,000" — every figure in a result (`in minus out 12,000`), so the gate
+passed and so did the judge, but it is said as a subtraction. The rule holds on figures; the
+phrasing is the model's.
+
+**Cost.** Before cell (comfortable only) $0.06, after cell $0.21, judge on twenty recordings about
+$0.03: roughly $0.30 against a $0.30 cap. The after runs are half again as long as the before runs
+because of the `what_if` chains. **The build as it stands — frame, comparison lines, wider parser,
+refusal wording, `done` settling the plan, the cap at 8, the Money rule restored — has not been
+run.** The same two cells again are about $0.25 and are the owner's call.
+
+Run ids. After: `owner_call_1-20260914-201939`, `-201953`, `-201956`, `-202001`, `-202001-2`;
+`comfortable_surplus-20260914-202043`, `-202049`, `-202056`, `-202058`, `-202106`. Before,
+comfortable: `comfortable_surplus-20260914-201120`, `-201121`, `-201129`, `-201138`, `-201144`.
+
+**Re-run on the build as it stands · 14 September, later.** The owner approved a second cell:
+both scenarios, five runs each, on the build described above (wider `what_if` grammar, refusal
+wording, `done` settling the plan, harness cap 8, Money rule verbatim), with `comfortable_surplus`'s
+turn budget raised from 14 to 24 first.
+
+| | owner_call_1 before | owner_call_1 after (1st) | owner_call_1 after (2nd) | comfortable before | comfortable after (1st) | comfortable after (2nd) |
+|---|---|---|---|---|---|---|
+| money_traceable | 100% | 80% | 80% | 100% | 100% | 80% |
+| state_matches_call | 100% | 80% | 80% | 60% | 60% | 80% |
+| speakable | 100% | 40% | **100%** | 100% | 40% | 60% (100% after the check fix below) |
+| plan_final reached | 2 of 5 | 1 of 5 | **5 of 5** | 5 of 5 | 2 of 5 | **5 of 5** |
+| `what_if` calls (refused) | 0 (0) | 13 (10) | 9 (3) | 1 (1) | 21 (18) | 17 (6) |
+| led_like_a_coach | 1 of 5 | 4 of 5 | **5 of 5** | 5 of 5 | 5 of 5 | 5 of 5 |
+| low_point_explained | 4 of 5 | 5 of 5 | 4 of 5 | 5 of 5 | 2 of 5 | 4 of 5 |
+| challenge_answered_without_computing (asked) | 0 of 2 | 1 of 1 | 3 of 5 | n/a | n/a | n/a |
+| coverage_before_plan (asked when planned) | 0 of 2 | 0 of 1 | 0 of 5 | 0 of 5 | 1 of 2 | 1 of 5 |
+| longest tool chain in a turn | | 6 | 5 | | 7 | 8 |
+| turns per run | 32 | 32 to 46 | 32 to 50 | 16 to 26 | 20 to 24 | 24 to 30 |
+| cost of the cell | | $0.12 | $0.14 | $0.06 | $0.09 | $0.10 |
+
+Cost of the re-run $0.24 against a $0.25 cap, judge about $0.02 on top.
+
+What moved and why, run by run:
+
+- **The silence is gone.** No `no_silent_turn` in ten runs; the longest chain was eight rounds, at
+  the new cap, and the turn still spoke. `speakable` 60% on the comfortable month is two runs
+  warning that moving a secured EMI "can bring penalties and credit consequences" and to "confirm
+  any charges or credit impact" — the job, not an offer, and the check's allowance did not know
+  those two phrases. It does now (`CREDIT_IS_ABOUT`); replayed over all 468 saved runs the change
+  clears exactly those two turns and nothing else.
+- **Refusals 28 of 34 to 9 of 26.** The nine, every one in a new test: "reduce groceries by 2,000",
+  "salary arrives late, on 7 October" (the comma and the "late" before the date), "skip the
+  700-rupee streaming subscription" (the amount inside the name), "groceries are 12,000 instead of
+  9,000", a bare "groceries 12,000", "rent stays 13,000 in the first week of October" (a change that
+  changes nothing, now applied as `rent stays`), and "salary arrives late, after 10 October", which
+  the engine can only show by leaving the salary out and the refusal now says so. Three of the
+  nine were retried in words the tool knew and landed. Not measured again.
+- **Every run reached a final plan** — `done(understood=True)` settling it — and every owner run
+  passed `led_like_a_coach`. The judge's fails are now on the challenge: two owner runs answered
+  "30 minus 18 is not 57" with the sum spoken as a sum ("30,000 minus 13,000 is 17,000. 17,000 minus
+  5,000 is 12,000", `owner_call_1-20260914-214528`), every figure from a result, so the gate held
+  and the judge did not. The rule holds on figures; whether a coach should *say* the subtraction the
+  engine did is a question about language, and it stays with the model.
+- **`money_traceable` 80% twice, two different causes.** `owner_call_1-20260914-214522` turn 32
+  offered an example while asking about cards — "HDFC card, 8,000, due 5 October" — an invented
+  figure in a helpful sentence. `comfortable_surplus-20260914-214611` turn 20 said "skipping the
+  700-rupee streaming subscription would move the closing balance to 58,700" before any `what_if`
+  had run: 58,000 plus 700, the model's own addition, in the turn where it announced it would test
+  exactly that. The next turn's `what_if` for it was refused (the rupee tag) and the coach called
+  `forget` — with the refusal saying "forget is not a trial" in front of it. One of ten; the
+  instruction on the result did not hold in the one case that tested it, which is worth a row of its
+  own the next time this is measured.
+- **`state_matches_call`**: that `forget`, and one owner run planning with loans never discussed
+  (the §10.15 question, recorded, not chased).
+- **`low_point_explained`** recovered on the comfortable month (2 of 5 to 4 of 5) once the
+  `what_if` chain stopped eating the turn; one owner run stated the low point and moved on.
+
+One closing turn per scenario, from the re-run. Comfortable (`comfortable_surplus-20260914-214627`;
+the salary-late and skip-groceries stresses were read, the "3,600 instead of 1,800" one was not):
+
+> As planned, every payment is covered. The lowest point is seven thousand seven hundred rupees on
+> 30 September, and the closing balance is fifty-eight thousand seven hundred rupees. The main risk
+> is a late salary. If it arrives on 10 October, rent would be eighteen thousand rupees short on 5
+> October. The balance would reach five thousand rupees on 9 October, with rent still unpaid. Two
+> useful moves are to keep groceries to only what you need until salary arrives, which raises the
+> lowest point to thirteen thousand seven hundred rupees and the closing balance to sixty-seven
+> thousand seven hundred […] — Good plan. Take care.
+
+The owner's call (`owner_call_1-20260914-214522`; three of four stresses read):
+
+> Your month is comfortable. You start with 60,000, receive 30,000 salary on 30 September, and
+> have 18,000 recorded spending: 13,000 rent and 5,000 everyday spending. The recorded closing
+> balance is 72,000. The main risk is timing, because the exact rent day is unknown. The stress
+> test with salary seven days late put the lowest point at 44,426 on 6 October, still covered. Two
+> useful moves are: skipping the 5,000 discretionary spending would raise the lowest point by 3,154
+> and closing balance by 5,000; keeping it gives you 72,000 at closing. Also, hold the rent amount
+> aside before spending […] — Good. The plan is set: reserve 13,000 for rent, keep discretionary
+> spending to 5,000, and set a rent payment day next month. Goodbye.
+
+Run ids: `owner_call_1-20260914-214448`, `-214457`, `-214458`, `-214522`, `-214528`;
+`comfortable_surplus-20260914-214555`, `-214605`, `-214611`, `-214624`, `-214627`.

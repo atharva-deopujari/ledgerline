@@ -478,6 +478,159 @@ async def test_a_final_plan_is_refused_while_something_blocks_the_engine(live):
     assert "blocked" in params.result
 
 
+async def test_a_note_that_changes_nothing_says_the_figure_and_what_to_ask(live):
+    """Live call `voice-9869101897-20260914T135556Z-20260914-140323`, turn 35: "two fifty" was
+    heard as 2.50 twice, the person said "Not 2.5", the second note came back `unchanged phone and
+    internet`, and the coach replied "I've kept the phone and internet cost as 2.50 rupees". The
+    result now carries the figure and the fact a coach can act on: if they were correcting it,
+    the transcript did not carry the correction."""
+    params = Params()
+    await live.tools["note"](params, item="phone and internet", amount=2.5, kind="bill")
+    live.state.turn += 1  # the correction came three turns later; same-turn calls are replayed
+    await live.tools["note"](params, item="phone and internet", amount=2.5, kind="bill")
+    assert params.result.splitlines()[0] == (
+        "unchanged phone and internet, same figure as before, 2.50; "
+        "if they were correcting it, ask what they said"
+    )
+
+
+async def test_a_new_uncertain_income_is_noted_as_left_out(live):
+    """Demo rehearsal, step 2, three runs of three: "I think it comes around the thirtieth, I am
+    not fully sure" was noted with might_not_arrive and the result said only `noted salary 45,000
+    on 30 Sep`, so the coach told the person the DATE was uncertain. The flag decides whether the
+    money is in the figures at all; a new item says so the way a listed item does."""
+    params = Params()
+    await live.tools["note"](
+        params, item="salary", amount=45000, when="the 30th", might_not_arrive=True
+    )
+    assert params.result.splitlines()[0] == (
+        "noted salary 45,000 on 30 Sep, may not arrive, left out until it lands"
+    )
+
+
+async def _demo_month(live, params):
+    await live.tools["note"](params, item="cash", amount=10000)
+    await live.tools["note"](params, item="salary", amount=45000, when="the 30th")
+    await live.tools["note"](params, item="rent", amount=15000, when="5 October")
+    await live.tools["note"](params, item="electricity", amount=1800, when="the 22nd")
+    await live.tools["note"](params, item="groceries", amount=6000, when="spread", kind="bill")
+    await live.tools["note"](
+        params, item="credit card", amount=6000, when="the 20th", minimum_due=600
+    )
+    await live.tools["note"](
+        params, item="gym membership", amount=1500, when="the 18th", kind="spending"
+    )
+    await live.tools["show_month"](params)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "pay only the credit card minimum of 600",
+        "pay the credit-card minimum of 600 on 20 September",
+        "pay only the credit card minimum",
+        "pay the credit card's minimum due",
+    ],
+)
+async def test_what_if_pays_a_card_s_minimum(live, change):
+    """Demo rehearsal, step 12, refused in three runs of three: "what if I pay only the card
+    minimum and skip the gym" is the script's central what_if, and the parser knew "pay <card>
+    in full" but not its opposite. On the copy the card owes its minimum this month."""
+    params = Params()
+    await _demo_month(live, params)
+    await live.tools["what_if"](params, changes=[change])
+    assert params.result.splitlines()[0] == "if they did this: pay credit card minimum", (
+        params.result
+    )
+    assert "loans or cards: credit card 600 on 20 September as a card" in params.result
+
+
+async def test_paying_the_minimum_on_a_card_without_one_is_refused(live):
+    params = Params()
+    await live.tools["note"](params, item="cash", amount=10000)
+    await live.tools["note"](params, item="hdfc card", amount=6000, when="the 20th")
+    await live.tools["what_if"](params, changes=["pay the hdfc card minimum"])
+    assert "no minimum on the books for hdfc card" in params.result
+
+
+@pytest.mark.parametrize(
+    ("change", "applied"),
+    [
+        ("skip gym", "skip gym membership"),
+        ("skip the gym", "skip gym membership"),
+        ("salary arrives five days late, on 5 October", "salary 5 October"),
+        (
+            "move gym membership of 1,500 from 18 September to 30 September",
+            "gym membership 30 September",
+        ),
+    ],
+)
+async def test_what_if_reads_the_demo_rehearsal_s_phrases(live, change, applied):
+    """Refusals from the demo rehearsal (`demo_call_1-20260914-2228*`): the person's word for an
+    item ("gym") when the books say "gym membership", a shift said as a date, and an amount and
+    an old date inside a move. The stored name is what is echoed, so the person hears what moved."""
+    params = Params()
+    await _demo_month(live, params)
+    await live.tools["what_if"](params, changes=[change])
+    assert params.result.splitlines()[0] == f"if they did this: {applied}", params.result
+
+
+async def test_a_move_with_a_sentence_after_the_date_is_refused_not_half_applied(live):
+    """`demo_call_1-20260914-223631`, step 13: "salary arrives five days late, on 5 October, while
+    paying the credit card minimum of 600 and skipping the gym membership" was read as a move of
+    the salary to 5 October and the rest was silently dropped; the coach then had to tell the
+    person the tool's comparison was wrong. One change per entry, refused as such."""
+    params = Params()
+    await _demo_month(live, params)
+    await live.tools["what_if"](
+        params,
+        changes=[
+            "salary arrives five days late, on 5 October, while paying the credit card minimum "
+            "of 600 and skipping the gym membership"
+        ],
+    )
+    assert "could not read" in params.result and "one change per entry" in params.result
+    assert live.state.incomes[0].date == dt.date(2026, 9, 30)
+
+
+async def test_an_amount_with_its_date_is_one_change(live):
+    """`demo_call_1-20260914-223631`, step 14: "rent is 16,000 on 5 October" was refused because
+    the amount shape stopped at the amount. Both land on the copy."""
+    params = Params()
+    await _demo_month(live, params)
+    await live.tools["what_if"](params, changes=["rent is 16,000 on 5 October"])
+    assert params.result.splitlines()[0] == "if they did this: rent 16,000 on 5 October"
+    assert "bills: rent 16,000 on 5 October" in params.result
+
+
+async def test_forget_takes_the_person_s_word_for_an_item(live):
+    params = Params()
+    await live.tools["note"](
+        params, item="gym membership", amount=1500, when="the 18th", kind="spending"
+    )
+    await live.tools["forget"](params, item="the gym")
+    assert params.result.startswith("dropped gym membership")
+    assert live.state.optionals == []
+
+
+async def test_confirming_everything_carried_names_what_was_confirmed(live):
+    """Demo rehearsal, call 2: "nothing else changed" became `nothing_more(of="changes")` and the
+    result read `none: ` -- the category word for a field that is not a category. The domain's
+    own detail is the fact."""
+    from decimal import Decimal as D
+
+    from ledgerline.domain import state as state_ops
+    from ledgerline.domain.models import ItemKind
+
+    state_ops.upsert(live.state, ItemKind.ESSENTIAL, "rent", amount=D(16000), day_of_month=5)
+    state_ops.upsert(live.state, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=30)
+    for item in [*live.state.essentials, *live.state.incomes]:
+        item.carried = True
+    params = Params()
+    await live.tools["nothing_more"](params, of="changes")
+    assert params.result.splitlines()[0] == "confirmed: salary, rent"
+
+
 async def test_what_if_leaves_the_real_month_alone(live):
     params = Params()
     await live.tools["note"](params, item="cash", amount=60000)
@@ -488,20 +641,264 @@ async def test_what_if_leaves_the_real_month_alone(live):
     assert "if they did this: skip gym" in params.result
 
 
-async def test_what_if_says_what_moves(live):
+async def test_what_if_puts_before_and_after_side_by_side_and_names_the_move(live):
+    """The coaching brief: a coach with a spreadsheet types the stress in and reads two columns.
+    The old line was `closing 37,000 -> 41,000`, an arrow nobody can say and no delta, so the
+    model was left to subtract. Both figures, both dates, and the move are in the result."""
     params = Params()
     await live.tools["note"](params, item="cash", amount=20000)
     await live.tools["note"](params, item="salary", amount=30000, when="the 30th")
     await live.tools["note"](params, item="rent", amount=13000, when="the 7th")
     await live.tools["show_month"](params)
     await live.tools["what_if"](params, changes=["rent is 9000"])
-    assert "->" in params.result
+    lines = params.result.splitlines()
+    assert lines[0] == "if they did this: rent 9000"
+    assert lines[1] == "compared with the month as it stands:"
+    assert lines[2] == (
+        "lowest point 20,000 on 11 September as it stands, "
+        "20,000 on 11 September with this change, no move"
+    )
+    assert lines[3] == "closing 37,000 as it stands, 41,000 with this change, up 4,000"
+    assert "->" not in params.result
+
+
+async def test_what_if_says_when_the_shape_of_the_month_changes(live):
+    """ "Salary five days late" is the stress a coach tries first, and what it does is flip the
+    month from fine to a timing shortfall. That is said in words, beside the figures."""
+    params = Params()
+    await live.tools["note"](params, item="cash", amount=5000)
+    await live.tools["note"](params, item="salary", amount=30000, when="the 30th")
+    await live.tools["note"](params, item="rent", amount=13000, when="the 7th")
+    await live.tools["show_month"](params)
+    await live.tools["what_if"](params, changes=["move salary to the 8th"])
+    lines = params.result.splitlines()
+    # The shape comes first because it frames the figures: the closing balance goes UP here,
+    # by exactly the rent the engine left unpaid, and read alone that is good news.
+    assert lines[2] == (
+        "shape as it stands: every payment is covered; with this change: timing shortfall"
+    )
+    assert "closing 22,000 as it stands, 35,000 with this change, up 13,000" in params.result
+    assert "unpaid 0 as it stands, 13,000 with this change, up 13,000" in params.result
+
+
+async def test_what_if_figures_agree_with_the_derivation_in_the_same_result(live):
+    """The comparison and the "why the lowest point is" lines are read in one breath, so they
+    come off one whole-rupee ledger. A spread amount that does not divide by the days is where
+    rounding each side on its own would put two different lowest points in one result."""
+    import re
+
+    params = Params()
+    await live.tools["note"](params, item="cash", amount=20000)
+    await live.tools["note"](params, item="salary", amount=30000, when="the 30th")
+    await live.tools["note"](params, item="groceries", amount=9100, when="spread through the month")
+    await live.tools["show_month"](params)
+    await live.tools["what_if"](params, changes=["groceries is 9700"])
+    text = params.result
+    compared = re.search(r"lowest point [\d,]+ on [^,]+ as it stands, ([\d,]+) on", text).group(1)
+    derived = re.search(r"why the lowest point is ([\d,]+) on", text).group(1)
+    assert compared == derived
+    closing_compared = re.search(r"closing [\d,]+ as it stands, ([\d,]+) with", text).group(1)
+    closing_derived = re.findall(r"^closing ([\d,]+)$", text, re.MULTILINE)[-1]
+    assert closing_compared == closing_derived
+
+
+@pytest.mark.parametrize(
+    "change",
+    ["skip streaming this month", "skip streaming for this month", "drop the streaming for now"],
+)
+async def test_what_if_reads_past_the_words_a_coach_adds_to_a_skip(live, change):
+    """`comfortable_surplus-20260914-201144` and `correction_and_conflict-20260914-085412`: the
+    coach wrote "skip streaming this month", the item became "streaming this month", the tool
+    refused, and the coach reached for `forget` instead and lost the item for real
+    (`state_matches_facts`: streaming never recorded). The trailing words are how people talk
+    about a hypothesis; they are not part of the name."""
+    params = Params()
+    await live.tools["note"](params, item="cash", amount=20000)
+    await live.tools["note"](params, item="salary", amount=30000, when="the 30th")
+    await live.tools["note"](params, item="streaming", amount=700, when="spread", kind="spending")
+    await live.tools["show_month"](params)
+    await live.tools["what_if"](params, changes=[change])
+    assert "Nothing called" not in params.result
+    first = params.result.splitlines()[0]
+    assert first.startswith("if they did this: skip") and first.endswith("streaming")
+    assert "closing 49,300 as it stands, 50,000 with this change, up 700" in params.result
+
+
+async def _comfortable(live, params):
+    await live.tools["note"](params, item="cash", amount=20000)
+    await live.tools["note"](params, item="salary", amount=72000, when="the 1st")
+    await live.tools["note"](params, item="rent", amount=18000, when="the 5th")
+    await live.tools["note"](params, item="groceries", amount=9000, when="spread")
+    await live.tools["note"](params, item="electricity", amount=1800, when="the 18th")
+    await live.tools["show_month"](params)
+
+
+@pytest.mark.parametrize(
+    ("change", "applied", "seen"),
+    [
+        ("salary arrives 7 days late", "salary 7 days late", "salary 72,000 on 8 October"),
+        ("salary arrives late by 7 days", "salary 7 days late", "salary 72,000 on 8 October"),
+        ("my salary is a week late", "salary 7 days late", "salary 72,000 on 8 October"),
+        (
+            "electricity moves 5 days earlier",
+            "electricity 5 days early",
+            "electricity 1,800 on 13 September",
+        ),
+        ("salary is 10,000 short", "salary 10,000 short", "salary 62,000 on 1 October"),
+        ("salary is 10,000 rupees short", "salary 10,000 short", "salary 62,000 on 1 October"),
+        ("groceries are 2,000 higher", "groceries 2,000 more", "groceries 11,000 spread"),
+        (
+            "electricity moves to 15 September",
+            "electricity 15 September",
+            "electricity 1,800 on 15 September",
+        ),
+        ("pay rent on 5 October", "rent 5 October", "rent 18,000 on 5 October"),
+        ("salary arrives on 3 October", "salary 3 October", "salary 72,000 on 3 October"),
+        ("keep groceries at 9,500 rupees", "groceries 9,500", "groceries 9,500 spread"),
+    ],
+)
+async def test_what_if_reads_the_stresses_the_prompt_asks_for(live, change, applied, seen):
+    """The after cell of the coaching frame (REPORT 10.17): 34 `what_if` calls, 28 refused. The
+    prompt says "salary late or short, biggest bill moved, extras dropped" and the coach wrote
+    exactly that -- "salary arrives 7 days late", "salary is 10,000 short", "groceries are 2,000
+    higher", "electricity moves to 15 September", "pay rent on 5 October" -- and the parser knew
+    four shapes. Every phrase here is lifted from a saved run. A shift is code's arithmetic on a
+    copy; nothing about the real month changes."""
+    params = Params()
+    await _comfortable(live, params)
+    await live.tools["what_if"](params, changes=[change])
+    assert params.result.splitlines()[0] == f"if they did this: {applied}", params.result
+    assert seen in params.result, params.result
+    assert live.state.incomes[0].amount == Decimal("72000.00")
+    assert live.state.incomes[0].date == dt.date(2026, 10, 1)
+
+
+@pytest.mark.parametrize(
+    ("change", "applied", "seen"),
+    [
+        ("reduce groceries by 2,000 this month", "groceries 2,000 short", "groceries 7,000 spread"),
+        ("raise groceries by 2,000", "groceries 2,000 more", "groceries 11,000 spread"),
+        ("salary arrives late, on 7 October", "salary 7 October", "salary 72,000 on 7 October"),
+        ("salary arrives late on 7 October", "salary 7 October", "salary 72,000 on 7 October"),
+        (
+            "skip the 1,800-rupee electricity",
+            "skip electricity",
+            "bills: rent 18,000 on 5 October; groceries 9,000 spread",
+        ),
+        (
+            "electricity is 3,600 instead of 1,800",
+            "electricity 3,600",
+            "electricity 3,600 on 18 September",
+        ),
+        ("groceries 12,000", "groceries 12,000", "groceries 12,000 spread"),
+        (
+            "rent stays 18,000 in the first week of October",
+            "rent stays",
+            "rent 18,000 on 5 October",
+        ),
+    ],
+)
+async def test_what_if_reads_the_second_cell_s_phrases(live, change, applied, seen):
+    """The re-run (REPORT 10.17, second table): 26 calls, 9 refused, every refusal one of these
+    shapes lifted from the runs. "reduce X by N", "late, on <date>", a rupee amount inside the
+    item's name, "instead of <old>" trailing, a bare "<item> <amount>", and "<item> stays" as a
+    change that changes nothing."""
+    params = Params()
+    await _comfortable(live, params)
+    await live.tools["what_if"](params, changes=[change])
+    assert params.result.splitlines()[0] == f"if they did this: {applied}", params.result
+    assert seen in params.result, params.result
+
+
+async def test_late_after_the_window_points_at_the_month_without_the_item(live):
+    """ "salary arrives late, after 10 October" (`owner_call_1-20260914-214528`): the engine can
+    only show that month by leaving the salary out, and the refusal says how."""
+    params = Params()
+    await _comfortable(live, params)
+    await live.tools["what_if"](params, changes=["salary arrives late, after 10 October"])
+    assert "after the window" in params.result and "'salary is 0'" in params.result
+
+
+async def test_a_shift_out_of_the_window_is_refused_with_the_date_and_the_way_to_ask(live):
+    """`resolve_day` would wrap 12 October back to 12 September and plan the salary before
+    today. The refusal names where it lands and how to see the month without it."""
+    params = Params()
+    await _comfortable(live, params)
+    await live.tools["what_if"](params, changes=["salary arrives 12 days late"])
+    assert "13 October" in params.result and "after the window" in params.result
+    assert "'salary is 0'" in params.result
+    await live.tools["what_if"](params, changes=["rent is 20,000 short"])
+    assert "below zero" in params.result
+
+
+async def test_a_change_it_cannot_read_names_the_change_and_says_forget_is_for_real(live):
+    """Three saved runs: `what_if` refused, and the next call was `forget`, which drops the item
+    from the real month (`state_matches_facts`: streaming never recorded). The refusal is the
+    moment the model decides what to do next, so that is where money is protected."""
+    params = Params()
+    await _comfortable(live, params)
+    await live.tools["what_if"](
+        params, changes=["skip groceries", "protect the essentials before payday"]
+    )
+    text = params.result
+    assert "could not read 'protect the essentials before payday'" in text
+    assert "nothing was tried" in text
+    assert "one change per entry" in text
+    assert "7 days late" in text and "5,000 short" in text
+    assert "forget" in text and "for real" in text
+    assert live.state.essentials[1].name == "groceries"
+
+
+async def test_two_items_in_one_change_are_refused_as_nothing_on_the_books(live):
+    """ "electricity and bike loan EMI both move 5 days earlier"
+    (`comfortable_surplus-20260914-202106`): one change, two items. It reads as a shift of an
+    item called "electricity and rent both", and the refusal names that and says nothing was
+    tried."""
+    params = Params()
+    await _comfortable(live, params)
+    await live.tools["what_if"](params, changes=["electricity and rent both move 5 days earlier"])
+    assert "Nothing called 'electricity and rent both'" in params.result
+    assert "Nothing was tried" in params.result and "for real" in params.result
+
+
+async def test_what_if_that_changes_nothing_says_so(live):
+    params = Params()
+    await live.tools["note"](params, item="cash", amount=20000)
+    await live.tools["note"](params, item="salary", amount=30000, when="the 30th")
+    await live.tools["note"](params, item="rent", amount=13000, when="the 7th")
+    await live.tools["show_month"](params)
+    await live.tools["what_if"](params, changes=["rent is 13000"])
+    assert "nothing moves" in params.result
 
 
 async def test_an_edit_it_cannot_read_is_refused_with_the_shapes_it_can(live):
     params = Params()
     await live.tools["what_if"](params, changes=["do something clever about the rent"])
     assert "skip" in params.result and "in full" in params.result
+
+
+async def test_done_with_understanding_settles_a_plan_nothing_blocks(live):
+    """Six of seven coaching-frame runs that ended with `done(understood=True)` never called
+    `show_month(final=True)`: the coach asked them to say back what they would do, they did, and
+    the call ended with the screen still showing the plan as a draft. "They said the plan makes
+    sense" is what final means, so `done` settles it when a plan exists and nothing blocks it."""
+    params = Params()
+    await live.tools["note"](params, item="cash", amount=20000)
+    await live.tools["note"](params, item="salary", amount=30000, when="the 30th")
+    await live.tools["show_month"](params)
+    assert live.state.plan_final is False
+    await live.tools["done"](params, understood=True, reason="they said it back")
+    assert live.state.plan_final is True
+
+
+async def test_done_without_understanding_or_with_a_blocked_plan_settles_nothing(live):
+    params = Params()
+    await live.tools["done"](params, understood=True, reason="nothing recorded, blocked")
+    assert live.state.plan_final is False
+    await live.tools["note"](params, item="cash", amount=20000)
+    await live.tools["note"](params, item="salary", amount=30000, when="the 30th")
+    await live.tools["done"](params, understood=False, reason="they hung up")
+    assert live.state.plan_final is False
 
 
 async def test_done_ends_the_call_and_asks_for_one_goodbye(live):

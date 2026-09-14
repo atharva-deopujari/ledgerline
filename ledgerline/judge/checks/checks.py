@@ -70,6 +70,12 @@ CREDIT_IS_ABOUT = (
     "credit record",
     "credit history",
     "credit file",
+    # What a missed secured instalment does: two coaching-frame runs said "credit consequences"
+    # and "credit impact" about a bike EMI the person already has, and failed this gate for it.
+    "credit impact",
+    "credit consequence",
+    "credit standing",
+    "credit rating",
 )
 
 # Second, language that proposes or promises without naming one of those phrases, and claims to

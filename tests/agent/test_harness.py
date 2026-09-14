@@ -35,6 +35,9 @@ def test_the_scenarios_that_ship_with_the_harness():
         "hesitant_close",
         "fragmented_correction",
         "owner_call_1",
+        # The owner's demo script as two rehearsal scenarios; never in run_suite's SUITE.
+        "demo_call_1",
+        "demo_call_2",
     }
 
 
@@ -186,3 +189,41 @@ def test_agreement_without_a_goodbye_is_not_the_end(state):
     assert not harness._ready_to_end(state)
     state.understood = True
     assert harness._ready_to_end(state) and not harness._call_is_over(state)
+
+
+def test_a_carried_card_keeps_its_minimum_and_carried_groceries_stay_spread():
+    """`demo_call_2`: the first call stored a card with a minimum and groceries spread through the
+    month. Seeded without them, the engine could not propose the minimum and groceries fell on no
+    date -- a returning caller planned on less than the store holds."""
+    import datetime as dt
+    from decimal import Decimal
+
+    from evals.harness import _seed_carried
+    from ledgerline.domain.models import FinancialState
+
+    state = FinancialState(today=dt.date(2026, 9, 11))
+    _seed_carried(
+        state,
+        {
+            "carried": [
+                {
+                    "kind": "debt",
+                    "name": "credit card",
+                    "amount": "6000",
+                    "day": 20,
+                    "debt_kind": "credit_card",
+                    "min_due": "600",
+                    "spoken": "6,000, minimum 600",
+                },
+                {
+                    "kind": "essential",
+                    "name": "groceries",
+                    "amount": "6000",
+                    "spread": True,
+                    "spoken": "6,000 spread",
+                },
+            ]
+        },
+    )
+    assert state.debts[0].min_due == Decimal("600.00")
+    assert state.essentials[0].spread is True and state.essentials[0].carried is True

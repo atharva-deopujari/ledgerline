@@ -12,12 +12,15 @@ schema, and the signature is the tool's public contract.
 
 from __future__ import annotations
 
+import datetime as dt
 import re
 from collections.abc import Callable
+from decimal import Decimal
 from typing import Any
 
 from ledgerline.agent.tools import facts, phrases
 from ledgerline.agent.tools.coercion import (
+    WINDOW_DAYS,
     Invalid,
     _amount,
     _debt_kind_for,
@@ -26,6 +29,7 @@ from ledgerline.agent.tools.coercion import (
     _when,
 )
 from ledgerline.agent.tools.context import ToolContext
+from ledgerline.agent.tools.phrases import spoken_day
 from ledgerline.domain import engine as engine_ops
 from ledgerline.domain import state as state_ops
 from ledgerline.domain.cards import CardId
@@ -68,18 +72,108 @@ WHICH_DETAIL = (
     "On the books: {names}."
 )
 WHAT_IF_SHAPES = (
-    "I can try: 'skip <item>', 'pay <card> in full', 'move <item> to the 10th', "
-    "'<item> is 4,000'. Send each change in those words."
+    "nothing was tried; one change per entry, in these words: 'skip <item>', 'pay <card> in "
+    "full', 'move <item> to the 10th', '<item> is 4,000', '<item> 7 days late', '<item> 5,000 "
+    "short'. forget is not a trial: it drops an item for real."
 )
+COULD_NOT_READ = "could not read {change!r}; "
+NOT_TRIED = " Nothing was tried; forget is not a trial, it drops an item for real."
+SHIFT_PAST_WINDOW = (
+    "{item} {days} days {direction} lands on {when}, after the window ends {end}; nothing was "
+    "tried. Try '{item} is 0' to see the month without it."
+)
+SHIFT_BEFORE_TODAY = (
+    "{item} {days} days {direction} lands on {when}, before today; nothing was tried."
+)
+NO_DATE_TO_MOVE = (
+    "{item} has no one date to move, it is spread through the month; nothing was tried."
+)
+BELOW_ZERO = "{item} {amount} short takes it below zero; nothing was tried."
 
 # What `what_if` understands. Free text in, a state edit out, and every edit is echoed back in
-# the result so the model can read the hypothesis to the person and be corrected.
+# the result so the model can read the hypothesis to the person and be corrected. The shapes are
+# the ones the coach actually writes: the first after cell of the coaching frame sent 34 changes
+# and 28 were refused, "salary arrives 7 days late" and "salary is 10,000 short" most of all --
+# the very stresses the prompt names (REPORT 10.17). A shift is code's arithmetic on the copy.
 SKIP = re.compile(r"^(?:skip|cut|drop|cancel|stop)\s+(?P<item>.+?)$", re.IGNORECASE)
 IN_FULL = re.compile(r"^pay\s+(?P<item>.+?)\s+in full$", re.IGNORECASE)
-MOVE = re.compile(r"^(?:move\s+)?(?P<item>.+?)\s+(?:to|on)\s+(?P<when>.+?)$", re.IGNORECASE)
-SET = re.compile(
-    r"^(?:make\s+)?(?P<item>.+?)\s+(?:is|to be|at)\s+(?P<amount>[\d,]+)$", re.IGNORECASE
+# How a coach says a hypothesis -- "skip streaming this month", "drop the gym for now" -- and not
+# part of any item's name. Two saved runs had the item read as "streaming this month", the tool
+# refuse, and the coach reach for `forget` instead and lose the item for real.
+TRAILING = re.compile(
+    r"\s+(?:(?:for\s+)?(?:this month|this time|now)|instead of\s.+)$", re.IGNORECASE
 )
+# "the 1,800-rupee electricity bill": the amount is not part of the name.
+RUPEE_TAG = re.compile(r"\b[\d,]+[-\s]rupee\s+", re.IGNORECASE)
+# "reduce groceries by 2,000", "raise rent by 500": the amount moved, said as a verb.
+BY = re.compile(
+    r"^(?P<verb>reduce|cut|lower|raise|increase)\s+(?P<item>.+?)\s+by\s+(?P<amount>[\d,]+)"
+    r"(?:\s+rupees)?$",
+    re.IGNORECASE,
+)
+# "rent stays 13,000": a change that changes nothing, said as part of a hypothesis.
+STAYS = re.compile(r"^(?P<item>.+?)\s+stays?\b", re.IGNORECASE)
+# "salary arrives late, after 10 October": past the window, which only "is 0" can show.
+LATE_AFTER = re.compile(
+    r"^(?P<item>.+?)\s+(?:arrives?\s+|comes?\s+)?late,?\s+after\b", re.IGNORECASE
+)
+LATE_AFTER_WINDOW = (
+    "{item} after the window ends {end} is a month without it; nothing was tried. Try "
+    "'{item} is 0' to see it."
+)
+# "pay only the credit card minimum of 600 on 20 September": the opposite of paying in full, and
+# the demo script's central what_if -- refused three times of three before this shape existed.
+MINIMUM = re.compile(
+    r"^pay\s+(?:only\s+)?(?:the\s+)?(?P<item>.+?)(?:'s)?\s+minimum(?:\s+due)?"
+    r"(?:\s+of\s+[\d,]+)?(?:\s+on\s+.+)?$",
+    re.IGNORECASE,
+)
+NO_MINIMUM = "no minimum on the books for {item}; nothing was tried."
+# "gym membership of 1,500 from 18 September to 30 September": the amount and the old date are
+# not part of the move.
+OF_AMOUNT = re.compile(r"\s+of\s+[\d,]+(?:\s+rupees)?(?=\s|$)", re.IGNORECASE)
+FROM_TO = re.compile(r"\s+from\s+.+?\s+(?=(?:to|on)\s)", re.IGNORECASE)
+# "pay rent on 5 October", "keep groceries at 9,000": the verb is not the item.
+LEAD = re.compile(r"^(?:pay|put|keep|make|move|shift|push)\s+", re.IGNORECASE)
+_VERB = (
+    r"(?:\s+(?:arrives?|arriving|comes?|coming|lands?|is paid|paid|is due|due|moves?|moved|"
+    r"shifts?|shifted|goes|is|are)(?:\s+(?:\d+|an?|one|two|three|four|five|six|seven|ten)"
+    r"\s+(?:days?|weeks?))?(?:\s+late|\s+early)?,?)?"
+)
+_N = r"(?P<n>\d+|an?|one|two|three|four|five|six|seven|ten)"
+_UNIT = r"(?P<unit>days?|weeks?)"
+_DIRECTION = r"(?P<direction>late|later|early|earlier)"
+SHIFT = re.compile(rf"^(?P<item>.+?){_VERB}\s+{_N}\s+{_UNIT}\s+{_DIRECTION}$", re.IGNORECASE)
+SHIFT_BY = re.compile(
+    rf"^(?P<item>.+?){_VERB}\s+{_DIRECTION}\s+by\s+{_N}\s+{_UNIT}$", re.IGNORECASE
+)
+DELTA = re.compile(
+    rf"^(?P<item>.+?){_VERB}\s+(?P<amount>[\d,]+)(?:\s+rupees)?"
+    r"\s+(?P<direction>short|less|lower|more|higher|extra)$",
+    re.IGNORECASE,
+)
+MOVE = re.compile(rf"^(?P<item>.+?){_VERB}\s+(?:to|on)\s+(?P<when>.+?)$", re.IGNORECASE)
+SET = re.compile(
+    r"^(?P<item>.+?)\s+(?:(?:is|are|to be|at)\s+)?(?P<amount>[\d,]+)(?:\s+rupees)?"
+    r"(?:\s+on\s+(?P<when>.+?))?$",
+    re.IGNORECASE,
+)
+# A date followed by more sentence -- ", while paying the card minimum and skipping the gym" --
+# is two or three changes in one entry. `_when` reads the first day it finds and would apply
+# half of it; a demo rehearsal had the coach explain the tool's own comparison was wrong.
+CLAUSE = re.compile(r",|\b(?:while|and|but|then)\b", re.IGNORECASE)
+NUMBER_WORDS = {
+    "a": 1,
+    "an": 1,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "ten": 10,
+}
 
 
 def _all_items(state) -> list[tuple[ItemKind, Any]]:
@@ -100,21 +194,32 @@ def _on_the_books(state) -> str:
     return ", ".join(names) if names else ""
 
 
-def _find_kind(state, item: str) -> ItemKind | None:
-    """Which category an item the person named is filed under, or None when nothing matches.
+def _resolve(state, item: str) -> tuple[ItemKind, str] | None:
+    """Which item the person named -- its category and the name on the books -- or None.
 
-    Matching is the domain's: `remove` and `upsert` both resolve a name through `_find`, which
-    knows that "the rent" and "my rent" are the rent. Rather than reimplement that rule here --
-    it has drifted twice between this layer and the domain -- the name is normalised the same way
-    and compared against what is stored.
+    Matching is the domain's first: `remove` and `upsert` both resolve a name through `_find`,
+    which knows that "the rent" and "my rent" are the rent. Then the person's word for a longer
+    name: "gym" for "gym membership", "card" for "credit card", when exactly one item fits. The
+    stored name is what comes back, so the edit lands and the echo says what the books say. Two
+    fits is a question, not a guess.
     """
     key = state_ops.normalise_name(item)
     _, bare = state_ops.possessive_of(key)
     for kind, stored in _all_items(state):
         name = state_ops.normalise_name(stored.name)
         if name == key or state_ops.possessive_of(name)[1] == bare:
-            return kind
-    return None
+            return kind, stored.name
+    fits = [
+        (kind, stored.name)
+        for kind, stored in _all_items(state)
+        if bare and bare in state_ops.normalise_name(stored.name).split()
+    ]
+    return fits[0] if len(fits) == 1 else None
+
+
+def _find_kind(state, item: str) -> ItemKind | None:
+    found = _resolve(state, item)
+    return found[0] if found else None
 
 
 def _detail_field(state, about: str) -> str:
@@ -258,7 +363,8 @@ def build_tools(ctx: ToolContext) -> list[Callable[..., Any]]:
 
     async def forget(params: Any, item: str) -> None:
         """Drop something that no longer applies — a loan they have finished paying, a bill they
-        have cancelled.
+        have cancelled. Not for something they could skip or cut this month: that is what_if,
+        which leaves the books alone.
 
         Args:
             item: What they call it. It is dropped from wherever it is on the books.
@@ -266,13 +372,14 @@ def build_tools(ctx: ToolContext) -> list[Callable[..., Any]]:
         args = dict(item=item)
         if await replayed(params, "forget", args):
             return
-        kind = _find_kind(ctx.state, item)
-        if kind is None:
+        found = _resolve(ctx.state, item)
+        if found is None:
             names = _on_the_books(ctx.state)
             await params.result_callback(
                 NO_SUCH_ITEM.format(item=item, names=names) if names else NOTHING_ON_THE_BOOKS
             )
             return
+        kind, item = found
         outcome = state_ops.remove(ctx.state, kind, item)
         await ctx.recompute_and_push(FOCUS_BY_KIND[kind])
         await reply(params, "forget", args, facts.recorded(outcome, ctx.state))
@@ -407,6 +514,11 @@ def build_tools(ctx: ToolContext) -> list[Callable[..., Any]]:
             return
         ctx.state.understood = understood
         ctx.state.call_ended = True
+        # "They said the plan makes sense" is what final means. Six of seven coaching-frame runs
+        # ended here after a say-back and never called `show_month(final=True)`, so the screen
+        # kept the plan as a draft. Settled only where a plan exists and nothing blocks it.
+        if understood and engine_ops.build_plan(ctx.state).status is not PlanStatus.BLOCKED:
+            ctx.state.plan_final = True
         # Pushed before the transport goes away: this is the snapshot that stops the screen
         # asking a question the call has moved past.
         await ctx.recompute_and_push(CardId.PLAN)
@@ -421,17 +533,40 @@ def _apply(trial, change: str) -> str:
     """One plain edit against a copy of the month. Returns what was applied, for the result.
 
     Nothing is guessed: an edit it cannot read is refused with the shapes it can, because a
-    hypothesis the person did not ask for is worse than a question.
+    hypothesis the person did not ask for is worse than a question. The refusal says nothing was
+    tried and that `forget` is not a trial, because three saved runs answered a refusal here with
+    `forget` and dropped the item from the real month.
     """
-    text = change.strip()
-    kind = None
+    text = RUPEE_TAG.sub("", TRAILING.sub("", change.strip().replace("-", " ")))
+    text = FROM_TO.sub(" ", OF_AMOUNT.sub("", text))
+    minimum = MINIMUM.match(text)
+    if minimum:
+        kind, item = _kind_or_refuse(trial, minimum.group("item"))
+        debt = _find(trial, ItemKind.DEBT, item) if kind is ItemKind.DEBT else None
+        if debt is None or debt.min_due is None:
+            raise Invalid(NO_MINIMUM.format(item=item))
+        # Paying the minimum is the card owing its minimum this month, on the copy: the smaller
+        # sum lands on the due date and the rest is not this month's business.
+        debt.amount_due, debt.min_due = debt.min_due, None
+        return f"pay {item} minimum"
+    after = LATE_AFTER.match(text)
+    if after:
+        item = after.group("item")
+        _kind_or_refuse(trial, item)
+        end = spoken_day(trial.today + dt.timedelta(days=WINDOW_DAYS - 1))
+        raise Invalid(LATE_AFTER_WINDOW.format(item=item, end=end))
+    stays = STAYS.match(text)
+    if stays:
+        _, item = _kind_or_refuse(trial, stays.group("item"))
+        return f"{item} stays"
+    by = BY.match(text)
+    if by:
+        return _delta(trial, by)
     skip = SKIP.match(text)
     if skip:
-        kind = _find_kind(trial, skip.group("item"))
-        if kind is None:
-            raise Invalid(NO_SUCH_ITEM.format(item=skip.group("item"), names=_on_the_books(trial)))
-        state_ops.remove(trial, kind, skip.group("item"))
-        return f"skip {skip.group('item')}"
+        kind, item = _kind_or_refuse(trial, skip.group("item"))
+        state_ops.remove(trial, kind, item)
+        return f"skip {item}"
     full = IN_FULL.match(text)
     if full:
         # The same identity the domain uses, not a second one: `_find` knows "my hdfc card" is the
@@ -439,33 +574,96 @@ def _apply(trial, change: str) -> str:
         # nothing changed on the copy, and the result still announced the change (KIRO-011).
         debt = _find(trial, ItemKind.DEBT, full.group("item"))
         if debt is None:
-            raise Invalid(NO_SUCH_ITEM.format(item=full.group("item"), names=_on_the_books(trial)))
+            raise Invalid(_no_such(trial, full.group("item")))
         # Paying in full is the absence of the minimum: with no minimum on the card the engine has
         # no smaller sum to propose, so the whole balance is what the month plans for. Set on the
         # item rather than through `upsert`, where None means "leave it alone".
         debt.min_due = None
         return f"pay {full.group('item')} in full"
+    shift = SHIFT.match(text) or SHIFT_BY.match(text)
+    if shift:
+        return _shift(trial, shift)
+    text = LEAD.sub("", text)
+    delta = DELTA.match(text)
+    if delta:
+        return _delta(trial, delta)
     amount = SET.match(text)
     if amount:
-        kind = _find_kind(trial, amount.group("item"))
-        if kind is None:
-            raise Invalid(
-                NO_SUCH_ITEM.format(item=amount.group("item"), names=_on_the_books(trial))
-            )
+        kind, item = _kind_or_refuse(trial, amount.group("item"))
+        when = amount.group("when") or ""
+        if CLAUSE.search(when):
+            raise Invalid(COULD_NOT_READ.format(change=text) + WHAT_IF_SHAPES)
+        fields = _when(when, trial.today) if when else {}
         state_ops.upsert(
-            trial,
-            kind,
-            amount.group("item"),
-            amount=_amount(float(amount.group("amount").replace(",", ""))),
+            trial, kind, item, amount=_amount(_number(amount.group("amount"))), **fields
         )
-        return f"{amount.group('item')} {amount.group('amount')}"
+        return f"{item} {amount.group('amount')}" + (f" on {when}" if when else "")
     moved = MOVE.match(text)
     if moved:
-        kind = _find_kind(trial, moved.group("item"))
-        if kind is None:
-            raise Invalid(NO_SUCH_ITEM.format(item=moved.group("item"), names=_on_the_books(trial)))
-        state_ops.upsert(
-            trial, kind, moved.group("item"), **_when(moved.group("when"), trial.today)
-        )
-        return f"{moved.group('item')} {moved.group('when')}"
-    raise Invalid(WHAT_IF_SHAPES)
+        if CLAUSE.search(moved.group("when")):
+            raise Invalid(COULD_NOT_READ.format(change=text) + WHAT_IF_SHAPES)
+        kind, item = _kind_or_refuse(trial, moved.group("item"))
+        state_ops.upsert(trial, kind, item, **_when(moved.group("when"), trial.today))
+        return f"{item} {moved.group('when')}"
+    raise Invalid(COULD_NOT_READ.format(change=text) + WHAT_IF_SHAPES)
+
+
+def _no_such(trial, item: str) -> str:
+    return NO_SUCH_ITEM.format(item=item, names=_on_the_books(trial)) + NOT_TRIED
+
+
+def _kind_or_refuse(trial, item: str) -> tuple[ItemKind, str]:
+    """The category and the name on the books for the person's word, or the refusal."""
+    found = _resolve(trial, item)
+    if found is None:
+        raise Invalid(_no_such(trial, item))
+    return found
+
+
+def _number(text: str) -> float:
+    return float(text.replace(",", ""))
+
+
+def _shift(trial, match: re.Match) -> str:
+    """ "salary 7 days late": the item's own date moved by that many days, on the copy.
+
+    `resolve_day` maps a day of month to its next occurrence, so a shift past the window would
+    wrap to a date before today and plan the salary in the past; that is refused with where the
+    shift lands and how to ask for the month without the item instead.
+    """
+    item = match.group("item")
+    kind, item = _kind_or_refuse(trial, item)
+    stored = _find(trial, kind, item)
+    date = getattr(stored, "date", None) or getattr(stored, "due_date", None)
+    if date is None:
+        raise Invalid(NO_DATE_TO_MOVE.format(item=item))
+    n = match.group("n").lower()
+    days = NUMBER_WORDS.get(n) or int(n)
+    if match.group("unit").lower().startswith("week"):
+        days *= 7
+    direction = "late" if match.group("direction").lower().startswith("late") else "early"
+    landing = date + dt.timedelta(days=days if direction == "late" else -days)
+    said = dict(item=item, days=days, direction=direction, when=spoken_day(landing))
+    if landing > trial.today + dt.timedelta(days=WINDOW_DAYS - 1):
+        end = spoken_day(trial.today + dt.timedelta(days=WINDOW_DAYS - 1))
+        raise Invalid(SHIFT_PAST_WINDOW.format(end=end, **said))
+    if landing < trial.today:
+        raise Invalid(SHIFT_BEFORE_TODAY.format(**said))
+    state_ops.upsert(trial, kind, item, day_of_month=landing.day)
+    return f"{item} {days} days {direction}"
+
+
+def _delta(trial, match: re.Match) -> str:
+    """ "salary 10,000 short", "groceries 2,000 more": the amount moved by that much, on the
+    copy."""
+    kind, item = _kind_or_refuse(trial, match.group("item"))
+    stored = _find(trial, kind, item)
+    current = getattr(stored, "amount", None) if hasattr(stored, "amount") else stored.amount_due
+    step = _amount(_number(match.group("amount")))
+    word = (match.groupdict().get("direction") or match.group("verb")).lower()
+    direction = "more" if word in ("more", "higher", "extra", "raise", "increase") else "short"
+    new = (current or Decimal(0)) + (step if direction == "more" else -step)
+    if new < 0:
+        raise Invalid(BELOW_ZERO.format(item=item, amount=match.group("amount")))
+    state_ops.upsert(trial, kind, item, amount=new)
+    return f"{item} {match.group('amount')} {direction}"

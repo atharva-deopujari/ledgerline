@@ -213,3 +213,50 @@ the rules stay cut; what is gone is the measurement, because how the coach talks
 The one that earned its deletion by failing quietly: `changed_value_acknowledged` read v1's
 `rent: 11,000 -> 12,000`, v2 writes `rent 11,000 before, now 12,000`, and the rule went on
 reporting 100% on runs it was no longer looking at.
+
+
+## The coaching frame · v2, 14 September evening
+
+`docs/process/coach-brief.md`. One paragraph replaced "look at the month with your tools and explain
+it plainly, then agree what to do", written as what to do. Every line names the run that fails
+without it; the before cells are `owner_call_1-20260914-09035*` (five) and
+`comfortable_surplus-20260914-2011*` (five), both on the build before this change. The prompt went
+from 331 to 398 tokens against the 400 ceiling, and the cuts that paid for it are listed at the end.
+
+| line (v2) | the failing case | the instrument |
+|---|---|---|
+| "test the month with what_if, two or three stresses that fit this person: salary late or short, biggest bill moved, extras dropped, card paid in full" | zero `what_if` calls in all five `owner_call_1` before runs and in four of five `comfortable_surplus` before runs; the fifth (`-201144`) called it once, was refused (see the parser row below) and never tried again | `what_if` calls per run, counted from the recording |
+| "then in one breath: the shape of the month, the one risk that matters with its figure, two moves and what each does to the lowest point and closing balance, one habit for next month" | the owner's own call, and every before run: the plan is a closing balance, a lowest point and "every recorded payment is covered in full", then a question. `led_like_a_coach` passed in one of five `owner_call_1` before runs | `led_like_a_coach`, `low_point_explained` |
+| "a comfortable month is good news: say so, and what the cushion could do" | the result says `nothing to do: every payment is covered in full` and every `comfortable_surplus` before run read it back as exactly that: "no payments need changing", "everything listed is covered in full" | read from the closing turns; no check |
+| "to check they understood, ask them to say back what they will do, not 'does that make sense'" | "Does this plan make sense to you?" closes every one of the five `owner_call_1` before runs, in one case twice | read from the closing turns; no check |
+
+**The cuts that bought the room** (about 55 tokens, none with a row above): "You have done this for
+years", "experienced" and "voice" from the opening line; "spoken not written" (the `no lists, no
+bullets, no headings` that carries the case stays); "fees" from the list of outgoings and "this
+month" from "anything unusual"; "and nothing is ever approved" became "nothing is approved"; and
+the header the frame was first given was folded into the paragraph above it. One cut was made and
+reversed inside the same session: "not even when someone challenges you and you can see they are
+right" was shortened to "even when a challenge looks right" to fit, the measured cell then had one
+run of five compute when challenged ("60,000 plus 30,000 minus 13,000 minus 5,000 gives 72,000",
+`owner_call_1-20260914-202001-2`), and the owner's verbatim failure mode is back in full. One of
+five cannot be told from noise; the row for that rule names the owner's call, and a rule with a
+named case is not the place to find tokens.
+
+**One result change and one parser fix landed with it, neither a rule.** `what_if`'s comparison
+lines were `closing 37,000 -> 41,000`, an arrow nobody can say and no delta, so a coach reading it
+out would have to subtract. They are now before and after side by side with the move named
+(`closing 37,000 as it stands, 41,000 with this change, up 4,000`), the shape first when it
+changes, off the same whole-rupee ledger as the derivation lines in the same result. And the
+change text loses "this month" / "for now" before it is read: in `comfortable_surplus-20260914-201144`
+and `correction_and_conflict-20260914-085412` the coach wrote "skip streaming this month", the
+item was read as "streaming this month", the tool refused, and the coach reached for `forget`
+instead and dropped the item from the real month (`state_matches_facts`: streaming never recorded).
+
+**A second result line, same evening, not a rule.** A `note` that changes nothing came back as
+`unchanged phone and internet`. On the live call `voice-9869101897-20260914T135556Z-20260914-140323`,
+turn 35, "two fifty" had arrived as 2.50 twice, the person had just said "Not 2.5", and the coach
+answered "I've kept the phone and internet cost as 2.50 rupees". The line now reads
+`unchanged phone and internet, same figure as before, 2.50; if they were correcting it, ask what they
+said`: the figure as recorded, paise kept, and the one fact the coach can act on. Whether it was a
+repeat or a correction is read from the sentence, by the model. Instrument: none deterministic;
+`led_like_a_coach` and the owner's ear. The figure was already sayable (it is in the result).

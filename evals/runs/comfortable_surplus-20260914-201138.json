@@ -1,0 +1,408 @@
+{
+ "scenario": "comfortable_surplus",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hello. I\u2019m here to help you plan the next thirty days, from 11 September to 10 October. \n\nLet\u2019s start with money you have today. How much is in your bank account, and how much cash do you have?",
+   "tool_calls": []
+  },
+  {
+   "role": "user",
+   "text": "I have twenty thousand rupees in my bank account. I don\u2019t have cash."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted twenty thousand rupees in your bank account and no cash.\n\nWhat money do you expect to come in between 11 September and 10 October, and when?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "money in my bank account",
+      "amount": 20000,
+      "when": "today",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account\nnot mentioned yet: money coming in, bills, loans or cards, everyday spending"
+    },
+    {
+     "name": "note",
+     "args": {
+      "item": "cash",
+      "amount": 0,
+      "when": "today",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "unchanged money in the account\nrecorded: money in the account\nnot mentioned yet: money coming in, bills, loans or cards, everyday spending"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My salary of seventy-two thousand rupees comes in on the first of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your salary of seventy-two thousand rupees. Which day of the month does it arrive exactly?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "my salary",
+      "amount": 72000,
+      "when": "the first of the month",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted my salary 72,000\nrecorded: money in the account, money coming in\nnot mentioned yet: bills, loans or cards, everyday spending\nno date yet: 'the first of the month' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It arrives on the first day of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Which calendar date is that salary paid? For example, is it 1 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "my salary",
+      "amount": 72000,
+      "when": "the first day of the month",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "unchanged my salary\nrecorded: money in the account, money coming in\nnot mentioned yet: bills, loans or cards, everyday spending\nno date yet: 'the first day of the month' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It will be paid on 1 October."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your salary of seventy-two thousand rupees on 1 October.\n\nWhat bills or essential costs must you pay before 10 October, and when are they due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "my salary",
+      "amount": 72000,
+      "when": "1 October",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted my salary on 1 Oct\nrecorded: money in the account, money coming in\nnot mentioned yet: bills, loans or cards, everyday spending"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent of eighteen thousand rupees is due on 5 October."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted rent of eighteen thousand rupees due on 5 October.\n\nWhat other bills or essential costs are due in this period, such as utilities, phone, food, transport, or medicine?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 18000,
+      "when": "5 October",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent 18,000 on 5 Oct\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Electricity of eighteen hundred rupees is due on 18 September."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted electricity of eighteen hundred rupees due on 18 September.\n\nDo you have any loans or credit cards, including their payment amounts and due dates?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "electricity",
+      "amount": 1800,
+      "when": "18 September",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted electricity 1,800 on 18 Sep\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have a bike loan payment of four thousand five hundred rupees due on 20 September."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your bike loan payment of four thousand five hundred rupees due on 20 September.\n\nNow tell me about your usual everyday spending for this period, especially food, transport, phone, and household needs. Estimates are fine.",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "bike loan payment",
+      "amount": 4500,
+      "when": "20 September",
+      "kind": "loan or card",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted bike loan payment 4,500 on 20 Sep as a secured EMI\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I usually spend about nine thousand rupees on groceries over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted groceries of about nine thousand rupees over the month.\n\nDo you spend that steadily through the month, or mostly on particular dates? Also, what do you usually spend on transport and your phone?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "groceries",
+      "amount": 9000,
+      "when": "over the month",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted groceries 9,000\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending\nno date yet: 'over the month' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I spend the grocery money steadily through the month. I don\u2019t have transport or phone costs listed."
+  },
+  {
+   "role": "assistant",
+   "text": "Your month is covered.\n\nYou have twenty thousand rupees now. Your salary of seventy-two thousand rupees arrives on 1 October. Your listed outgoings are electricity of eighteen hundred rupees on 18 September, the bike loan payment of four thousand five hundred rupees on 20 September, groceries of nine thousand rupees spread through the month, and rent of eighteen thousand rupees on 5 October.\n\nThe lowest point is seven thousand seven hundred rupees on 30 September. That is after electricity, the bike payment, and six thousand rupees of groceries. After your salary arrives and rent is paid, you are projected to close at fifty-eight thousand seven hundred rupees on 10 October.\n\nEverything listed is covered in full. Does this plan make sense to you?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "groceries",
+      "amount": 9000,
+      "when": "spread through the month",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "groceries spread: now spread\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending"
+    },
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "everyday spending",
+      "about": "transport and phone costs"
+     },
+     "result": "none: everyday spending\nrecorded: money in the account, money coming in, bills, loans or cards\nnone: everyday spending\neverything they mentioned is on the books; nothing left unasked"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills, loans or cards\nnone: everyday spending\neverything they mentioned is on the books; nothing left unasked\nin the account now 20,000\nmoney coming in: my salary 72,000 on 1 October\nbills: rent 18,000 on 5 October; electricity 1,800 on 18 September; groceries 9,000 spread through the month\nloans or cards: bike loan payment 4,500 on 20 September as a secured EMI\nin 72,000, out 33,300, in minus out 38,700\nopening 20,000 plus in is 92,000 to work with, closing 58,700\nsurplus 58,700, shortfall 0\nwhy the lowest point is 7,700 on 30 September:\nstart with 20,000\nelectricity takes 1,800 on 18 September\nbike loan payment takes 4,500 on 20 September\ngroceries takes 6,000 by 30 September\nthat leaves 7,700, the lowest point\nmy salary adds 72,000 on 1 October\nrent takes 18,000 on 5 October\ngroceries takes 3,000 by 10 October\nclosing 58,700\nnothing to do: every payment is covered in full"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, it makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Thanks. Your plan is finalized. Goodbye.",
+   "tool_calls": [
+    {
+     "name": "show_month",
+     "args": {
+      "final": true
+     },
+     "result": "plan final\nrecorded: money in the account, money coming in, bills, loans or cards\nnone: everyday spending\neverything they mentioned is on the books; nothing left unasked\nin the account now 20,000\nmoney coming in: my salary 72,000 on 1 October\nbills: rent 18,000 on 5 October; electricity 1,800 on 18 September; groceries 9,000 spread through the month\nloans or cards: bike loan payment 4,500 on 20 September as a secured EMI\nin 72,000, out 33,300, in minus out 38,700\nopening 20,000 plus in is 92,000 to work with, closing 58,700\nsurplus 58,700, shortfall 0\nwhy the lowest point is 7,700 on 30 September:\nstart with 20,000\nelectricity takes 1,800 on 18 September\nbike loan payment takes 4,500 on 20 September\ngroceries takes 6,000 by 30 September\nthat leaves 7,700, the lowest point\nmy salary adds 72,000 on 1 October\nrent takes 18,000 on 5 October\ngroceries takes 3,000 by 10 October\nclosing 58,700\nnothing to do: every payment is covered in full"
+    },
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "plan agreed and finalized"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "20000.00",
+  "incomes": [
+   {
+    "name": "my salary",
+    "notes": "",
+    "carried": false,
+    "amount": "72000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike loan payment",
+    "notes": "",
+    "carried": false,
+    "kind": "secured_emi",
+    "amount_due": "4500.00",
+    "min_due": null,
+    "due_date": "2026-09-20",
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "18000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "electricity",
+    "notes": "",
+    "carried": false,
+    "amount": "1800.00",
+    "due_date": "2026-09-18",
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "groceries",
+    "notes": "",
+    "carried": false,
+    "amount": "9000.00",
+    "due_date": null,
+    "spread": true,
+    "survival": true
+   }
+  ],
+  "optionals": [],
+  "unknowns": [
+   {
+    "field": "optional",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 11
+ },
+ "hidden_facts": {
+  "opening_balance": "20000",
+  "incomes": [
+   {
+    "name": "salary",
+    "amount": "72000",
+    "day": 1
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "18000",
+    "day": 5
+   },
+   {
+    "name": "groceries",
+    "amount": "9000"
+   },
+   {
+    "name": "electricity",
+    "amount": "1800",
+    "day": 18
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike loan",
+    "amount": "4500",
+    "day": 20,
+    "debt_kind": "secured_emi"
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming",
+    "amount": "700"
+   }
+  ]
+ },
+ "carried": [],
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14
+ ],
+ "usage": {
+  "input_tokens": 67005,
+  "output_tokens": 1315
+ }
+}

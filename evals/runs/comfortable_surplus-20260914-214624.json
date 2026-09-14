@@ -1,0 +1,455 @@
+{
+ "scenario": "comfortable_surplus",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m here to help you plan the next thirty days, through 10 October. What money do you expect to come in, and when?",
+   "tool_calls": []
+  },
+  {
+   "role": "user",
+   "text": "My salary of seventy-two thousand rupees comes on the first of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your salary of seventy-two thousand rupees. Which date does it usually arrive\u20141 October, or another day?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "salary",
+      "amount": 72000,
+      "when": "the first of the month",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted salary 72,000\nrecorded: money coming in\nnot mentioned yet: money in the account, bills, loans or cards, everyday spending\nno date yet: 'the first of the month' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It arrives on the first of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ll use the first of the month as the salary date. How much money do you have in your account and in cash today, 11 September?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "salary arrival date",
+      "amount": null,
+      "when": "the first of the month",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "recorded: money coming in\nnot mentioned yet: money in the account, bills, loans or cards, everyday spending\nno date yet: 'the first of the month' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    },
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "money coming in",
+      "about": "the exact salary arrival date"
+     },
+     "result": "none: money coming in\nrecorded: money coming in\nnot mentioned yet: money in the account, bills, loans or cards, everyday spending"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have twenty thousand rupees in my account."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted twenty thousand rupees in your account today. What bills or fixed payments are due before 10 October, such as rent, EMIs, utilities, or card payments?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "money in my account",
+      "amount": 20000,
+      "when": "today, 11 September",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account, money coming in\nnot mentioned yet: bills, loans or cards, everyday spending"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent is eighteen thousand rupees, due on the fifth, and my bike loan EMI is four thousand five hundred rupees, due on the twentieth."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted rent of eighteen thousand rupees and your bike loan EMI of four thousand five hundred rupees. What do you spend on everyday essentials, such as food, travel, medicines, and phone costs, in a typical month?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 18000,
+      "when": "the fifth",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent 18,000\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending\nno date yet: 'the fifth' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    },
+    {
+     "name": "note",
+     "args": {
+      "item": "bike loan EMI",
+      "amount": 4500,
+      "when": "the twentieth",
+      "kind": "loan or card",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted bike loan emi 4,500 as a secured EMI\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending\nno date yet: 'the twentieth' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I spend about nine thousand rupees on groceries each month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted about nine thousand rupees a month for groceries. What other regular spending or payments do you have, including travel, utilities, phone, subscriptions, or credit cards?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "groceries",
+      "amount": 9000,
+      "when": "each month",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted groceries 9,000\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending\nno date yet: 'each month' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My electricity bill is eighteen hundred rupees, due on the eighteenth. I could skip my seven-hundred-rupee streaming subscription."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted the electricity bill of eighteen hundred rupees and the seven-hundred-rupee streaming subscription as optional. Do you have any credit-card dues, other loans, overdue amounts, or cash spending this month?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "electricity bill",
+      "amount": 1800,
+      "when": "the eighteenth",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted electricity bill 1,800\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending\nno date yet: 'the eighteenth' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    },
+    {
+     "name": "note",
+     "args": {
+      "item": "streaming subscription",
+      "amount": 700,
+      "when": "monthly",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": false
+     },
+     "result": "noted streaming subscription 700\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\neverything they mentioned is on the books; nothing left unasked\nno date yet: 'monthly' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I do not have those."
+  },
+  {
+   "role": "assistant",
+   "text": "Your month has a serious timing gap. The account starts at twenty thousand rupees, and the salary arrives on 1 October. The listed outgoings are groceries, rent, electricity, the bike EMI, and streaming.\n\nThe main risk is that some essential payments may fall before the salary lands. The tool shows a lowest point of twenty rupees on 3 October, with eight thousand eight hundred twenty rupees unpaid in its current timing. I need to test a few safer choices before we settle it.\n\nWould you like me to test skipping streaming, moving the biggest payment later, and a salary delay?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "loans and cards",
+      "about": "any other loans, credit-card dues, or overdue amounts"
+     },
+     "result": "none: loans or cards\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\neverything they mentioned is on the books; nothing left unasked"
+    },
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "everyday spending",
+      "about": "any cash spending besides the items mentioned"
+     },
+     "result": "none: everyday spending\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\neverything they mentioned is on the books; nothing left unasked"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills, loans or cards, everyday spending\neverything they mentioned is on the books; nothing left unasked\nin the account now 20,000\nmoney coming in: salary 72,000; salary arrival date\nbills: rent 18,000; groceries 9,000; electricity bill 1,800\nloans or cards: bike loan emi 4,500 as a secured EMI\neveryday spending: streaming subscription 700\nunsolvable, something is left unpaid\nin 0, out 19,980, in minus out -19,980\nopening 20,000 plus in is 20,000 to work with, closing 20\nsurplus 20, shortfall 0\nunpaid total 8,820\nwhy the lowest point is 20 on 3 October:\nstart with 20,000\ngroceries takes 6,000 by 30 September\nrent takes 12,600 by 1 October\nelectricity bill takes 1,380 by 3 October\nthat leaves 20, the lowest point\nclosing 20\nwhat they could do: From 1 October there is not enough for groceries; 3,000 of 9,000 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nFrom 2 October there is not enough for rent; 5,400 of 18,000 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nFrom 4 October there is not enough for electricity bill; 420 of 1,800 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nDrop streaming subscription this month; that keeps 700 in the account\nunpaid groceries 3,000 due 1 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nunpaid rent 5,400 due 2 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nunpaid electricity bill 420 due 4 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nnote: rent has no date; spread across the month\nnote: groceries has no date; spread across the month\nnote: electricity bill has no date; spread across the month\nleft out of these figures: salary (72,000 known), salary arrival date, bike loan emi (4,500 known)"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, please test those."
+  },
+  {
+   "role": "assistant",
+   "text": "With those changes, every payment is covered. The lowest point becomes eleven thousand three hundred sixty rupees on 4 October, up from twenty rupees. The closing balance becomes sixty-three thousand two hundred rupees, and nothing is unpaid.\n\nThe key move is to confirm whether rent can be paid on 10 October and whether salary could arrive on 5 October. Skipping streaming keeps seven hundred rupees available, but the plan works mainly because the salary arrives before rent.\n\nWould you like me to test the bike EMI or electricity bill being moved instead, in case those dates are easier to change?",
+   "tool_calls": [
+    {
+     "name": "what_if",
+     "args": {
+      "changes": [
+       "skip streaming subscription",
+       "move rent to 10 October",
+       "salary arrives on 5 October"
+      ]
+     },
+     "result": "if they did this: skip streaming subscription; rent 10 October; salary 5 October\ncompared with the month as it stands:\nshape as it stands: unsolvable; with this change: every payment is covered\nlowest point 20 on 3 October as it stands, 11,360 on 4 October with this change, up 11,340\nclosing 20 as it stands, 63,200 with this change, up 63,180\nunpaid 8,820 as it stands, 0 with this change, down 8,820\nrecorded: money in the account, money coming in, bills, loans or cards\nnone: everyday spending\neverything they mentioned is on the books; nothing left unasked\nin the account now 20,000\nmoney coming in: salary 72,000 on 5 October; salary arrival date\nbills: rent 18,000 on 10 October; groceries 9,000; electricity bill 1,800\nloans or cards: bike loan emi 4,500 as a secured EMI\nin 72,000, out 28,800, in minus out 43,200\nopening 20,000 plus in is 92,000 to work with, closing 63,200\nsurplus 63,200, shortfall 0\nwhy the lowest point is 11,360 on 4 October:\nstart with 20,000\nelectricity bill takes 1,440 by 4 October\ngroceries takes 7,200 by 4 October\nthat leaves 11,360, the lowest point\nsalary adds 72,000 on 5 October\nelectricity bill takes 360 by 10 October\ngroceries takes 1,800 by 10 October\nrent takes 18,000 on 10 October\nclosing 63,200\nnothing to do: every payment is covered in full\nnote: groceries has no date; spread across the month\nnote: electricity bill has no date; spread across the month\nleft out of these figures: salary arrival date, bike loan emi (4,500 known)"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, test moving the bike EMI or electricity bill instead."
+  },
+  {
+   "role": "assistant",
+   "text": "Moving both the bike EMI and electricity bill to 10 October is worse. The lowest point is two hundred rupees on 2 October, and thirteen thousand five hundred rupees remains unpaid. It also leaves the bike EMI short by thirteen thousand three hundred rupees on 10 October.\n\nThe safer option is to ask about rent on 10 October and confirm whether salary can arrive on 5 October, while skipping streaming. Moving the bike EMI needs particular care because a missed secured instalment can bring penalties and credit consequences.\n\nPlease say back what you will do: which payment dates you will ask to move, what you will do about streaming, and what you will confirm about your salary date.",
+   "tool_calls": [
+    {
+     "name": "what_if",
+     "args": {
+      "changes": [
+       "move bike loan EMI to 10 October",
+       "move electricity bill to 10 October"
+      ]
+     },
+     "result": "if they did this: bike loan EMI 10 October; electricity bill 10 October\ncompared with the month as it stands:\nlowest point 20 on 3 October as it stands, 200 on 2 October with this change, up 180\nclosing 20 as it stands, 200 with this change, up 180\nunpaid 8,820 as it stands, 13,500 with this change, up 4,680\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\neverything they mentioned is on the books; nothing left unasked\nin the account now 20,000\nmoney coming in: salary 72,000; salary arrival date\nbills: rent 18,000; groceries 9,000; electricity bill 1,800 on 10 October\nloans or cards: bike loan emi 4,500 on 10 October as a secured EMI\neveryday spending: streaming subscription 700\nunsolvable, something is left unpaid\nin 0, out 19,800, in minus out -19,800\nopening 20,000 plus in is 20,000 to work with, closing 200\nsurplus 200, shortfall 0\nunpaid total 13,500\nwhy the lowest point is 200 on 2 October:\nstart with 20,000\ngroceries takes 6,600 by 2 October\nrent takes 13,200 by 2 October\nthat leaves 200, the lowest point\nclosing 200\nwhat they could do: From 3 October there is not enough for groceries; 2,400 of 9,000 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nFrom 3 October there is not enough for rent; 4,800 of 18,000 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nOn 10 October you are 1,600 short for electricity bill. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nOn 10 October you are 13,300 short for bike loan emi. The money is not there at any point in the next thirty days. You could ask the lender whether the due date can move to just after you are paid (Missing a secured instalment adds penal charges, gets reported to the credit bureaus once it is thirty days past due, and the lender can eventually move to take back the asset)\nDrop streaming subscription this month; that keeps 700 in the account\nunpaid groceries 2,400 due 3 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nunpaid rent 4,800 due 3 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nunpaid electricity bill 1,800 due 10 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nunpaid bike loan emi 4,500 due 10 October, Missing a secured instalment adds penal charges, gets reported to the credit bureaus once it is thirty days past due, and the lender can eventually move to take back the asset\nnote: rent has no date; spread across the month\nnote: groceries has no date; spread across the month\nleft out of these figures: salary (72,000 known), salary arrival date"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I\u2019ll ask to move rent to 10 October, skip streaming, and confirm whether my salary can arrive on 5 October."
+  },
+  {
+   "role": "assistant",
+   "text": "Your plan is: ask to move rent to 10 October, skip streaming, and confirm whether your salary can arrive on 5 October.\n\nThe important risk is that this plan is not confirmed yet. Until rent is moved and the salary date is confirmed, the month still shows eight thousand eight hundred twenty rupees unpaid, with a lowest point of twenty rupees on 3 October.\n\nYour habit for next month is to check salary timing against rent and essential bills before the month begins. Please confirm the rent change and salary date before committing to those payments.",
+   "tool_calls": [
+    {
+     "name": "show_month",
+     "args": {
+      "final": true
+     },
+     "result": "plan final\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\neverything they mentioned is on the books; nothing left unasked\nin the account now 20,000\nmoney coming in: salary 72,000; salary arrival date\nbills: rent 18,000; groceries 9,000; electricity bill 1,800\nloans or cards: bike loan emi 4,500 as a secured EMI\neveryday spending: streaming subscription 700\nunsolvable, something is left unpaid\nin 0, out 19,980, in minus out -19,980\nopening 20,000 plus in is 20,000 to work with, closing 20\nsurplus 20, shortfall 0\nunpaid total 8,820\nwhy the lowest point is 20 on 3 October:\nstart with 20,000\ngroceries takes 6,000 by 30 September\nrent takes 12,600 by 1 October\nelectricity bill takes 1,380 by 3 October\nthat leaves 20, the lowest point\nclosing 20\nwhat they could do: From 1 October there is not enough for groceries; 3,000 of 9,000 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nFrom 2 October there is not enough for rent; 5,400 of 18,000 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nFrom 4 October there is not enough for electricity bill; 420 of 1,800 is not covered this month. The money is not there at any point in the next thirty days. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nDrop streaming subscription this month; that keeps 700 in the account\nunpaid groceries 3,000 due 1 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nunpaid rent 5,400 due 2 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nunpaid electricity bill 420 due 4 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nnote: rent has no date; spread across the month\nnote: groceries has no date; spread across the month\nnote: electricity bill has no date; spread across the month\nleft out of these figures: salary (72,000 known), salary arrival date, bike loan emi (4,500 known)"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It does make sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "They confirmed the plan makes sense."
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "20000.00",
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "carried": false,
+    "amount": "72000.00",
+    "date": null,
+    "latest_date": null,
+    "certainty": "confirmed"
+   },
+   {
+    "name": "salary arrival date",
+    "notes": "",
+    "carried": false,
+    "amount": null,
+    "date": null,
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike loan emi",
+    "notes": "",
+    "carried": false,
+    "kind": "secured_emi",
+    "amount_due": "4500.00",
+    "min_due": null,
+    "due_date": null,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "18000.00",
+    "due_date": null,
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "groceries",
+    "notes": "",
+    "carried": false,
+    "amount": "9000.00",
+    "due_date": null,
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "electricity bill",
+    "notes": "",
+    "carried": false,
+    "amount": "1800.00",
+    "due_date": null,
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming subscription",
+    "notes": "",
+    "carried": false,
+    "amount": "700.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "income",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "debt",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "optional",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 12
+ },
+ "hidden_facts": {
+  "opening_balance": "20000",
+  "incomes": [
+   {
+    "name": "salary",
+    "amount": "72000",
+    "day": 1
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "18000",
+    "day": 5
+   },
+   {
+    "name": "groceries",
+    "amount": "9000"
+   },
+   {
+    "name": "electricity",
+    "amount": "1800",
+    "day": 18
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike loan",
+    "amount": "4500",
+    "day": 20,
+    "debt_kind": "secured_emi"
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming",
+    "amount": "700"
+   }
+  ]
+ },
+ "carried": [],
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14
+ ],
+ "usage": {
+  "input_tokens": 91505,
+  "output_tokens": 1682
+ }
+}

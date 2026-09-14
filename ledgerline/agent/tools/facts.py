@@ -178,7 +178,7 @@ def recorded(outcome: Any, state: FinancialState, *, reason: UnknownReason | Non
     the person's money. An amount too small to be real has to be checked, because "my rent is
     twelve thousand" arrives as "rent is 12" often enough to have happened on a live call.
     """
-    lines = _outcome_lines(outcome, reason)
+    lines = _outcome_lines(outcome, reason, state)
     lines += coverage_lines(state)
     return "\n".join(line for line in lines if line)
 
@@ -195,9 +195,43 @@ def _kind_word(field: str, kind: ItemKind | None) -> str:
     return BARE_KIND.get(field) or state_ops.label_for(field)
 
 
-def _outcome_lines(outcome: Any, reason: UnknownReason | None) -> list[str]:
+# A note that changed nothing is one of two things: the person repeating themselves, or a
+# correction the transcript did not carry. On a live call "two fifty" arrived as 2.50 twice, the
+# person said "Not 2.5", the result said only `unchanged phone and internet`, and the coach replied
+# "I've kept the phone and internet cost as 2.50 rupees". The figure and the fact are stated; which
+# of the two it was is the model's to read from the sentence that produced it.
+SAME_FIGURE = (
+    "{head}{name}, same figure as before, {amount}; if they were correcting it, ask what they said"
+)
+
+
+def _unchanged_line(outcome: Any, name: str, state: FinancialState) -> str:
+    amount = (
+        state.opening_balance
+        if outcome.kind is ItemKind.BALANCE
+        else _known_amount(state, outcome.name or "")
+    )
+    if amount is None:
+        return phrases.UNCHANGED + name
+    return SAME_FIGURE.format(head=phrases.UNCHANGED, name=name, amount=rupees_exact(amount))
+
+
+def rupees_exact(amount: Decimal) -> str:
+    """The figure as recorded, paise kept when there are any: an unchanged 2.50 read back as "3"
+    would hide the very thing this line exists to surface."""
+    whole_part = whole(amount)
+    if amount == whole_part:
+        return group(whole_part)
+    return f"{amount:,.2f}"
+
+
+def _outcome_lines(outcome: Any, reason: UnknownReason | None, state: FinancialState) -> list[str]:
     if outcome is None:
         return []
+    if outcome.kind is None and not outcome.field:
+        # `confirm_carried`: no field, no kind, the domain's own sentence. Without this it read
+        # `none: ` -- a category word for something that is not a category.
+        return [outcome.detail or ""]
     if outcome.kind is None:  # nothing_more about one detail
         label = _kind_word(outcome.field or "", None)
         head = NONE if reason is UnknownReason.NOT_APPLICABLE else phrases.NOT_KNOWN
@@ -208,7 +242,7 @@ def _outcome_lines(outcome: Any, reason: UnknownReason | None) -> list[str]:
     if outcome.status is OutcomeStatus.NOOP:
         return [phrases.NOTHING_RECORDED + name]
     if outcome.status is OutcomeStatus.UNCHANGED:
-        return [phrases.UNCHANGED + name]
+        return [_unchanged_line(outcome, name, state)]
     return _change_lines(outcome, name)
 
 
@@ -247,6 +281,11 @@ def _change_lines(outcome: Any, name: str) -> list[str]:
         if attribute in FLAGS:
             if old:
                 said.append(f"{label}: now {new}")
+            elif attribute == "certainty" and COUNTED.get(str(new)):
+                # A new income that may not arrive is out of the figures from this moment, and
+                # the noted line is the only place the model learns it. Three demo rehearsals
+                # read "might not arrive" as an uncertain DATE because this was missing.
+                new_parts.append(", " + COUNTED[str(new)])
             continue
         if old:
             said.append(LAST_TIME.format(label=label, old=old, new=new))
@@ -254,7 +293,8 @@ def _change_lines(outcome: Any, name: str) -> list[str]:
             new_parts.append(new if attribute == "amount" else f"{_prefix(attribute)} {new}")
     lines = []
     if new_parts:
-        lines.append(f"{NOTED}{name} " + " ".join(new_parts + ([filing] if filing else [])))
+        joined = " ".join(new_parts + ([filing] if filing else [])).replace(" ,", ",")
+        lines.append(f"{NOTED}{name} {joined}")
     lines += said
     return [_protected(line, outcome, name) for line in lines]
 
@@ -323,6 +363,10 @@ def month(
         lines.append(phrases.PLAN_FINAL)
     if applied is not None:
         lines.append("if they did this: " + "; ".join(applied))
+    # The comparison first: it is what `what_if` was called for, and the model reads the top of a
+    # result before the rest of it. The full picture of the changed month follows.
+    if against is not None:
+        lines += _delta_lines(plan, against)
     lines += coverage_lines(state)
     if plan.status is PlanStatus.BLOCKED:
         lines.append(phrases.BLOCKED + ", ".join(state_ops.label_for(f) for f in plan.blockers))
@@ -332,8 +376,6 @@ def month(
     lines += _low_point_lines(plan)
     lines += _choices_lines(plan)
     lines += _excluded_lines(state, plan)
-    if against is not None:
-        lines += _delta_lines(plan, against)
     return "\n".join(line for line in lines if line)
 
 
@@ -489,16 +531,58 @@ def _known_amount(state: FinancialState, name: str) -> Decimal | None:
     return None
 
 
+COMPARED = "compared with the month as it stands:"
+NOTHING_MOVES = "nothing moves"
+COVERED = "every payment is covered"
+
+
 def _delta_lines(plan: PlanResult, against: PlanResult) -> list[str]:
-    """What the change did, for `what_if`. Both plans came from the same engine."""
+    """What the change did, for `what_if`: before and after side by side, and the move.
+
+    A coach with a spreadsheet types the stress in and reads two columns. The old line was
+    `closing 37,000 -> 41,000`: an arrow nobody can say, and no delta, so the model was left to
+    subtract. Both figures, both dates and the move are here, off the same whole-rupee ledger the
+    derivation lines below are read from, so one result never carries two lowest points. The
+    subtraction is code's; nothing is worked out by the model.
+    """
     if plan.summary is None or against.summary is None:
         return []
-    lines = []
-    for label, now, before in (
-        ("lowest", plan.summary.lowest_balance, against.summary.lowest_balance),
-        ("closing", plan.summary.closing_balance, against.summary.closing_balance),
-        ("unpaid", plan.summary.unpaid_total, against.summary.unpaid_total),
-    ):
-        if now != before:
-            lines.append(f"{label} {rupees(before)} -> {rupees(now)}")
-    return lines or ["nothing moves"]
+    now, before = in_rupees(plan.summary), in_rupees(against.summary)
+    now_low, before_low = in_rupees_low_point(plan), in_rupees_low_point(against)
+    lines = [COMPARED]
+    if plan.status is not against.status:
+        # First, because it frames what follows: a closing balance that goes UP because a bill
+        # was left unpaid reads as good news without the shape beside it.
+        lines.append(f"shape as it stands: {_shape(against)}; with this change: {_shape(plan)}")
+    if now_low is not None and before_low is not None:
+        lines.append(
+            f"lowest point {group(before_low.b)} on {spoken_day(against.low_point.date)} as it "
+            f"stands, {group(now_low.b)} on {spoken_day(plan.low_point.date)} with this change, "
+            f"{_move(before_low.b, now_low.b)}"
+        )
+    lines.append(
+        f"closing {group(before.closing_balance)} as it stands, "
+        f"{group(now.closing_balance)} with this change, "
+        f"{_move(before.closing_balance, now.closing_balance)}"
+    )
+    if now.unpaid_total != before.unpaid_total:
+        lines.append(
+            f"unpaid {group(before.unpaid_total)} as it stands, "
+            f"{group(now.unpaid_total)} with this change, "
+            f"{_move(before.unpaid_total, now.unpaid_total)}"
+        )
+    if len(lines) == 1 or all(line.endswith(_move(0, 0)) for line in lines[1:]):
+        return [NOTHING_MOVES]
+    return lines
+
+
+def _move(before: int, after: int) -> str:
+    """ "up 4,000", "down 13,000" or "no move" -- whole rupees, code's subtraction."""
+    delta = after - before
+    if delta == 0:
+        return "no move"
+    return f"{'up' if delta > 0 else 'down'} {group(abs(delta))}"
+
+
+def _shape(plan: PlanResult) -> str:
+    return phrases.PLAN_SHAPE.get(plan.status, COVERED).split(",")[0]

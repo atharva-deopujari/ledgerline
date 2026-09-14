@@ -1526,3 +1526,19 @@ def test_the_fold_changes_nothing_it_detects():
             for v in check(recording)
         )
         assert direct == folded, path.name
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Confirm any charges or credit impact before you ask the lender.",
+        "A missed secured instalment can bring penalties and credit consequences.",
+        "Paying late can hurt your credit standing.",
+    ],
+)
+def test_naming_what_a_missed_payment_does_to_their_credit_is_not_an_offer(line):
+    """`comfortable_surplus-20260914-214555` and `-214624` failed `speakable` for warning that
+    moving a secured EMI has credit consequences -- the job, not an offer. Same family as
+    "credit record" and "credit history" above."""
+    t = transcript(bot(line))
+    assert not [v for v in checks.speakable(t) if "offers credit" in v.detail]

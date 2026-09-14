@@ -216,3 +216,18 @@ def test_v2_says_what_to_do_when_they_will_not_answer():
     text = prompt.base_prompt("v2").lower()
     assert "will not answer" in text
     assert "names\nwhat it is missing" in text
+
+
+def test_v2_tests_the_month_before_advising_and_says_what_a_coach_says():
+    """The coaching brief (`docs/process/coach-brief.md`). The owner's own call: a comfortable
+    month answered with a closing balance and nothing else, and in 10 of 10 saved v2 runs on
+    `owner_call_1` and `comfortable_surplus` the coach never called `what_if` once. The frame
+    is written as what to do, not as rules about tone."""
+    text = " ".join(prompt.base_prompt("v2").lower().split())  # wrapped lines joined
+    assert "what_if" in text  # the instrument, by name, so the model reaches for it
+    assert "two or three" in text  # not every stress, the ones that fit this person
+    assert "lowest point" in text and "closing" in text  # what each move does, both figures
+    assert "one habit" in text
+    assert "cushion" in text  # a comfortable month is not "nothing to do"
+    assert "say back what they will do" in text
+    assert "does that make sense" not in text.replace('not "does that make sense"', "")

@@ -1,0 +1,180 @@
+{
+  "scenario": "voice-9876500099-20260914T141257Z",
+  "source": "voice",
+  "session_id": "9876500099-20260914T141257Z",
+  "prompt_version": "v2@2",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-14",
+  "turns": [
+    {
+      "role": "assistant",
+      "text": "Let\u2019s take this one step at a time. How much money is in your bank account and cash today?",
+      "tool_calls": [],
+      "completions": 1,
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "My rent is 11,000 rupees due on the 5th.",
+      "finalisations": [
+        "My rent is 11,000 rupees due on the 5th."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "I\u2019ve noted rent of 11,000 rupees due on 5 October. How much money is in your bank account and cash today?",
+      "tool_calls": [
+        {
+          "id": "call_f4YolUWevntilo33LyPDinX5",
+          "name": "note",
+          "args": {
+            "item": "rent",
+            "amount": 11000,
+            "when": "the 5th",
+            "kind": "bill",
+            "must_pay": true
+          },
+          "result": "noted rent 11,000 on 5 Oct\nrecorded: bills\nnot mentioned yet: money in the account, money coming in, loans or cards, everyday spending"
+        }
+      ],
+      "completions": 2,
+      "timings": {
+        "vad_stop_at": "2026-09-14T14:13:21.153872+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 6.7,
+        "first_token_from_turn_start": 6.7,
+        "first_audio": 4.642,
+        "first_audio_from_turn_start": 4.642
+      }
+    },
+    {
+      "role": "user",
+      "text": "I have 20,000 in my account.",
+      "finalisations": [
+        "I have 20,000 in my account."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "I\u2019ve noted 20,000 rupees in your account. What money will come in between 14 September and 13 October, and when?",
+      "tool_calls": [
+        {
+          "id": "call_iTtYrPyp6UFYzmDQG1CvL6c3",
+          "name": "note",
+          "args": {
+            "item": "bank account",
+            "amount": 20000,
+            "when": "today",
+            "kind": "balance"
+          },
+          "result": "noted opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending"
+        }
+      ],
+      "completions": 2,
+      "timings": {
+        "vad_stop_at": "2026-09-14T14:13:36.193243+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 4.36,
+        "first_token_from_turn_start": 4.36,
+        "first_audio": 2.453,
+        "first_audio_from_turn_start": 2.453
+      }
+    },
+    {
+      "role": "user",
+      "text": "That is everything.",
+      "finalisations": [
+        "That is everything."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "No money is coming in during this period. Do you have any loans, credit cards, or other repayments due?",
+      "tool_calls": [
+        {
+          "id": "call_IAWtdrl990nyjYlTtgT06rGh",
+          "name": "nothing_more",
+          "args": {
+            "of": "money coming in"
+          },
+          "result": "none: money coming in\nrecorded: money in the account, bills\nnone: money coming in\nnot mentioned yet: loans or cards, everyday spending"
+        }
+      ],
+      "completions": 2,
+      "timings": {
+        "vad_stop_at": "2026-09-14T14:13:50.432943+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 4.885,
+        "first_token_from_turn_start": 4.885,
+        "first_audio": 2.758,
+        "first_audio_from_turn_start": 2.758
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-14",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "incomes": [],
+    "debts": [],
+    "essentials": [
+      {
+        "name": "rent",
+        "notes": "",
+        "carried": false,
+        "amount": "11000.00",
+        "due_date": "2026-10-05",
+        "spread": false,
+        "survival": true
+      }
+    ],
+    "optionals": [],
+    "unknowns": [
+      {
+        "field": "income",
+        "reason": "not_applicable"
+      }
+    ],
+    "understood": false,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 3
+  },
+  "plan_final": false,
+  "carried": [],
+  "cards_versions": [
+    1,
+    2,
+    3
+  ],
+  "ended_by": "client",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  },
+  "verdict": {
+    "session_id": "9876500099-20260914T141257Z",
+    "status": "ready",
+    "summary": 1.0,
+    "deterministic": [
+      {
+        "rule": "money_traceable",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "state_matches_call",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "speakable",
+        "passed": true,
+        "detail": null
+      }
+    ],
+    "intent": [],
+    "judge_model": null,
+    "trace_url": "https://us.cloud.langfuse.com/project/cmtzwzchp05arad0ch8y5vgzw/traces/11bf27067f91824074dc1ed95ae09181"
+  }
+}

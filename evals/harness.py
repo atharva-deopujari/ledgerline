@@ -28,7 +28,12 @@ from ledgerline.observability.attributes import Attr
 
 MODEL = "gpt-5.6-luna"
 TODAY = dt.date(2026, 9, 11)
-MAX_TOOL_ROUNDS = 4
+# Rounds of tool calls the model may chain before the harness stops it. The voice pipeline has
+# no such cap: after a function result the model is called again until it speaks. At 4, the first
+# coaching-frame cell had six of ten runs end a turn with `note, show_month, what_if, what_if` and
+# no text at all -- `no_silent_turn` failures the real pipeline could not have produced, though
+# the four round trips of dead air behind them are real (REPORT 10.17).
+MAX_TOOL_ROUNDS = 8
 RUNS_DIR = Path(__file__).parent / "runs"
 SCENARIOS_DIR = Path(__file__).parent / "scenarios"
 
@@ -129,6 +134,10 @@ def _seed_carried(state: FinancialState, scenario: dict) -> list[tuple[str, str]
             fields["day_of_month"] = int(entry["day"])
         if entry.get("debt_kind"):
             fields["debt_kind"] = DebtKind(entry["debt_kind"])
+        if entry.get("min_due"):
+            fields["min_due"] = Decimal(str(entry["min_due"]))
+        if entry.get("spread"):
+            fields["spread"] = True
         state_ops.upsert(state, ItemKind(entry["kind"]), entry["name"], **fields)
         pairs.append((entry["name"], entry["spoken"]))
     # `upsert` clears `carried`, which is the point of the flag in a live call: a figure the

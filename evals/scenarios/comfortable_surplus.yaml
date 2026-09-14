@@ -15,7 +15,11 @@ persona:
     optionals:
       - {name: streaming, amount: "700"}
   ends_when: "the coach has explained the plan and I have said I understood it"
-max_turns: 14
+# 24, not 14. Fourteen was sized for a call that asks its questions and reads the month back; the
+# coaching frame tests the month with what_if and asks for a say-back, and every run of the first
+# coaching cell used 20 to 24 turns (REPORT 10.17). Three of five ended without a final plan at the
+# old budget.
+max_turns: 24
 expect:
   plan_final: true
   status: OK
