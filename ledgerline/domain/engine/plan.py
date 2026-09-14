@@ -85,6 +85,12 @@ def _propose_changes(
     plan turned out not to need."""
     if shape is PlanStatus.TIMING:
         events = _defer_optionals(events, opening, window, actions)
+        dip = _simulate(events, opening, window).lowest
+        if dip < ZERO:
+            # The money is there over the month and not on the day, and moving what can move has
+            # not closed it. Paying only the minimum is the issuer's own option -- a lever the
+            # person already holds -- so it is used before the plan asks the issuer for anything.
+            events, _ = _pay_min_due(events, dip, policy, actions)
     else:
         # `net` stays the shape of the month as the user described it; `remaining` is what is left
         # to close as cuts land. Classification reads the former, the loops the latter.

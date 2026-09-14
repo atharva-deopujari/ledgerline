@@ -39,16 +39,26 @@ def _reserve_after(
     events: list[_Event], window: list[dt.date], ignore: frozenset[int] = frozenset()
 ) -> _Reserve:
     def suffix(chosen: list[_Event]) -> dict[dt.date, Decimal]:
+        """What must be carried past each day for the obligations that outrank this one.
+
+        Money arriving before them counts: reserving a rent that a salary lands in time to cover
+        is how the engine ends up refusing a payment the person can plainly afford -- the demo
+        rehearsal's card, held back on the 20th against a rent on 5 October that the salary on the
+        30th pays for. Never negative: a surplus does not become permission to overspend later.
+        """
         per_day = {day: ZERO for day in window}
         for event in chosen:
             per_day[event.date] += event.amount
+        for event in incoming:
+            per_day[event.date] -= event.amount
         running, out = ZERO, {}
         for day in reversed(window):
             out[day] = running
-            running += per_day[day]
+            running = max(running + per_day[day], ZERO)
         return out
 
     obligations = [e for e in events if e.kind in _OBLIGATION_KINDS]
+    incoming = [e for e in events if e.kind is RowKind.INCOME]
     # `ignore` drops an obligation from what gets reserved, never from the set of tiers that need
     # a table: an event with no table of its own would silently reserve nothing.
     counted = [e for e in obligations if id(e) not in ignore]

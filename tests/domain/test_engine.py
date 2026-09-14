@@ -872,8 +872,11 @@ def test_a_payment_the_balance_covers_says_what_paying_it_would_cost_later():
     plan = build_plan(state_from(facts))
     said = next(a.rationale for a in plan.actions if a.target == "personal emi")
 
+    # 800, not 18,000: the reserve counts the salary that lands before the rent it is protecting.
+    # Reserving against money that is on its way is how an engine refuses a payment the person can
+    # plainly afford, which is the demo rehearsal's card in another month's clothes.
     assert said.startswith(
-        "On 25 September paying the 3,000 personal emi would leave you 18,000 short for "
+        "On 25 September paying the 3,000 personal emi would leave you 800 short for "
         "groceries and rent later in the month."
     )
     assert [u.amount for u in plan.unpaid if u.name == "personal emi"] == [D(3000)]
@@ -1169,3 +1172,69 @@ def test_in_minus_out_is_negative_when_more_goes_out_than_comes_in(scenario):
     s = plan.summary
     assert s.net_flow == s.total_in - s.total_out_planned
     assert (s.net_flow < 0) == (s.total_out_planned > s.total_in)
+
+
+# ------------------------- the demo rehearsal: a dip a minimum payment would have closed
+
+
+def demo_call_state():
+    """evals/scenarios/demo_call_1.yaml, the month the rehearsal ran: the salary lands on the 30th
+    and the card is due on the 20th."""
+    return state_from(
+        {
+            "opening_balance": 10000,
+            "incomes": [{"name": "salary", "amount": 45000, "date": "2026-09-30"}],
+            "debts": [
+                {
+                    "name": "credit card",
+                    "kind": "credit_card",
+                    "amount_due": 6000,
+                    "min_due": 600,
+                    "due_date": "2026-09-20",
+                }
+            ],
+            "essentials": [
+                {"name": "groceries", "amount": 6000, "spread": True, "survival": True},
+                {"name": "electricity", "amount": 1800, "due_date": "2026-09-22"},
+                {"name": "rent", "amount": 15000, "due_date": "2026-10-05"},
+            ],
+            "optionals": [{"name": "gym", "amount": 1500, "date": "2026-09-18"}],
+        }
+    )
+
+
+def test_a_dip_a_minimum_payment_closes_proposes_the_minimum_payment():
+    """The rehearsal's defect. Paying only the minimum is the issuer's own option and outranks
+    asking the issuer for anything, but `_pay_min_due` ran on one branch only -- so in a timing
+    month the card sat wholly unpaid and the plan asked the issuer instead of using the lever the
+    issuer already offers."""
+    plan = build_plan(demo_call_state())
+
+    assert plan.status == "TIMING"
+    minimums = [a for a in plan.actions if a.type == ActionType.PAY_MIN_DUE]
+    assert len(minimums) == 1
+    assert minimums[0].target == "credit card"
+    assert minimums[0].amount == D(600)
+    assert minimums[0].remainder == D(5400)
+
+    paid = [row for row in plan.timeline if "credit card" in row.label]
+    assert [row.amount for row in paid] == [D(-600)]
+    assert not any(u.name == "credit card" for u in plan.unpaid)
+
+
+def test_the_minimum_payment_comes_before_asking_anyone():
+    """Order is the plan's argument: use the lever the issuer offers before asking them for one."""
+    plan = build_plan(demo_call_state())
+    kinds = [a.type for a in plan.actions]
+
+    if ActionType.ASK_LENDER in kinds:
+        assert kinds.index(ActionType.PAY_MIN_DUE) < kinds.index(ActionType.ASK_LENDER)
+
+
+def test_the_low_point_shows_the_minimum_leaving():
+    """The person asked why the card was not paid; the derivation has to show the 600 going out."""
+    plan = build_plan(demo_call_state())
+    rows = plan.low_point.before + plan.low_point.after
+    card_lines = [row for row in rows if "card" in row.label]
+
+    assert [row.amount for row in card_lines] == [D(-600)]

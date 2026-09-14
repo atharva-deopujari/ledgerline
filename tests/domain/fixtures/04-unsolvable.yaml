@@ -38,8 +38,10 @@ expected:
   closing_balance: 0
   negative_days: []
   actions:
-    - {type: ASK_LENDER, target: hdfc card, date_from: 2026-09-25}
+    # The minimum first: it is the issuer's own option, and using a lever the person already
+    # holds comes before asking the issuer to agree to anything.
     - {type: PAY_MIN_DUE, target: hdfc card, amount: 500}
+    - {type: ASK_LENDER, target: hdfc card, date_from: 2026-09-25}
     - {type: CUT_OPTIONAL, target: dining}
     - {type: CUT_OPTIONAL, target: gym}
     - {type: CUT_OPTIONAL, target: ott}

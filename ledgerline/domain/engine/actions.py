@@ -269,8 +269,10 @@ def _prune_noop_optionals(
 
 
 _ACTION_RANK: dict[ActionType, int] = {
-    ActionType.ASK_LENDER: 0,
-    ActionType.PAY_MIN_DUE: 1,
+    # What the person can do alone comes before what needs somebody else to agree: using the
+    # minimum the issuer already offers outranks asking the issuer for anything.
+    ActionType.PAY_MIN_DUE: 0,
+    ActionType.ASK_LENDER: 1,
     ActionType.CUT_OPTIONAL: 2,
     ActionType.DEFER_OPTIONAL: 2,
 }
