@@ -1371,3 +1371,145 @@ Screenshots regenerated. `11-review-phone.png` is the one whose content changed:
 reads three gating rules and the three intent criteria, with no advisory block. The capture script
 writes all twelve in one run, so the other eleven are re-encodes of the same page rather than
 visual changes.
+
+---
+
+# The console
+
+The start page became a console with tabs, and every capability the backend has now has a screen
+reached from `/` in one or two clicks: New call, Callers, Caller, Calls, Call, Evals, Report.
+
+## The desktop layout, and two things that came with it
+
+The start page is centred on a 1100px column with the copy left and the number and its action
+right, collapsing to the phone column below 60rem. Two changes beyond the ask, both because the
+screenshot made them obvious: the masthead rule still spans the window but what sits on it lines up
+with the content column (`--edge` = `max(gut, half the leftover)`), since a wordmark pinned to the
+window edge beside centred content reads as two grids; and the form became a stack on the 8px
+rhythm, because the old flex row put the label beside the field once there was width for it.
+
+## Routes and the shell
+
+`routeFor` grew the console's paths and refuses what could not name a real thing: a caller whose
+number is not a number, and a recording id containing `..` or a slash — the page never asks the
+server about nonsense. `/review/users/<phone>` still resolves to the caller screen, since the HLD
+published that URL.
+
+Tabs are plain anchors. Nothing pushes state, the server serves the app for any path, and a full
+navigation is what the back button already understands. A screen reached from a tab keeps its
+parent lit. `to(path)` carries `?mock=1` across a navigation, so the whole console demos from the
+samples with no backend — without it the second click would fall back to real endpoints.
+
+`ConsoleTabs` is split out of `ConsoleShell` because the call board mounts one audio element and
+must keep it: the front page swaps header and main under a wrapper that never unmounts, rather
+than being wrapped by two different shells.
+
+## One fetch hook, one guard per shape
+
+`useFetched(url, guard)` is behind all five screens instead of a hook each. The guard is the same
+boundary argument as `isVerdict`: the app is served for any path, so a wrong URL answers with the
+page's own HTML, and that has to read as a failure rather than reach a screen that maps over it.
+`guards.ts` holds one predicate per contract shape. `call.call` is checked only for being an
+object — the recording's shape belongs to the recorder, so the Call screen reads every field
+defensively and a turn missing its role or text renders as much of itself as it has.
+
+## What each screen says, and what it refuses to say
+
+- **Callers**: a caller with `last_summary` null reads "not judged", never a zero — C's rule, and
+  the same reasoning as a simulated run's empty verdict column.
+- **Calls**: live and simulated in one ledger, told apart by a word beside the name. Three check
+  dots, each carrying a visually-hidden sentence, so colour is never the only signal. The filters
+  work over the list already in hand: the options must come from the whole list anyway, or a filter
+  could hide its own way back, and a refetch to narrow two rows is a round trip for nothing.
+- **Call**: the transcript with each turn's tool calls under it in a native `<details>`, closed
+  until asked for; the verdict panel already written for the board; the final state printed as it
+  was saved, because inventing a layout for a shape the recorder owns would be a second contract
+  nobody agreed to.
+- **Evals**: the matrix with a rate short of every run marked, the personas, and the four judge
+  criteria named as advisory with a link to the report.
+- **Report**: `evals/REPORT.md`, rendered.
+
+## Markdown: no dependency
+
+The renderer is about 150 lines and builds **React elements, never HTML**. The report is a file the
+server reads off disk; a renderer going through `dangerouslySetInnerHTML` would make its contents
+executable, and every Markdown dependency renders to an HTML string that would then have to be
+sanitised to be safe. It covers what the document actually contains: headings, paragraphs, lists,
+tables, fenced code, rules, inline code, bold and links. A test renders the real 1,931-line
+`evals/REPORT.md` and asserts it produces the headings, tables and code blocks it should — the
+sample in `protocol/` is a stub, and the real file is the only document this renderer exists for.
+Reading that file needs node types in the test project, which is the one line added to
+`tsconfig.app.json`.
+
+## The phone-width bug the e2e caught
+
+`test_the_console_reads_at_phone_width`, in `tests/e2e/test_console_journey.py`, measures `scrollWidth - clientWidth` on every screen at
+400px. It failed on `/calls` by 290px: the table's scroll box had `overflow-x: auto`, `min-width: 0`
+and `max-width: 100%`, and the page still gained the table's width. `overflow: auto`, a grid
+display and containing the parent all failed; `contain: paint` — this box paints nothing outside
+itself — held it. The comment in the stylesheet says exactly that rather than guessing at the
+engine's reasons.
+
+## Ponytail pass
+
+Three cuts, all duplication the console had introduced rather than inherited:
+
+| cut | before | after |
+|---|---|---|
+| `console/format.ts` — a second date formatter beside the board's | its own file, 19 lines | folded into `components/format.ts`, file deleted |
+| `ReviewPage.factDate` — a third copy of the same formatter, to the character | 171 lines | 164 |
+| `EvalsScreen.asWords` and two inline `replace(/_/g, ' ')` in `CallsScreen` | three copies | `keyAsWords`, which already existed for exactly this |
+
+Kept: `ScreenState` (three consumers, and the empty state is the thing this project keeps getting
+right), `useFetched` (five), `guards.ts` (a boundary, not ceremony).
+
+## Gates
+
+| gate | result |
+|---|---|
+| `npm run lint` / `format:check` / `typecheck` | clean |
+| `npm run test -- --run` | **415 passed**, 46 files (360 before the console) |
+| `npm run build` | built |
+| `uv run ruff check tests/e2e` / `ruff format --check` | clean |
+| `uv run pytest -m e2e tests/e2e` | **22 passed** (16 before) |
+
+Screens in `docs/process/screens`: `13-start-desktop.png`, `14-callers.png`, `15-calls.png`,
+`16-call.png`, `17-evals.png`, `18-report.png`, alongside the board and phone shots.
+
+---
+
+# The way back from an ended call
+
+The owner hung up on a live call and found the board still up with nothing that takes them off
+it. Two changes.
+
+**The console stays.** The tabs used to be swapped out for the phase masthead the moment a board
+existed, which is what left the ended screen with no exit. `ConsoleTabs` now takes a slot and the
+phases sit beside the tabs, so the tab bar is on screen before the call, during it and after it.
+
+**The ended screen says where to go.** Beside "Start another call": *Back to start* to `/` with the
+number still in the form, *See this call* to `/calls/<id>` for the recording just made, and *Your
+memory* to `/callers/<phone>`. Each ends the call before it leaves — `stop()` is what the End
+control does, awaited so the teardown happens before the page unloads, rather than a navigation
+quietly dropping a live Daily connection. The recording id is built defensively:
+`voice-<session id>` unless the session id already carries the prefix, because the recorder's
+basename and C's session id have differed in the samples.
+
+One test written and then deleted rather than kept green: an assertion that leaving DELETEs the
+session. It does not, by design — the server ends a live session itself and the client only
+releases one that never reached the room (addendum 10) — so the honest assertion is that the call
+object is destroyed before the page goes anywhere, and the session-release path stays covered by
+the call layer's own suite.
+
+## Gates
+
+| gate | result |
+|---|---|
+| `npm run lint` / `format:check` / `typecheck` | clean |
+| `npm run test -- --run` | **420 passed**, 47 files (415 before) |
+| `npm run build` | built |
+| `uv run ruff check tests/e2e` / `ruff format --check` | clean |
+| `uv run pytest -m e2e tests/e2e` | **23 passed** (22 before) |
+
+New screenshot: `19-ended-desktop.png`. New e2e step: end a call, take the way back, and start
+another from the form.

@@ -1016,3 +1016,115 @@ deleted behind its own back once ownership has transferred. The Kiro 15 tests st
 F4 (same-second ids) raised again; unchanged, on the phase-2 note.
 
 `tests/api` and `tests/voice` green, ruff and format clean, 7 contracts kept.
+
+## 2026-09-14 · The console's five read endpoints
+
+`api/review.py` gained the five views the admin panel reads, beside the existing
+`/review/users/{phone}`. All read-only, all bounded, none on the call path, and a missing store
+or a missing recordings directory is an empty list rather than an error — a screen that fails
+because nobody has called yet is worse than one that says so.
+
+| Endpoint | Model | Notes |
+|---|---|---|
+| `GET /api/review/users` | `UsersPage{users: ReviewUser[]}` | from A's `Store.list_users()`; a store that raises logs and returns `[]` |
+| `GET /api/review/calls?source=&scenario=` | `CallsPage{calls: CallSummary[]}` | every `*.json` under the recordings directory, newest first |
+| `GET /api/review/calls/{id}` | `CallDetail{call, verdict}` | live keeps its stored verdict; simulated is checked now |
+| `GET /api/review/evals` | `EvalsPage` | scenarios, checks, criteria, matrix, `runs_total`, `computed_at` |
+| `GET /api/review/report` | `ReportPage{markdown}` | `evals/REPORT.md`, missing is `""` |
+
+Decisions worth recording. **`started_at` is the stamp in the filename**, not the mtime: the
+recorder writes it when the call ends and it survives a copy that would reset the file's time;
+mtime is the fallback when a name has no stamp. **The path guard is a whitelist of shape** — an
+id with a separator, a parent reference or nothing behind it never becomes a path, and six
+traversal shapes are tested including `..`, `sub/dir` and `a\b`. **Caching is keyed on (path,
+mtime)** so a file is read once per version of itself, and the matrix is keyed on the sorted list
+of simulated paths, so it recomputes exactly when a run appears or disappears. **`summary` is
+null for a simulated run**: the deterministic rules pass or fail, but no judge scored it, and
+inventing a number from three booleans would be arithmetic nobody asked for.
+
+Two adaptations once A's `list_users()` landed. The store answers with `(name, value)` pairs and
+the wire carries `{name, value}` objects, so the endpoint maps them and the mirrored contract
+does not move. And `UserSummary.last_summary` is None by design — the sessions row records where
+a verdict lives, not the verdict — so the console reads it from that person's newest
+`voice-<phone>-*.json`, which the calls listing has already parsed; it is a lookup into the same
+per-file cache, not a second walk of the directory. A caller whose calls were never judged shows
+no summary rather than a zero.
+
+`Settings.recordings_dir` is new and empty by default, meaning the repo's `evals/runs`; the tests
+point it at a temp directory holding two live and two simulated recordings.
+
+22 tests in `tests/api/test_console.py`, including one HTTP pass over all five so a route wired
+to the wrong function cannot pass unnoticed. `tests/api`, `tests/voice`, `tests/observability`
+green; ruff and format clean; 7 contracts kept.
+
+## 2026-09-14 · One call is one session, and the session shows the conversation
+
+Two changes from the owner's reading of trace `6ec57b71…`.
+
+**`session.id` is the call, not the person.** It was `user_id or session_id`, so every call from
+one phone landed in one Langfuse session and the Sessions view read two calls hours apart as a
+single conversation. Now `session.id` is our `session_id` (phone + stamp, already unique per
+call) and `user.id` stays the phone, so the Users view is what gathers a person. The
+`langfuse.trace.metadata.session_id` attribute went with the change: it repeated what
+`session.id` now carries.
+
+**The call span carries the whole conversation.** Its input was the first user line and its
+output the last coach line, so a session showed "Hello" and the goodbye and nothing between
+without opening the trace. The input is now the transcript as `{"role", "content"}` messages,
+which Langfuse renders as a conversation; the output is still the last thing the coach said.
+Written once, at teardown — the `call` span exists only after Pipecat's conversation span has
+closed, so there is nothing to update as the call runs. `CallRecorder.trace_input` became
+`trace_messages`; the exchange spans in the trace tree are untouched.
+
+Verified on a headless call (`9876500099`, Deepgram TTS), read back from Langfuse: the call
+span's `sessionId` is `9876500099-20260914T141257Z`, its `userId` is `9876500099`, and its input
+is the seven messages of the call in order, starting "Let's take this one step at a time…" and
+ending with the coach's last question as the output. Rooms `total_count=0`.
+
+Consecutive user turns are joined into one message, the same rule the exchange spans use: a
+sentence Deepgram finalises in three pieces is one thing the person said, so the session view and
+the trace tree agree. The recording keeps its per-fragment turns either way, and
+the join only applies to user turns — two coach turns in a row are two things the coach said.
+
+`tests/voice`, `tests/observability` and `tests/api` green; ruff and format clean.
+
+## STT: currency symbols and smart_format · 14 September
+
+What the owner's live call recorded, `evals/runs/voice-9869101897-20260914T135556Z-20260914-140323.json`:
+turn 31, the person naming a phone bill, arrives as `$2.50 per month.`; the correction at turn 34
+arrives as `Not 2.5. It's $2.50 rupees.` — the same formatter, the same wrong figure, a second
+time. The coach recorded 2.50, said it sounded too small, and recorded 2.50 again. Three attempts
+to land 250, and none of the three was the model's fault: it never saw what the person said.
+
+Two files:
+
+| File | What it holds |
+|---|---|
+| `ledgerline/voice/spoken.py` | `SpokenText`, a frame processor over `TranscriptionFrame`. `CURRENCY = [$£€₹¥](?=\s?\d)` — a symbol immediately before a figure, not a bare `$` in prose — is stripped, and the raw text is logged beside the cleaned text at INFO, the level a live call runs at |
+| `ledgerline/voice/pipeline.py` | `STT_SMART_FORMAT = False` on the Deepgram STT settings, `numerals=True` kept; `SpokenText()` sits in the pipeline right after the transport input, before the user aggregator, so nothing downstream ever sees the symbol |
+
+Tests: `tests/voice/test_spoken.py`, 7 — five parametrised transcripts (`$2.50 rupees` cleaned,
+`₹250` and `£11,000` cleaned, a plain `13,000 rupees` untouched, empty text untouched), one that
+asserts both the raw and the cleaned text appear in the log line, and one that a frame with no
+symbol is pushed through as the same object. `tests/voice/test_pipeline_wiring.py` asserts
+`SpokenText` is `processors[2]`, so a reordered pipeline fails rather than silently bypassing the
+guard. Both files green, whole suite green.
+
+The probe, `spike/probe_stt.py --numbers` against the live API (nova-3-general, `en-IN`,
+`numerals=true`, Aura-2 speech, full table in `docs/process/spike-findings.md`):
+`smart_format=true` returns `$2.50 rupees.`, `200And50Rupees,` and `2Point5` for "two fifty
+rupees", "two hundred and fifty rupees" and "two point five" — a symbol and a decimal nobody
+spoke, then two strings that parse as nothing.
+`smart_format=false` returns `2 50 rupees`, `250 rupees` and `2.5` for the same three clips, and
+plain digits (`2500`, `12500`, `13000`) for the rest, so the hard case arrives unparsed rather
+than confidently wrong and the model asks again instead of recording a number.
+
+One headless call after the change, `TTS_PROVIDER=deepgram ./spike/run_once.sh sttcheck`: four
+utterances, four `record_number` calls (8000, 45000, 11000, 2000), first audio 3.5 s after VAD
+stop on the last turn, `room DELETE ... True`, and zero errors or tracebacks in either the bot or
+the driver log (`/tmp/spike-sttcheck-bot.log`, `/tmp/spike-sttcheck-drive.log`). No recording file
+and no `stt currency stripped` line, and that is expected rather than a miss: `spike/spike_bot.py`
+builds its own pipeline with `smart_format=True` and no `SpokenText`, and writes no recording. It
+proves the room lifecycle and the turn path still work; the guard itself is covered by the two
+test files and the probe, and the next live call through `voice/pipeline.py` is what will show
+the log line in anger.

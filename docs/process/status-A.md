@@ -1421,3 +1421,61 @@ no `before` rows, takes the opening.
 
 Domain 449 -> 458, 497 with the store; whole suite green; **snapshots and sample byte-identical**
 (635 / 1307 / 1272 / 1983 / 1982 and 3,572); 7 contracts kept.
+
+### The console's one query: `Store.list_users()`
+
+One row per phone with at least one session, newest call first: `phone`, `calls`, `last_call_at`,
+`facts` (active, inside the age window -- what the next call would actually carry, not everything
+ever said), `last_summary`, `headline`. Two queries, both through the same bounded reader as every
+other read, on a `CONSOLE_TIMEOUT_SECS` of 2 seconds rather than the call path's 0.2: a page
+someone opened can wait longer than a person mid-sentence, and a database that cannot answer shows
+an empty console rather than holding the page open.
+
+**`last_summary` is always None, and that is a fact about the schema rather than a missing value.**
+The `sessions` row records where the verdict lives -- the recording path and the trace id -- not
+the verdict itself, so the judge's sentence is not stored twice. C reads it from the recording. The
+field is on the model because the console shows it and because the day a row carries one, this is
+where it comes from; a test pins the reason so nobody fills it in by accident.
+
+`headline` is up to two `(name, spoken value)` pairs: the rent and the salary when they are known,
+otherwise the two most recently recorded. Amounts are grouped the way the cards group them and
+dates read as a day and a month, so the console speaks the product's own vocabulary. One line per
+item, never two fields of the same one.
+
+A forgotten person has no row: `forget` nulls the phone on their sessions, so the calls stay
+countable and nothing points at them -- a console that still listed them would make the button a
+lie. Seven db tests, including two phones, superseded rows excluded from the count while staying in
+`history_all`, and the forgotten case. Store 39 -> 46, 504 with domain.
+
+### The demo rehearsal's card: a dip a minimum payment would have closed
+
+The rehearsal's month -- salary on the 30th, card of 6,000 due on the 20th with a 600 minimum --
+left the card wholly unpaid and the plan asking the issuer for a favour. Two causes, both in the
+engine:
+
+1. **`_pay_min_due` ran on one branch only.** In a TIMING month `_propose_changes` deferred
+   optionals and went straight to settling, so the one lever the issuer already offers was never
+   reached. It now runs after the deferrals when a dip remains, driven by the dip rather than by
+   the month's net -- in a TIMING month the net is positive by definition, which is why passing it
+   would have done nothing.
+2. **The reserve counted obligations and ignored income.** `_reserve_after` reserved the whole
+   15,000 rent due on 5 October against the card on the 20th, without noticing the 45,000 salary
+   landing on the 30th, so the engine refused a 600 payment out of a 6,500 balance. Money arriving
+   before the obligation it protects now counts, floored at zero so a surplus never becomes
+   permission to overspend later.
+
+**`PAY_MIN_DUE` also outranks `ASK_LENDER` now.** What the person can do alone comes before what
+needs somebody else to agree, and fixture 04's expected order moved with it.
+
+The demo month now proposes the minimum at 600 with its 5,400 remainder, covers the card, and has
+**nothing unpaid** -- and the gym deferral is gone, pruned as needless once the card no longer
+needed the money. One fewer thing asked of the person, which is the point of the pruning pass.
+
+One existing test changed on purpose: the spoken shortfall in scenario 02 is **800, not 18,000**.
+That is the same defect in another month's clothes -- the old figure reserved a rent against money
+already on its way -- and 800 is what paying that EMI would actually leave short. The refusal
+stands either way; the sentence is now true.
+
+Domain 458 -> 461, 507 with the store, whole suite 1249 passed. **Snapshots and sample
+byte-identical** (635 / 1307 / 1272 / 1983 / 1982 and 3,572): no mock state has a card minimum, and
+none of the four is a timing month held up by a reserve.

@@ -2422,3 +2422,88 @@ guess is one correction away. Kiro has raised the default twice; it is a decisio
 (the fold). The recordings under `evals/runs` are committed and replayable — 448 of them, and the
 fold's acceptance test replays over every one. The before column of §10.13 cannot be re-run: v1 is
 deleted.
+
+
+# Session B · the coaching frame · 14 September evening
+
+Brief: `docs/process/coach-brief.md`. Report: `evals/REPORT.md` §10.17. Provenance rows: the last
+section of `docs/process/prompt-provenance.md`. Suite green, ruff and lint-imports clean, prompt at
+398 tokens. No commits.
+
+## Changed
+
+- `ledgerline/agent/tools/facts.py` — `_delta_lines` rewritten: `compared with the month as it
+  stands:` then shape (first, when it changes), lowest point with both dates, closing, unpaid, each
+  as `X as it stands, Y with this change, up/down N` off `in_rupees` / `in_rupees_low_point`, so the
+  comparison and the derivation in one result agree. Sits right under `if they did this:`.
+  `nothing moves` when nothing does.
+- `ledgerline/agent/prompts/v2.md` — the coaching paragraph (brief §"Prompt v2"), 331 to 398 tokens;
+  cuts listed in the provenance section. The Money rule is verbatim again after one cell.
+- `ledgerline/agent/tools/plain.py` — `what_if` grammar: `TRAILING` ("this month", "for now"),
+  `LEAD` ("pay", "keep", "move"), `SHIFT`/`SHIFT_BY` ("7 days late", "late by a week"), `DELTA`
+  ("10,000 short", "2,000 higher"), verbs between item and "to/on" ("electricity moves to 15
+  September"), " rupees" after an amount. A shift past the window or before today is refused with
+  the landing date; past the window it suggests `'<item> is 0'`. Every refusal ends "nothing was
+  tried; forget is not a trial, it drops an item for real". `forget`'s description says the same.
+  `done(understood=True)` sets `plan_final` when the plan is not blocked.
+- `evals/harness.py` — `MAX_TOOL_ROUNDS` 4 to 8, with the reason in the comment.
+- Tests: `tests/agent/test_plain.py` (comparison lines, shape change, ledger agreement, nothing
+  moves, trailing words, eleven stress phrases from the runs, out-of-window refusal, unreadable
+  refusal, two-items refusal, `done` settling); `tests/agent/test_prompt.py` (the frame's lines,
+  wrapped-line safe).
+
+## Found, and where it stands
+
+- The coach reaches for **stresses, not figures**: every `what_if` it wrote is a state edit the
+  engine already answers. No engine change; the brief's condition for one was not met.
+- **The harness cap was harsher than the pipeline** and produced the six `no_silent_turn` failures.
+  Raised. The real cost underneath — four to seven round trips before speaking — is a latency
+  question for C's filler, not a rule.
+- **`forget` after a refused `what_if`** dropped an item from the real month three times. Parser,
+  refusal wording and description all changed; the wording is the money instruction of this change.
+- **`done` without `show_month(final=True)`** in six of seven understood runs. Fixed in `done`.
+- **`low_point_explained` fell on the comfortable month** (5 of 5 to 2 of 5). Cause not separable on
+  five runs: the frame's "one breath" or the refused-chain eating the turn.
+- **Open for the owner**: `comfortable_surplus.max_turns: 14` was sized for a two-question call;
+  every after run used 20 to 24 turns. One owner run planned with loans never discussed (§10.15's
+  question). The "30,000 minus 18,000 is 12,000" phrasing — figures from a result, said as a sum.
+
+## Not done
+
+The final build is unmeasured: the cell that produced the table ran before the parser, the cap,
+the `done` change and the Money-rule restore. Re-running both cells is about $0.25. Cap was $0.30
+and roughly $0.30 was spent.
+
+## Re-run, later the same evening
+
+Owner approved; both cells again on the build above, `comfortable_surplus.max_turns` 14 to 24
+first (noted in the scenario file). Table and excerpts appended to REPORT §10.17. Headlines: no
+silent turn, 5 of 5 final plans in both scenarios, `led_like_a_coach` 5 of 5 on the owner's call,
+refusals 9 of 26 (from 28 of 34). $0.24 of $0.25.
+
+Landed from the re-run, unmeasured: six more `what_if` shapes (`BY`, `STAYS`, `LATE_AFTER`,
+`RUPEE_TAG`, "instead of" trailing, "late," before a date, a bare `<item> <amount>`), each a phrase
+from a run in `test_what_if_reads_the_second_cell_s_phrases`; `CREDIT_IS_ABOUT` knows "credit
+impact / consequence / standing / rating", replayed over every saved run, exactly the two new turns
+change.
+
+Open, recorded: `forget` after a refused `what_if` happened once more with the "not a trial" line
+in front of the model; one run said "58,000 plus 700" before its `what_if` ran; one run offered
+"HDFC card, 8,000" as an example figure; two owner runs said the subtraction the engine did as a
+subtraction. The premature-plan-on-debt run: once more, not chased.
+
+## Unchanged note, same figure (queued item, done)
+
+`facts._unchanged_line`: `unchanged <item>, same figure as before, <amount>; if they were correcting
+it, ask what they said`, amount as recorded with paise kept (`rupees_exact`), balance path covered.
+Test `test_a_note_that_changes_nothing_says_the_figure_and_what_to_ask` from the live two-fifty
+call (turn 35 of `voice-9869101897-20260914T135556Z-20260914-140323`). Provenance paragraph at the
+end of `prompt-provenance.md`. Suite green. Unmeasured; a result line, not a prompt rule.
+
+## Demo rehearsal (frozen after this)
+
+Two scenarios from the owner's script, `demo_call_1` and `demo_call_2` (not in SUITE), two rounds,
+$0.27. Step table, the domain finding (a timing month never proposes the card minimum), the script
+lines to change (step 5 correction wording, step 11 "below zero", step 15 "keep aside", a balance
+line before step 18) and the best full transcript are in `evals/demo-rehearsal.md`. Fixes with
+tests in `facts.py`, `plain.py`, `harness.py` listed there. Suite green; frozen.
