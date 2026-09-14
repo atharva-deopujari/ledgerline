@@ -13,9 +13,18 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from loguru import logger
 from pydantic import BaseModel
 
-from ledgerline.api import aftercall
+from ledgerline.api import aftercall, review
 from ledgerline.api.phone import PhoneField, PhonePath
-from ledgerline.api.review import UserReview, review_for
+from ledgerline.api.review import (
+    CallDetail,
+    CallsPage,
+    EvalsPage,
+    NotFound,
+    ReportPage,
+    UserReview,
+    UsersPage,
+    review_for,
+)
 from ledgerline.api.sessions import SessionRegistry
 from ledgerline.config import Settings
 from ledgerline.judge.models import Verdict
@@ -28,6 +37,7 @@ router = APIRouter(prefix="/api")
 CALL_IN_PROGRESS = "A call is already running. End it before starting another."
 NO_SUCH_SESSION = "No such session."
 NO_VERDICT = "No verdict for that call."
+NO_SUCH_RECORDING = "No recording by that id."
 
 
 class StartCall(BaseModel):
@@ -182,6 +192,43 @@ async def forget_user(phone: PhonePath, request: Request) -> Response:
     await request.app.state.store.forget(phone)
     logger.info("forgot everything for one caller")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/review/users", response_model=UsersPage)
+async def review_users(request: Request) -> UsersPage:
+    """Everyone who has called. The console's first screen."""
+    return await review.users(request.app.state.store, request.app.state.settings)
+
+
+@router.get("/review/calls", response_model=CallsPage)
+async def review_calls(
+    request: Request, source: str | None = None, scenario: str | None = None
+) -> CallsPage:
+    """Every recording on disk, live and simulated, newest first."""
+    return await review.calls(request.app.state.settings, source=source, scenario=scenario)
+
+
+@router.get("/review/calls/{call_id}", response_model=CallDetail)
+async def review_call(call_id: str, request: Request) -> CallDetail:
+    """One recording in full, with its verdict."""
+    try:
+        return await review.call(request.app.state.settings, call_id)
+    except NotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=NO_SUCH_RECORDING
+        ) from None
+
+
+@router.get("/review/evals", response_model=EvalsPage)
+async def review_evals(request: Request) -> EvalsPage:
+    """The scenarios, the rules and the pass rate of each rule on each scenario."""
+    return await review.evals(request.app.state.settings)
+
+
+@router.get("/review/report", response_model=ReportPage)
+async def review_report() -> ReportPage:
+    """`evals/REPORT.md` as it stands."""
+    return await review.report()
 
 
 @router.get("/review/users/{phone}", response_model=UserReview)

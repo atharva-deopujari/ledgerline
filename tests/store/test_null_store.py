@@ -29,6 +29,7 @@ async def test_every_operation_is_a_quiet_no_op():
     assert await store.history("9876543210", kind="essential", name="rent", field="amount") == []
     assert await store.history_all("9876543210") == []
     assert await store.calls_for("9876543210") == []
+    assert await store.list_users() == []
     await store.forget("9876543210")
     await store.close()
 

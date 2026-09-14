@@ -97,3 +97,20 @@ describe('the memory page', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not/i)
   })
 })
+
+describe('calling as a caller', () => {
+  it('writes the number where the start form reads it, then goes to the form', async () => {
+    localStorage.clear()
+    const assign = vi.fn()
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      assign,
+    } as unknown as Location)
+
+    await show()
+    screen.getByRole('button', { name: /call as this number/i }).click()
+
+    expect(localStorage.getItem('ledgerline.phone')).toBe(REVIEW.phone)
+    expect(assign).toHaveBeenCalledWith('/')
+  })
+})

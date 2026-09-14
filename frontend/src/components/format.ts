@@ -107,3 +107,19 @@ export function splitLowest(lowest: string): { figure: string; when: string } {
   if (at === -1) return { figure: lowest, when: '' }
   return { figure: lowest.slice(0, at), when: lowest.slice(at + 1) }
 }
+
+/**
+ * "2026-09-14T10:02:11Z" -> "14 Sep 2026". Parsed by hand rather than through Date, which
+ * would drag the reader's timezone into a stamp the server wrote in UTC.
+ */
+export function whenDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+  if (!m) return iso
+  return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1] ?? ''} ${m[1]}`
+}
+
+/** The same stamp with its time, for a screen about one call rather than many. */
+export function whenExact(iso: string): string {
+  const time = /T(\d{2}):(\d{2})/.exec(iso)
+  return time ? `${whenDate(iso)}, ${time[1]}:${time[2]}` : whenDate(iso)
+}

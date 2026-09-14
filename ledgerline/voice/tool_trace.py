@@ -129,7 +129,7 @@ class ToolTracer(BaseObserver):
     def record_call_io(
         self,
         *,
-        input: str,
+        messages: list[dict[str, str]],
         output: str,
         ended_by: str | None = None,
         plan_final: bool | None = None,
@@ -143,6 +143,9 @@ class ToolTracer(BaseObserver):
 
         The SDK's own `start_observation(trace_context=...)` would do the same thing over the
         network; doing it with the tracer we already have keeps this on the one export path.
+
+        The input is the whole conversation as role/content messages, which Langfuse renders as
+        a conversation in the session view; the output is the last thing the coach said.
 
         `ended_by` and `plan_final` ride along as trace metadata, because the output alone
         cannot tell an abandoned call from a finished one: a person who hangs up mid-question
@@ -162,14 +165,16 @@ class ToolTracer(BaseObserver):
         self._remember_trace(span)
         for key, value in self._attributes.items():
             span.set_attribute(key, value)
-        span.set_attribute(Attr.TRACE_INPUT, input)
+        # Written once, at the end: the span exists only after the conversation span has
+        # closed, so there is nothing to update as the call runs.
+        span.set_attribute(Attr.TRACE_INPUT, _json(messages))
         span.set_attribute(Attr.TRACE_OUTPUT, output)
         if ended_by is not None:
             span.set_attribute(Attr.METADATA_ENDED_BY, ended_by)
         if plan_final is not None:
             # A string, so the filter in Langfuse reads the same as every other metadata value.
             span.set_attribute(Attr.METADATA_PLAN_FINAL, "true" if plan_final else "false")
-        span.set_attribute(Attr.OBSERVATION_INPUT, input)
+        span.set_attribute(Attr.OBSERVATION_INPUT, _json(messages))
         span.set_attribute(Attr.OBSERVATION_OUTPUT, output)
         span.end()
 

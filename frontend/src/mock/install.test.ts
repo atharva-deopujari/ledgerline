@@ -30,6 +30,21 @@ describe('the mock fetch', () => {
     expect(realFetch).not.toHaveBeenCalled()
   })
 
+  it("answers the console's read-only endpoints from the samples", async () => {
+    // ?mock=1 is the whole demo: every tab works with no backend behind it.
+    for (const [url, marker] of [
+      ['/api/review/users', '"users"'],
+      ['/api/review/users/9876543210', '"memory_read"'],
+      ['/api/review/calls', '"calls"'],
+      ['/api/review/calls/voice-1', '"verdict"'],
+      ['/api/review/evals', '"matrix"'],
+      ['/api/review/report', '"markdown"'],
+    ] as const) {
+      expect(await body(await fetch(url))).toContain(marker)
+    }
+    expect(realFetch).not.toHaveBeenCalled()
+  })
+
   it('lets the verdict poll through to the real fetch', async () => {
     const response = await fetch('/api/sessions/sess-1/verdict')
     expect(await body(response)).toBe('from the server')

@@ -285,7 +285,7 @@ async def run_session(
             record.ended_by = recorder.ended_by
             record.trace_id = tool_tracer.trace_id
         tool_tracer.record_call_io(
-            input=recorder.trace_input,
+            messages=recorder.trace_messages,
             output=recorder.trace_output,
             ended_by=recorder.ended_by,
             plan_final=state.plan_final,

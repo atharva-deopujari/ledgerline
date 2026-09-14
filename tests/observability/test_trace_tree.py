@@ -104,7 +104,6 @@ async def test_the_conversation_span_carries_the_call_dimensions(turn_trace, exp
     conversation = next(s for s in exporter.get_finished_spans() if s.name == "conversation")
     assert conversation.attributes[Attr.TRACE_NAME] == "coach-call"
     assert conversation.attributes[Attr.SESSION_ID] == SESSION_ID
-    assert conversation.attributes[Attr.METADATA_SESSION_ID] == SESSION_ID
     assert conversation.attributes[Attr.ENVIRONMENT] == "development"
     assert "source:voice" in conversation.attributes[Attr.TAGS]
 

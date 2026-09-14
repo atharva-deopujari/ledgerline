@@ -24,7 +24,6 @@ class Attr(StrEnum):
     SESSION_ID = "session.id"
     ENVIRONMENT = "langfuse.environment"
     TAGS = "langfuse.trace.tags"
-    METADATA_SESSION_ID = "langfuse.trace.metadata.session_id"
     # Written after the call, so they cannot be tags (which are immutable at creation).
     METADATA_ENDED_BY = "langfuse.trace.metadata.ended_by"
     METADATA_PLAN_FINAL = "langfuse.trace.metadata.plan_final"
@@ -44,15 +43,15 @@ def conversation_attributes(
 ) -> dict[str, str | list[str]]:
     """The dimensions of one call that are known before it starts.
 
-    `session_id` groups a person's calls in Langfuse's session view, so it is the phone number
-    once we have one and the call id until then — never the call id when a phone is known, or
-    each call would be its own session.
+    **One call is one session.** Grouping every call from one phone under one `session.id` made
+    the Sessions view read two calls hours apart as a single conversation; the person is the
+    `user.id`, and the Users view is what gathers their calls. Our `session_id` is already unique
+    per call, which is why the trace metadata no longer repeats it.
     """
     attrs: dict[str, str | list[str]] = {
         Attr.TRACE_NAME: TRACE_NAME,
-        Attr.SESSION_ID: user_id or session_id,
+        Attr.SESSION_ID: session_id,
         Attr.ENVIRONMENT: settings.langfuse_environment,
-        Attr.METADATA_SESSION_ID: session_id,
         Attr.TAGS: [
             f"prompt:{settings.prompt_version}",
             f"tts:{settings.tts_provider}",

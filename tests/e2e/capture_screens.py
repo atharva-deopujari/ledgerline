@@ -18,6 +18,7 @@ VERDICT = REPO_ROOT / "frontend" / "src" / "protocol" / "verdict.sample.json"
 REVIEW = REPO_ROOT / "frontend" / "src" / "protocol" / "review.sample.json"
 
 PHONE = {"width": 420, "height": 900}
+CONSOLE = {"width": 1440, "height": 900}
 DESKTOP = {"width": 1280, "height": 900}
 WAIT_MS = 45_000
 
@@ -52,6 +53,11 @@ def main() -> None:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
 
+            # The console is composed for a desktop viewport and checked at phone width.
+            page = _open(browser, url, CONSOLE)
+            _shot(page, "13-start-desktop.png")
+            page.close()
+
             page = _open(browser, url, PHONE)
             _shot(page, "1-start-phone.png")
             _start(page)
@@ -72,6 +78,30 @@ def main() -> None:
                 _shot(page, f"4-board-{theme}.png")
                 page.wait_for_selector(".plan", timeout=WAIT_MS)
                 _shot(page, f"5-plan-{theme}.png")
+                page.close()
+
+            # The ended call on a desktop viewport: the console still there, and the ways on.
+            page = _open(browser, url, CONSOLE)
+            _start(page)
+            page.wait_for_selector(".plan", timeout=WAIT_MS)
+            page.get_by_role("button", name="End call").click()
+            page.wait_for_selector("[aria-label='After the call']", timeout=WAIT_MS)
+            _shot(page, "19-ended-desktop.png")
+            page.close()
+
+            # The console's tabs, every one served from the samples by ?mock=1.
+            for name, path in (
+                ("14-callers.png", "/callers"),
+                ("15-calls.png", "/calls"),
+                ("16-call.png", "/calls/voice-9869101897-20260913T194053Z"),
+                ("17-evals.png", "/evals"),
+                ("18-report.png", "/report"),
+            ):
+                page = browser.new_page(viewport=CONSOLE)
+                page.goto(f"{url}{path}?mock=1")
+                page.wait_for_load_state("networkidle")
+                page.wait_for_selector(".screen", timeout=WAIT_MS)
+                _shot(page, name)
                 page.close()
 
             # The judge's verdict, with the endpoint answered by this script: it belongs to

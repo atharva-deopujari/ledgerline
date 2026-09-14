@@ -12,8 +12,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, status
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
@@ -25,6 +25,7 @@ from ledgerline.config import Settings
 from ledgerline.observability import tracing
 from ledgerline.store.db import open_store
 
+API_PREFIX = "api/"
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 NOT_BUILT = (
@@ -79,8 +80,33 @@ def create_app(settings: Settings | None = None, frontend_dist: Path | None = No
     app.state.verdicts = Verdicts()
     app.include_router(router)
 
-    if (dist / "index.html").is_file():
-        app.mount("/", StaticFiles(directory=dist, html=True), name="frontend")
+    index = dist / "index.html"
+    if index.is_file():
+        # The console's routes live in the browser, so the server has to answer for paths it has
+        # no file for. `StaticFiles` alone serves what exists and 404s the rest, which is why
+        # every tab was "not found" on the container while the e2e static server — which falls
+        # back to the index for anything — made it look fine.
+        if (dist / "assets").is_dir():
+            app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+
+        @app.get("/{path:path}", include_in_schema=False)
+        async def frontend(path: str) -> FileResponse:
+            """A real file if there is one, the page if the browser is asking for a route.
+
+            A missing file that names an extension stays a 404: a stale bundle hash answering
+            200 with HTML fails later, deeper, and as a syntax error inside a script tag.
+            """
+            if path.startswith(API_PREFIX):
+                # An unknown endpoint fails like an API. Handing back the page would turn a
+                # mistyped URL into a screen that silently says nothing.
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            candidate = dist / path
+            if path and candidate.is_file() and dist in candidate.resolve().parents:
+                return FileResponse(candidate)
+            if Path(path).suffix:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            return FileResponse(index)
+
     else:
 
         @app.get("/", response_class=HTMLResponse, include_in_schema=False)

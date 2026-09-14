@@ -16,6 +16,12 @@ import verdictSample from './verdict.sample.json'
 import type { Verdict } from './verdict'
 import reviewSample from './review.sample.json'
 import type { UserReview } from './review'
+import usersSample from './users.sample.json'
+import callsSample from './calls.sample.json'
+import callSample from './call.sample.json'
+import evalsSample from './evals.sample.json'
+import reportSample from './report.sample.json'
+import type { UsersPage, CallsPage, CallDetail, EvalsPage, ReportPage } from './review'
 
 const fixtures: [string, unknown][] = [
   ['sample.json', sample],
@@ -71,5 +77,52 @@ describe('review sample matches the contract', () => {
     expect(r.history.some((f) => f.ended && f.value === null)).toBe(true)
     expect(r.notes.length).toBe(1)
     expect(r.calls.map((c) => c.trace_url === null)).toEqual([false, true])
+  })
+})
+
+describe('console samples match the contract', () => {
+  it('users: every caller carries the counts and at most two headline facts', () => {
+    const page = usersSample as UsersPage
+    expect(page.users.length).toBeGreaterThan(0)
+    for (const u of page.users) {
+      expect(typeof u.phone).toBe('string')
+      expect(typeof u.calls).toBe('number')
+      expect(typeof u.facts).toBe('number')
+      expect(u.headline.length).toBeLessThanOrEqual(2)
+      for (const h of u.headline) expect(Object.keys(h).sort()).toEqual(['name', 'value'])
+    }
+  })
+  it('calls: every row carries all three checks and a live/simulated source', () => {
+    const page = callsSample as CallsPage
+    for (const c of page.calls) {
+      expect(['live', 'simulated']).toContain(c.source)
+      expect(Object.keys(c.checks).sort()).toEqual([
+        'money_traceable',
+        'speakable',
+        'state_matches_call',
+      ])
+      if (c.source === 'simulated') expect(c.summary).toBeNull()
+    }
+  })
+  it('call: the detail carries the recording and a verdict with three rules', () => {
+    const d = callSample as CallDetail
+    expect(Array.isArray(d.call.turns)).toBe(true)
+    expect(d.verdict.deterministic.map((r) => r.rule).sort()).toEqual([
+      'money_traceable',
+      'speakable',
+      'state_matches_call',
+    ])
+  })
+  it('evals: the matrix names every check for every scenario, rates within 0 and 1', () => {
+    const e = evalsSample as EvalsPage
+    for (const s of e.scenarios) {
+      const row = e.matrix[s.name]
+      expect(Object.keys(row).sort()).toEqual([...e.checks].sort())
+      for (const rate of Object.values(row)) expect(rate >= 0 && rate <= 1).toBe(true)
+    }
+    expect(e.criteria).toHaveLength(4)
+  })
+  it('report: markdown is a non-empty string', () => {
+    expect((reportSample as ReportPage).markdown.length).toBeGreaterThan(0)
   })
 })

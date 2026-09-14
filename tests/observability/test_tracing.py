@@ -99,7 +99,6 @@ def test_conversation_attributes_name_the_call_and_its_dimensions(settings: Sett
     attrs = conversation_attributes(settings, session_id="9876543210-20260913T141502Z")
 
     assert attrs[Attr.TRACE_NAME] == "coach-call"
-    assert attrs[Attr.METADATA_SESSION_ID] == "9876543210-20260913T141502Z"
     assert attrs[Attr.SESSION_ID] == "9876543210-20260913T141502Z"
     assert Attr.USER_ID not in attrs, "no phone yet means no user id, not an empty one"
     assert set(attrs[Attr.TAGS]) == {
@@ -110,10 +109,16 @@ def test_conversation_attributes_name_the_call_and_its_dimensions(settings: Sett
     }
 
 
-def test_user_id_is_set_when_the_caller_is_known(settings: Settings):
+def test_a_session_is_one_call_and_a_user_is_a_person(settings: Settings):
+    """One call is one Langfuse session; a person is the user the sessions belong to.
+
+    Grouping every call from one phone into a single session showed two calls hours apart as one
+    conversation in the Sessions view. The Users view is what groups a person.
+    """
     attrs = conversation_attributes(settings, session_id="s1", user_id="9876543210")
+
     assert attrs[Attr.USER_ID] == "9876543210"
-    assert attrs[Attr.SESSION_ID] == "9876543210", "a person's calls group under the person"
+    assert attrs[Attr.SESSION_ID] == "s1"
 
 
 def test_the_sdk_still_has_the_methods_we_call():

@@ -102,8 +102,10 @@ ledgerline/
 │   │
 │   └── api/                      HTTP surface. imports voice
 │       ├── routes.py             POST /api/sessions {phone} -> {room_url, token, session_id}; DELETE /api/sessions/{id}; GET /api/health;
-│       │                         GET /api/sessions/{id}/verdict (202 while pending); DELETE /api/users/{phone}; GET /api/review/users/{phone}
-│       ├── review.py             UserReview, ReviewFact, ReviewNote, ReviewCall (CONTRACT, mirrored in protocol/review.ts) and their builder
+│       │                         GET /api/sessions/{id}/verdict (202 while pending); DELETE /api/users/{phone}; GET /api/review/users/{phone};
+│       │                         the console's five reads: GET /api/review/users, /calls?source&scenario, /calls/{id}, /evals, /report
+│       ├── review.py             UserReview, ReviewFact, ReviewNote, ReviewCall and the console pages UsersPage, CallsPage, CallDetail, EvalsPage,
+│       │                         ReportPage (CONTRACTS, mirrored in protocol/review.ts); recordings read once per (path, mtime), ids never become paths
 │       ├── aftercall.py          the post-call task: end the session row, record_call(loaded=), extractor, judge, scores, verdict held in process
 │       └── sessions.py           SessionRegistry: single slot reserved before the first await, cancel awaits teardown
 │
@@ -112,8 +114,11 @@ ledgerline/
 │       ├── main.tsx  App.tsx  phone.ts (validate and remember the number)  route.ts (useRoute over location.pathname, no router dependency)
 │       ├── call/                 useDailyCall.ts (thin hook) over lifecycle.ts (CallLifecycle class), dailyEvents.ts (typed adapter),
 │       │                         types.ts, constants.ts, messages.ts, testDouble.ts; the POST carries {phone}, 422 is PHONE_REJECTED
-│       ├── protocol/             types.ts, verdict.ts, review.ts (CONTRACTS) with sample.json, verdict.sample.json, review.sample.json generated from Python;
+│       ├── protocol/             types.ts, verdict.ts, review.ts (CONTRACTS) with sample.json, verdict.sample.json, review.sample.json and the console's
+│       │                         users/calls/call/evals/report.sample.json, all generated from Python;
 │       │                         parse.ts, markers.ts (untyped marker words, one definition each), fixtures.test.ts (every sample survives its type)
+│       ├── console/              ConsoleShell + tabs, CallersScreen, CallsScreen, CallScreen, EvalsScreen, ReportScreen, useFetched(url, guard),
+│       │                         guards.ts (every page parsed at the boundary), markdown.tsx (about 150 lines, React elements, no HTML string)
 │       ├── state/sessionReducer.ts
 │       ├── mock/                 install.ts (answers only the POST and DELETE that start and cancel a call), script.ts, snapshots.json (generated; five frames, `returning` first)
 │       ├── components/           LedgerCard, CardRows, CardKv, CardStack, StatusBadge, PlanPanel, PhaseStrip, Timeline, TotalsBar, LowestPoint,

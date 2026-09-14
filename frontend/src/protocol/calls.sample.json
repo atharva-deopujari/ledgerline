@@ -1,0 +1,40 @@
+{
+  "calls": [
+    {
+      "id": "voice-9869101897-20260914T100211Z",
+      "source": "live",
+      "label": "9869101897",
+      "scenario": null,
+      "started_at": "2026-09-14T10:02:11Z",
+      "turns": 48,
+      "plan_final": true,
+      "ended_by": "done",
+      "prompt_version": "v2@7",
+      "summary": 0.86,
+      "checks": {
+        "money_traceable": true,
+        "state_matches_call": true,
+        "speakable": true
+      },
+      "trace_url": null
+    },
+    {
+      "id": "owner_call_1-20260914-090351",
+      "source": "simulated",
+      "label": "owner_call_1",
+      "scenario": "owner_call_1",
+      "started_at": "2026-09-14T09:03:51Z",
+      "turns": 32,
+      "plan_final": true,
+      "ended_by": "done",
+      "prompt_version": "v2",
+      "summary": null,
+      "checks": {
+        "money_traceable": true,
+        "state_matches_call": false,
+        "speakable": true
+      },
+      "trace_url": null
+    }
+  ]
+}

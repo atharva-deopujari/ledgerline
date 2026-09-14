@@ -139,10 +139,9 @@ invent a session per call. We set on the conversation span through `additional_s
 |---|---|---|
 | `langfuse.trace.name` | `coach-call` | stable, filterable; never the uuid |
 | `user.id` | the phone | per-person cost and quality, memory debugging |
-| `session.id` | the phone for voice, matrix run id for simulation | groups a person's calls in the session view; groups a 5x5 matrix |
+| `session.id` | our call id (phone plus UTC stamp) for voice, matrix run id for simulation | one Langfuse session is one call, its root input the whole transcript as chat messages, written once at teardown because the span exists only after Pipecat's conversation span has closed, so every turn reads in the Sessions view (owner's ruling of 14 Sep, replacing the phone, which had merged calls hours apart); a person's calls group under `user.id` |
 | `langfuse.environment` | `production` / `development` / `simulation` | keeps sim traces out of production dashboards |
 | `langfuse.trace.tags` | `prompt:v<N>`, `tts:cartesia`, `llm_api:chat`, `source:voice` | immutable dimensions known at start |
-| `langfuse.trace.metadata.session_id` | our call id | join key to Postgres and to `evals/runs` |
 
 Trace input and output are runtime values the conversation span cannot take, so the recorder opens one span of
 its own (`call`) and sets `langfuse.trace.input` (first user utterance) and `langfuse.trace.output` (the plan

@@ -99,7 +99,7 @@ class NullRecorder:
     def write(self):
         return "<not written>"
 
-    trace_input = "I have twenty thousand"
+    trace_messages = [{"role": "user", "content": "I have twenty thousand"}]
     trace_output = "You are short by 2,000 on the 30th."
 
 
@@ -613,7 +613,7 @@ async def test_trace_input_and_output_are_recorded_after_the_call(rig, monkeypat
 
     assert recorded == [
         {
-            "input": "I have twenty thousand",
+            "messages": [{"role": "user", "content": "I have twenty thousand"}],
             "output": "You are short by 2,000 on the 30th.",
             # Without these an abandoned call reads in Langfuse like a finished one.
             "ended_by": None,

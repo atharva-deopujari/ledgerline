@@ -5,6 +5,12 @@
  *
  * Dev-only. Nothing imports this unless the flag is present.
  */
+import callSample from '../protocol/call.sample.json'
+import callsSample from '../protocol/calls.sample.json'
+import evalsSample from '../protocol/evals.sample.json'
+import reportSample from '../protocol/report.sample.json'
+import reviewSample from '../protocol/review.sample.json'
+import usersSample from '../protocol/users.sample.json'
 import { MOCK_SCRIPT, type MockEvent } from './script'
 
 type Handler = (ev: unknown) => void
@@ -57,6 +63,20 @@ class MockCall {
   }
 }
 
+/**
+ * The console's read-only endpoints, answered from the samples the orchestrator generates
+ * from C's models. `?mock=1` is then the whole demo: every tab, the browser tests and the
+ * screenshots need no backend. Longest path first, so a call's id is not read as the list.
+ */
+const REVIEW: [RegExp, unknown][] = [
+  [/\/api\/review\/users\/[^/?]+$/, reviewSample],
+  [/\/api\/review\/users$/, usersSample],
+  [/\/api\/review\/calls\/[^/?]+$/, callSample],
+  [/\/api\/review\/calls(\?.*)?$/, callsSample],
+  [/\/api\/review\/evals$/, evalsSample],
+  [/\/api\/review\/report$/, reportSample],
+]
+
 export function installMock(): void {
   const realFetch = globalThis.fetch.bind(globalThis)
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -73,6 +93,16 @@ export function installMock(): void {
         { status: 200, headers: { 'content-type': 'application/json' } },
       )
     }
+    if (method === 'GET') {
+      const sample = REVIEW.find(([pattern]) => pattern.test(url))?.[1]
+      if (sample !== undefined) {
+        return new Response(JSON.stringify(sample), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+    }
+
     return realFetch(input, init)
   }) as typeof fetch
 

@@ -5,7 +5,13 @@ fire-and-forget: a database that is down degrades the product to what it was bef
 """
 
 from ledgerline.store.db import NullStore, open_store
-from ledgerline.store.models import NewNote, ProfileFact, ProfileNote, SessionRow
+from ledgerline.store.models import (
+    NewNote,
+    ProfileFact,
+    ProfileNote,
+    SessionRow,
+    UserSummary,
+)
 
 __all__ = [
     "NewNote",
@@ -13,5 +19,6 @@ __all__ = [
     "ProfileFact",
     "ProfileNote",
     "SessionRow",
+    "UserSummary",
     "open_store",
 ]

@@ -486,12 +486,17 @@ async def test_latency_is_anchored_to_the_last_fragment_not_the_first(recorder, 
 # -- what Langfuse shows as the trace's input and output ------------------------
 
 
-async def test_trace_input_is_the_first_thing_the_person_said(recorder):
+async def test_the_conversation_is_every_turn_in_order(recorder):
     await a_full_turn(recorder, "I have twenty thousand", "Noted.")
     await a_full_turn(recorder, "Rent is twelve thousand", "Understood.")
     recorder.close()
 
-    assert recorder.trace_input == "I have twenty thousand"
+    assert recorder.trace_messages == [
+        {"role": "user", "content": "I have twenty thousand"},
+        {"role": "assistant", "content": "Noted."},
+        {"role": "user", "content": "Rent is twelve thousand"},
+        {"role": "assistant", "content": "Understood."},
+    ]
 
 
 async def test_trace_output_is_the_last_thing_the_bot_said(recorder):
@@ -506,7 +511,7 @@ async def test_a_silent_call_says_why_it_ended_instead_of_nothing(recorder):
     recorder.mark_ended_by(EndedBy.IDLE)
     recorder.close()
 
-    assert recorder.trace_input == ""
+    assert recorder.trace_messages == []
     assert recorder.trace_output == "no reply; call ended by idle"
 
 
@@ -603,3 +608,40 @@ async def test_a_recorder_with_no_tracer_records_exactly_as_before(recorder):
     recorder.close()
 
     assert [t["role"] for t in recorder.transcript()["turns"]] == ["user", "assistant"]
+
+
+def test_the_transcript_reads_back_as_chat_messages(recorder, settings, today):
+    """What the Langfuse session shows: the call as a conversation, in order."""
+    recorder._turns = [
+        {"role": "user", "text": "My rent is 11,000."},
+        {"role": "assistant", "text": "Noted."},
+    ]
+
+    assert recorder.trace_messages == [
+        {"role": "user", "content": "My rent is 11,000."},
+        {"role": "assistant", "content": "Noted."},
+    ]
+
+
+async def test_fragments_of_one_sentence_are_one_message(recorder):
+    """The same join the exchange spans make, so the session reads like the trace tree.
+
+    Deepgram finalises a hesitant sentence in pieces and each piece is its own recorder turn; in
+    the session view that read as three things the person said instead of one.
+    """
+    await feed(recorder, VADUserStoppedSpeakingFrame(), UserStoppedSpeakingFrame())
+    await feed(recorder, transcription("I have"))
+    await feed(recorder, UserStoppedSpeakingFrame(), transcription("20,000 in cash and"))
+    await feed(recorder, UserStoppedSpeakingFrame(), transcription("20,000 in bank balance."))
+    await feed(
+        recorder,
+        LLMFullResponseStartFrame(),
+        LLMTextFrame(text="That is 40,000 in total."),
+        LLMFullResponseEndFrame(),
+    )
+    recorder.close()
+
+    assert recorder.trace_messages == [
+        {"role": "user", "content": "I have 20,000 in cash and 20,000 in bank balance."},
+        {"role": "assistant", "content": "That is 40,000 in total."},
+    ]

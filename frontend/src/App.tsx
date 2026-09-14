@@ -13,8 +13,14 @@ import { Timeline } from './components/Timeline'
 import { TotalsBar } from './components/TotalsBar'
 import { VoiceBar } from './components/VoiceBar'
 import { useChangedRows } from './components/useChangedRows'
+import { CallersScreen } from './console/CallersScreen'
+import { CallScreen } from './console/CallScreen'
+import { CallsScreen } from './console/CallsScreen'
+import { ConsoleShell, ConsoleTabs } from './console/ConsoleShell'
+import { EvalsScreen } from './console/EvalsScreen'
+import { ReportScreen } from './console/ReportScreen'
 import { ReviewPage } from './review/ReviewPage'
-import { useRoute } from './route'
+import { to, useRoute } from './route'
 import { VerdictPanel } from './components/VerdictPanel'
 import { forgetRememberedPhone, normalisePhone, readRememberedPhone, rememberPhone } from './phone'
 import { initialSession, sessionReducer } from './state/sessionReducer'
@@ -70,6 +76,24 @@ function CallApp() {
   // The judge's verdict on the call that just ended; nothing is asked for until it has.
   const review = useVerdict(sessionId, callOver)
 
+  /** The recording's basename. C's session id may or may not carry the recorder's prefix. */
+  const recordingId =
+    sessionId && (sessionId.startsWith('voice-') ? sessionId : `voice-${sessionId}`)
+  const calledNumber = normalisePhone(phone)
+
+  /**
+   * End the call, then go. `stop()` is what the End control does — it leaves the room and
+   * DELETEs the session — and it is awaited so the server hears about it before the page
+   * unloads, rather than being left to time the room out on its own.
+   */
+  const leaveTo = useCallback(
+    async (href: string) => {
+      await stop()
+      window.location.assign(href)
+    },
+    [stop],
+  )
+
   const onStart = useCallback(() => {
     const valid = normalisePhone(phone)
     if (!valid) {
@@ -85,59 +109,64 @@ function CallApp() {
     <div className="app" data-call={session.call}>
       <audio ref={audioRef} playsInline />
 
-      <header className="masthead">
-        <p className="masthead__brand">Ledgerline</p>
+      {/* The tabs stay through the call and after it: a person who has just hung up must
+          never be left on a board with no way off it. */}
+      <ConsoleTabs route={{ name: 'call' }}>
         {snapshot && <PhaseStrip phase={snapshot.phase} />}
         {nothingMissing && <p className="masthead__clear">nothing still needed</p>}
-      </header>
+      </ConsoleTabs>
 
       <ErrorBanner message={session.error} onRetry={onStart} disabled={busy} />
 
       {!started ? (
         <main className="opening">
-          <p className="opening__kicker">{connecting ? 'connecting' : 'about four minutes'}</p>
-          <h1 className="opening__title">{OPENING_TITLE}</h1>
-          <p className="opening__line">{connecting ? CONNECTING_LINE : OPENING_LINE}</p>
-          <form
-            className="opening__form"
-            onSubmit={(e) => {
-              e.preventDefault()
-              onStart()
-            }}
-          >
-            <label className="opening__label" htmlFor="phone">
-              Your phone number
-            </label>
-            <input
-              id="phone"
-              className="opening__field"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value)
-                setRefused(false)
+          <div className="opening__copy">
+            <p className="opening__kicker">{connecting ? 'connecting' : 'about four minutes'}</p>
+            <h1 className="opening__title">{OPENING_TITLE}</h1>
+            <p className="opening__line">{connecting ? CONNECTING_LINE : OPENING_LINE}</p>
+          </div>
+          <div className="opening__panel">
+            <form
+              className="opening__form"
+              onSubmit={(e) => {
+                e.preventDefault()
+                onStart()
               }}
-              aria-invalid={refused}
-              aria-describedby={refused ? 'phone-hint' : undefined}
-              disabled={busy}
-            />
-            <button className="opening__button" disabled={busy} aria-busy={busy}>
-              {connecting
-                ? 'Starting…'
-                : starting
-                  ? 'Finishing the last attempt…'
-                  : 'Start the call'}
-            </button>
-          </form>
-          {refused && (
-            <p className="opening__hint" id="phone-hint" role="alert">
-              {PHONE_HINT}
-            </p>
-          )}
-          {/* The person's own delete control, beside the number it deletes. */}
-          <ForgetButton phone={normalisePhone(phone) ?? ''} onForgotten={forgetRememberedPhone} />
+            >
+              <label className="opening__label" htmlFor="phone">
+                Your phone number
+              </label>
+              <input
+                id="phone"
+                className="opening__field"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value)
+                  setRefused(false)
+                }}
+                aria-invalid={refused}
+                aria-describedby={refused ? 'phone-hint' : undefined}
+                disabled={busy}
+              />
+              <button className="opening__button" disabled={busy} aria-busy={busy}>
+                {connecting
+                  ? 'Starting…'
+                  : starting
+                    ? 'Finishing the last attempt…'
+                    : 'Start the call'}
+              </button>
+            </form>
+            {refused && (
+              <p className="opening__hint" id="phone-hint" role="alert">
+                {PHONE_HINT}
+              </p>
+            )}
+            {/* The person's own delete control, beside the number it deletes. */}
+            <ForgetButton phone={normalisePhone(phone) ?? ''} onForgotten={forgetRememberedPhone} />
+          </div>
         </main>
       ) : (
         <main className="board">
@@ -214,6 +243,32 @@ function CallApp() {
           >
             {starting ? 'Finishing the last attempt…' : 'Start another call'}
           </button>
+          <nav className="ended" aria-label="After the call">
+            {/* Every one of these leaves the page, so the call is ended first: a navigation
+                would drop the Daily connection without telling the server, and the next
+                call would meet its own session still registered. */}
+            <button type="button" className="ended__link" onClick={() => void leaveTo(to('/'))}>
+              Back to start
+            </button>
+            {recordingId && (
+              <button
+                type="button"
+                className="ended__link"
+                onClick={() => void leaveTo(to(`/calls/${encodeURIComponent(recordingId)}`))}
+              >
+                See this call
+              </button>
+            )}
+            {calledNumber && (
+              <button
+                type="button"
+                className="ended__link"
+                onClick={() => void leaveTo(to(`/callers/${encodeURIComponent(calledNumber)}`))}
+              >
+                Your memory
+              </button>
+            )}
+          </nav>
         </footer>
       )}
     </div>
@@ -226,5 +281,22 @@ function CallApp() {
  */
 export default function App() {
   const route = useRoute()
-  return route.name === 'review' ? <ReviewPage phone={route.phone} /> : <CallApp />
+  if (route.name === 'call') return <CallApp />
+  return (
+    <ConsoleShell route={route}>
+      {route.name === 'caller' ? (
+        <ReviewPage phone={route.phone} />
+      ) : route.name === 'calls' ? (
+        <CallsScreen />
+      ) : route.name === 'recording' ? (
+        <CallScreen id={route.id} />
+      ) : route.name === 'evals' ? (
+        <EvalsScreen />
+      ) : route.name === 'report' ? (
+        <ReportScreen />
+      ) : (
+        <CallersScreen />
+      )}
+    </ConsoleShell>
+  )
 }

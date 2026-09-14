@@ -207,10 +207,13 @@ async def test_without_a_turn_observer_nothing_is_traced(tracer, exporter):
 async def test_the_call_span_carries_the_trace_input_and_output(tracer, turn, exporter):
     observer = ToolTracer(FakeTurnObserver(turn), tracer=tracer)
 
-    observer.record_call_io(input="I have twenty thousand", output="You are short by 2,000.")
+    observer.record_call_io(
+        messages=[{"role": "user", "content": "I have twenty thousand"}],
+        output="You are short by 2,000.",
+    )
 
     span = next(s for s in exporter.get_finished_spans() if s.name == "call")
-    assert span.attributes[Attr.TRACE_INPUT] == "I have twenty thousand"
+    assert json.loads(span.attributes[Attr.TRACE_INPUT])[0]["content"] == "I have twenty thousand"
     assert span.attributes[Attr.TRACE_OUTPUT] == "You are short by 2,000."
     assert span.context.trace_id == turn.get_span_context().trace_id, "same trace, or it is lost"
 
@@ -220,7 +223,7 @@ async def test_an_unfinished_call_says_so_on_the_trace(tracer, turn, exporter):
     observer = ToolTracer(FakeTurnObserver(turn), tracer=tracer)
 
     observer.record_call_io(
-        input="I have twenty thousand",
+        messages=[{"role": "user", "content": "I have twenty thousand"}],
         output="How much is your rent?",
         ended_by="client",
         plan_final=False,
@@ -241,7 +244,7 @@ async def test_the_call_span_repeats_the_trace_identity(tracer, turn, exporter):
     identity = {Attr.TRACE_NAME: "coach-call", Attr.SESSION_ID: "sess-1"}
     observer = ToolTracer(FakeTurnObserver(turn), tracer=tracer, attributes=identity)
 
-    observer.record_call_io(input="in", output="out")
+    observer.record_call_io(messages=[{"role": "user", "content": "in"}], output="out")
 
     span = next(s for s in exporter.get_finished_spans() if s.name == "call")
     assert span.attributes[Attr.TRACE_NAME] == "coach-call"
@@ -252,7 +255,7 @@ async def test_the_call_span_is_skipped_when_there_was_no_turn(tracer, exporter)
     """No turn means no trace to attach to; a span of our own would start a stray trace."""
     observer = ToolTracer(FakeTurnObserver(None), tracer=tracer)
 
-    observer.record_call_io(input="", output="no reply; call ended by idle")
+    observer.record_call_io(messages=[], output="no reply; call ended by idle")
 
     assert exporter.get_finished_spans() == ()
 
@@ -260,7 +263,7 @@ async def test_the_call_span_is_skipped_when_there_was_no_turn(tracer, exporter)
 async def test_recording_the_call_does_nothing_when_tracing_is_off(tracer, exporter):
     observer = ToolTracer(None, tracer=tracer)
 
-    observer.record_call_io(input="anything", output="anything")
+    observer.record_call_io(messages=[], output="anything")
 
     assert exporter.get_finished_spans() == ()
 
@@ -400,3 +403,30 @@ async def test_an_exchange_alone_captures_the_trace_id(tracer, turn, exporter):
     observer.end_exchange("Understood.")
 
     assert observer.trace_id == format(turn.get_span_context().trace_id, "032x")
+
+
+# -- the whole conversation on the call span ------------------------------------
+
+
+async def test_the_call_span_carries_the_conversation_as_messages(tracer, turn, exporter):
+    """The Sessions view shows each trace's root input and output, nothing between.
+
+    With only the first line and the last, a reviewer had to open the trace to see what was said.
+    A list of role/content messages is what Langfuse renders as a conversation.
+    """
+    observer = ToolTracer(FakeTurnObserver(turn), tracer=tracer)
+
+    observer.record_call_io(
+        messages=[
+            {"role": "assistant", "content": "The call just connected."},
+            {"role": "user", "content": "My rent is 11,000."},
+            {"role": "assistant", "content": "Noted. Your plan is set."},
+        ],
+        output="Noted. Your plan is set.",
+    )
+
+    span = next(s for s in exporter.get_finished_spans() if s.name == "call")
+    written = json.loads(span.attributes[Attr.TRACE_INPUT])
+    assert [m["role"] for m in written] == ["assistant", "user", "assistant"]
+    assert written[1]["content"] == "My rent is 11,000."
+    assert span.attributes[Attr.TRACE_OUTPUT] == "Noted. Your plan is set."

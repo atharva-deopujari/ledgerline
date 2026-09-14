@@ -14,7 +14,13 @@ from psycopg_pool import AsyncConnectionPool
 
 from ledgerline.domain.models import FinancialState
 from ledgerline.store import notes, profile, sessions
-from ledgerline.store.models import NewNote, ProfileFact, ProfileNote, SessionRow
+from ledgerline.store.models import (
+    NewNote,
+    ProfileFact,
+    ProfileNote,
+    SessionRow,
+    UserSummary,
+)
 from ledgerline.store.profile import PROFILE_MAX_AGE_DAYS
 
 SCHEMA = Path(__file__).with_name("schema.sql")
@@ -22,6 +28,11 @@ SCHEMA = Path(__file__).with_name("schema.sql")
 # The call path waits this long for a profile and no longer. A person hears a delay; they do not
 # hear a missing memory, because the first tool result tells them what was carried.
 PROFILE_TIMEOUT_SECS = 0.2
+
+# The console is a page someone opened, not a person waiting mid-sentence, so it may take longer
+# than the call path -- but it is still bounded: a database that cannot answer shows an empty
+# console rather than holding the page open.
+CONSOLE_TIMEOUT_SECS = 2.0
 
 
 @runtime_checkable
@@ -65,6 +76,8 @@ class Store(Protocol):
     async def history_all(self, phone: str) -> list[ProfileFact]: ...
 
     async def calls_for(self, phone: str) -> list[SessionRow]: ...
+
+    async def list_users(self, *, timeout: float = CONSOLE_TIMEOUT_SECS) -> list[UserSummary]: ...
 
     async def record_notes(
         self, phone: str, session_id: str, new: list[NewNote], *, active: list[ProfileNote]
@@ -125,6 +138,9 @@ class NullStore:
         return []
 
     async def calls_for(self, phone: str) -> list[SessionRow]:
+        return []
+
+    async def list_users(self, *, timeout: float = CONSOLE_TIMEOUT_SECS) -> list[UserSummary]:
         return []
 
     async def record_notes(
@@ -204,6 +220,11 @@ class PostgresStore:
 
     async def calls_for(self, phone: str) -> list[SessionRow]:
         return await sessions.for_phone(self.pool, phone)
+
+    async def list_users(self, *, timeout: float = CONSOLE_TIMEOUT_SECS) -> list[UserSummary]:
+        return await profile.list_users(
+            self.pool, timeout=timeout, max_age_days=self.profile_max_age_days
+        )
 
     async def record_notes(
         self, phone: str, session_id: str, new: list[NewNote], *, active: list[ProfileNote]

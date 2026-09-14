@@ -1,18 +1,13 @@
+import { to } from '../route'
 import { type ReactNode, useId } from 'react'
-import { groupIndian, shortDate } from '../components/format'
+import { groupIndian, whenDate } from '../components/format'
 import { ForgetButton } from '../components/ForgetButton'
+import { rememberPhone } from '../phone'
 import type { ReviewCall, ReviewFact, ReviewNote } from '../protocol/review'
 import { useUserReview } from './useUserReview'
 
 const UNREADABLE = 'The memory could not be read, so what is below may be incomplete.'
 const FAILED = 'Could not load this page. The call itself is unaffected.'
-
-/** "2026-08-14T09:02:11Z" -> "14 Aug 2026". A fact's date is a day, not a moment. */
-function factDate(iso: string): string {
-  const day = iso.slice(0, 10)
-  const printed = shortDate(day)
-  return printed === day ? iso : `${printed} ${day.slice(0, 4)}`
-}
 
 /** Money arrives as a string and is grouped for reading; anything else is printed as sent. */
 function factValue(fact: ReviewFact): string {
@@ -28,7 +23,7 @@ function FactRow({ fact }: { fact: ReviewFact }) {
       <span className="fact__name">
         {fact.name} {fact.field}
       </span>
-      <span className="fact__when">{factDate(fact.last_confirmed_at)}</span>
+      <span className="fact__when">{whenDate(fact.last_confirmed_at)}</span>
       <span className="fact__value">
         {fact.superseded ? (
           <>
@@ -58,7 +53,7 @@ function NoteRow({ note }: { note: ReviewNote }) {
 function CallRow({ call }: { call: ReviewCall }) {
   return (
     <li className="call">
-      <span className="call__when">{factDate(call.started_at)}</span>
+      <span className="call__when">{whenDate(call.started_at)}</span>
       <span className="call__id">{call.session_id}</span>
       {/* Null without LANGFUSE_PROJECT_ID: a link that goes nowhere is worse than none. */}
       {call.trace_url && (
@@ -147,7 +142,21 @@ export function ReviewPage({ phone }: { phone: string }) {
             ))}
           </Block>
 
-          <ForgetButton phone={phone} />
+          <div className="caller__actions">
+            {/* The start form reads the remembered number, so calling as this person is
+                writing it there and going to the form. */}
+            <button
+              type="button"
+              className="opening__button"
+              onClick={() => {
+                rememberPhone(phone)
+                window.location.assign(to('/'))
+              }}
+            >
+              Call as this number
+            </button>
+            <ForgetButton phone={phone} />
+          </div>
         </main>
       )}
     </div>

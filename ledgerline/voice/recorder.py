@@ -332,10 +332,26 @@ class CallRecorder(BaseObserver):
         return self._ended_by
 
     @property
-    def trace_input(self) -> str:
-        """What the person opened with. Langfuse shows this as the trace's input."""
+    def trace_messages(self) -> list[dict[str, str]]:
+        """The call as a conversation, which is what the Langfuse session view renders.
+
+        The first user line alone made a session unreadable without opening the trace: a reviewer
+        saw "Hello" and the goodbye and nothing in between.
+        """
         self._flush_user()
-        return next((t["text"] for t in self._turns if t["role"] == Role.USER), "")
+        self._flush_assistant()
+        messages: list[dict[str, str]] = []
+        for turn in self._turns:
+            role, text = str(turn["role"]), turn.get("text") or ""
+            # Consecutive user turns are the fragments of one sentence — Deepgram finalises a
+            # hesitant sentence in pieces and each piece is its own recorder turn. Joined here
+            # the way the exchange spans join them, so the session view and the trace tree tell
+            # the same story; the recording keeps its per-fragment turns either way.
+            if messages and role == Role.USER and messages[-1]["role"] == role:
+                messages[-1]["content"] = f"{messages[-1]['content']} {text}".strip()
+                continue
+            messages.append({"role": role, "content": text})
+        return messages
 
     @property
     def trace_output(self) -> str:

@@ -75,6 +75,8 @@ class Settings(BaseSettings):
     langfuse_project_id: str = ""  # only needed for the trace link on screen
     langfuse_environment: str = "development"  # production | development | simulation
     database_url: str = ""
+    # Where the recorder writes and the console reads. Empty means the repo's evals/runs.
+    recordings_dir: str = ""
     # Facts older than this are history, never carried into the next call.
     profile_max_age_days: int = 60
     # Empty disables the layer it names and nothing else: no judge model, no intent judge; no

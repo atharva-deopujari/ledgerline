@@ -1,0 +1,35 @@
+{
+  "scenarios": [
+    {
+      "name": "owner_call_1",
+      "runs": 15,
+      "persona": "The owner's own call: hedges, fragments mid-sentence, says 'I did not understand', challenges the arithmetic."
+    },
+    {
+      "name": "fragmented_balance",
+      "runs": 52,
+      "persona": "Gives the balance in two parts across three fragments, then a card, groceries and a gym."
+    }
+  ],
+  "checks": ["money_traceable", "state_matches_call", "speakable"],
+  "criteria": [
+    "coverage_before_plan",
+    "low_point_explained",
+    "challenge_answered_without_computing",
+    "led_like_a_coach"
+  ],
+  "matrix": {
+    "owner_call_1": {
+      "money_traceable": 1.0,
+      "state_matches_call": 0.93,
+      "speakable": 1.0
+    },
+    "fragmented_balance": {
+      "money_traceable": 0.96,
+      "state_matches_call": 0.58,
+      "speakable": 1.0
+    }
+  },
+  "runs_total": 449,
+  "computed_at": "2026-09-14T10:02:11Z"
+}

@@ -86,6 +86,10 @@
 
   /* --- measure --------------------------------------------------------------------- */
   --gut: 1.125rem; /* the side gutter; widens with the viewport */
+  /* One content width for every screen in the console, and the gutter that centres it: the
+     window keeps its full-bleed rules while everything on them lines up with the column. */
+  --page: 68.75rem;
+  --edge: max(var(--gut), calc((100% - var(--page)) / 2));
   --col-when: 4.5rem;
   --col-amount: 6.5rem;
 

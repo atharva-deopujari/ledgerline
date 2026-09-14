@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import time
+from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
@@ -534,3 +535,73 @@ async def test_a_started_call_is_not_cleaned_up_behind_its_own_back(app_state, m
     assert deleted == []
     assert app_state.state.sessions.active == 1
     await app_state.state.sessions.cancel_all()
+
+
+# -- the app is one page with its own routes ------------------------------------
+
+
+@pytest.fixture
+def built_dist(tmp_path, settings, monkeypatch):
+    """A `dist` the way `npm run build` leaves one: an index and a hashed asset."""
+    from ledgerline import main as m
+    from ledgerline.observability.langfuse import NullLangfuse
+
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<!doctype html><title>Ledgerline</title><div id=root>")
+    (dist / "assets" / "app-abc123.js").write_text("console.log('hi')")
+    (dist / "favicon.svg").write_text("<svg/>")
+
+    monkeypatch.setattr(m.tracing, "setup", lambda s: NullLangfuse())
+    monkeypatch.setattr(m, "open_store", lambda dsn, **kwargs: _store())
+    with TestClient(m.create_app(settings, frontend_dist=dist)) as client:
+        yield client
+
+
+@pytest.mark.parametrize(
+    "path", ["/callers", "/calls", "/calls/voice-x-1", "/evals", "/report", "/review/users/1"]
+)
+def test_every_console_route_serves_the_page(built_dist, path):
+    """The routes live in the browser, so the server has to answer for paths it has no file for.
+
+    Without this the owner clicks a tab on the container and gets a 404: `StaticFiles` serves
+    files that exist and nothing else, and only the e2e static server ever fell back to the index.
+    """
+    response = built_dist.get(path)
+
+    assert response.status_code == 200
+    assert "<div id=root>" in response.text
+
+
+def test_an_unknown_api_path_is_still_a_json_404(built_dist):
+    """A mistyped endpoint must fail like an API, not hand back a page that says nothing."""
+    response = built_dist.get("/api/nope")
+
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("application/json")
+
+
+def test_real_files_are_served_as_themselves(built_dist):
+    assert built_dist.get("/assets/app-abc123.js").text == "console.log('hi')"
+    assert built_dist.get("/favicon.svg").status_code == 200
+
+
+def test_a_missing_file_is_a_404_not_the_page(built_dist):
+    """A stale asset hash or a missing favicon must not answer 200 with HTML.
+
+    A bundle that 404s is a broken deploy someone can see; one that receives the index page
+    instead fails later, deeper, and with a syntax error from a script tag full of HTML.
+    """
+    assert built_dist.get("/assets/app-old.js").status_code == 404
+    assert built_dist.get("/missing.js").status_code == 404
+
+
+def test_without_a_build_the_page_still_explains_itself(settings, monkeypatch):
+    from ledgerline import main as m
+    from ledgerline.observability.langfuse import NullLangfuse
+
+    monkeypatch.setattr(m.tracing, "setup", lambda s: NullLangfuse())
+    monkeypatch.setattr(m, "open_store", lambda dsn, **kwargs: _store())
+
+    with TestClient(m.create_app(settings, frontend_dist=Path("/nowhere"))) as client:
+        assert "Frontend not built" in client.get("/").text

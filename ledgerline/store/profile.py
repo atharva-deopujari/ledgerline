@@ -26,7 +26,8 @@ from ledgerline.domain.models import (
     UnknownReason,
 )
 from ledgerline.domain.policy import carries
-from ledgerline.store.models import ProfileFact
+from ledgerline.domain.state import group_inr
+from ledgerline.store.models import ProfileFact, UserSummary
 
 # One billing cycle plus slack. Older facts stay as history and never reach a call: a rent from
 # four months ago is not a fact about this month, and asking is cheaper than being wrong.
@@ -332,3 +333,81 @@ async def history_all(pool: AsyncConnectionPool, phone: str) -> list[ProfileFact
         )
         rows = await cursor.fetchall()
     return [ProfileFact.model_validate(row) for row in rows]
+
+
+# The two figures a person's month is recognised by, in the order a console should show them.
+_HEADLINE_FIRST = ("rent", "salary")
+
+_USERS = """
+    SELECT phone, count(*) AS calls, max(started_at) AS last_call_at
+    FROM sessions WHERE phone IS NOT NULL
+    GROUP BY phone ORDER BY last_call_at DESC
+"""
+
+_ACTIVE_FOR = """
+    SELECT phone, name, field, value, recorded_at FROM profile_facts
+    WHERE phone = ANY(%s)
+      AND superseded_by IS NULL
+      AND value IS NOT NULL
+      AND greatest(recorded_at, last_confirmed_at) > now() - make_interval(days => %s)
+    ORDER BY recorded_at DESC, id DESC
+"""
+
+
+def _spoken_fact(field: str, value: str) -> str:
+    """A stored fact as a person would read it: money grouped, a date as a day and month."""
+    if field in {"amount", "min_due"}:
+        try:
+            return group_inr(Decimal(value))
+        except (ArithmeticError, ValueError):
+            return value
+    if field.endswith("date"):
+        try:
+            return f"{dt.date.fromisoformat(value):%-d %b}"
+        except ValueError:
+            return value
+    return value
+
+
+def _headline(rows: list[dict]) -> list[tuple[str, str]]:
+    """Two facts that say who this is: the rent and the salary when they are known, otherwise the
+    two most recently recorded. One line per item, never two fields of the same one."""
+    amounts = [row for row in rows if row["field"] == "amount"]
+    named = {row["name"]: row for row in reversed(amounts)}  # newest wins on a repeated name
+    chosen = [named.pop(name) for name in _HEADLINE_FIRST if name in named]
+    chosen += [row for row in amounts if row["name"] in named][: 2 - len(chosen)]
+    return [(row["name"], _spoken_fact(row["field"], row["value"])) for row in chosen[:2]]
+
+
+async def list_users(
+    pool: AsyncConnectionPool,
+    *,
+    timeout: float,
+    max_age_days: int = PROFILE_MAX_AGE_DAYS,
+) -> list[UserSummary]:
+    """Everyone who has called, newest call first, with what the next call would carry.
+
+    A forgotten person has no rows here: `forget` nulls the phone on their sessions, so the calls
+    stay countable and nothing points at them. Bounded like every other read; a console that cannot
+    answer shows nobody rather than holding the page open.
+    """
+    people = await read_within(pool, _USERS, (), timeout=timeout, what="the caller list")
+    if not people:
+        return []
+    phones = [row["phone"] for row in people]
+    facts = await read_within(
+        pool, _ACTIVE_FOR, (phones, max_age_days), timeout=timeout, what="the callers' facts"
+    )
+    by_phone: dict[str, list[dict]] = {phone: [] for phone in phones}
+    for row in facts or ():
+        by_phone[row["phone"]].append(row)
+    return [
+        UserSummary(
+            phone=row["phone"],
+            calls=row["calls"],
+            last_call_at=row["last_call_at"],
+            facts=len(by_phone[row["phone"]]),
+            headline=_headline(by_phone[row["phone"]]),
+        )
+        for row in people
+    ]

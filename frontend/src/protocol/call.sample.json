@@ -1,0 +1,96 @@
+{
+  "call": {
+    "session_id": "voice-9869101897-20260914T100211Z",
+    "source": "live",
+    "scenario": null,
+    "today": "2026-09-14",
+    "prompt_version": "v2@7",
+    "plan_final": true,
+    "ended_by": "done",
+    "turns": [
+      {
+        "role": "assistant",
+        "text": "Let's get your next thirty days clear. How much do you have in the bank and in cash today?",
+        "tool_calls": []
+      },
+      {
+        "role": "user",
+        "text": "Around 60,000 in the bank."
+      },
+      {
+        "role": "assistant",
+        "text": "Got it, 60,000 rupees in the bank. What comes in between now and 14 October?",
+        "tool_calls": [
+          {
+            "name": "note",
+            "arguments": {
+              "item": "bank balance",
+              "amount": 60000,
+              "kind": "balance"
+            },
+            "result": "bank balance 60,000, noted. not mentioned yet: money coming in, bills, loans or cards, everyday spending"
+          }
+        ]
+      }
+    ],
+    "state": {
+      "opening_balance": "60000.00",
+      "incomes": [],
+      "essentials": [],
+      "debts": [],
+      "optionals": []
+    },
+    "cards_versions": [1, 2],
+    "carried": []
+  },
+  "verdict": {
+    "session_id": "voice-9869101897-20260914T100211Z",
+    "status": "ready",
+    "summary": 0.86,
+    "deterministic": [
+      {
+        "rule": "money_traceable",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "state_matches_call",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "speakable",
+        "passed": true,
+        "detail": null
+      }
+    ],
+    "intent": [
+      {
+        "criterion": "led_like_a_coach",
+        "outcome": "pass",
+        "reason": "asked about loans and everyday spending before planning",
+        "turn": null
+      },
+      {
+        "criterion": "low_point_explained",
+        "outcome": "fail",
+        "reason": "the low point was named but not explained from its derivation",
+        "turn": 14
+      },
+      {
+        "criterion": "challenge_answered_without_computing",
+        "outcome": "not_applicable",
+        "reason": "no figure was challenged",
+        "turn": null
+      },
+      {
+        "criterion": "coverage_before_plan",
+        "outcome": "pass",
+        "reason": "loans, bills and everyday spending were each asked about before show_month final",
+        "turn": null
+      }
+    ],
+    "judge_model": "gpt-5.6-luna",
+    "trace_url": null
+  }
+}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SessionRow(BaseModel):
@@ -65,3 +65,20 @@ class NewNote(BaseModel):
     text: str
     evidence_turn: int | None = None
     supersedes: int | None = None
+
+
+class UserSummary(BaseModel):
+    """One row of the console: a person who has called, and what is remembered about them.
+
+    `last_summary` is always None today. The `sessions` row records where the verdict lives -- the
+    recording path and the trace id -- not the verdict itself, so the judge's sentence is read from
+    the recording rather than stored twice. It is here because the console shows it; the day the
+    row carries one, this is where it comes from.
+    """
+
+    phone: str
+    calls: int
+    last_call_at: dt.datetime
+    facts: int  # active, inside the age window: what the next call would actually carry
+    last_summary: str | None = None
+    headline: list[tuple[str, str]] = Field(default_factory=list)  # (item name, spoken value)
