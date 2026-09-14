@@ -5,12 +5,14 @@ no human are spent. Synthetic speech is cleaner than a real Indian-English speak
 transcripts as a floor on quality, not a measurement of it.
 
     PYTHONPATH=. uv run python spike/probe_stt.py
+    PYTHONPATH=. uv run python spike/probe_stt.py --numbers   # smart_format on vs off
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+import sys
 
 import aiohttp
 import websockets
@@ -44,10 +46,13 @@ async def synthesise(settings: Settings, text: str) -> bytes:
             return await response.read()
 
 
-async def transcribe(settings: Settings, pcm: bytes, language: str) -> dict:
+async def transcribe(
+    settings: Settings, pcm: bytes, language: str, smart_format: bool = True
+) -> dict:
     url = (
         "wss://api.deepgram.com/v1/listen?model=nova-3-general"
-        f"&language={language}&smart_format=true&numerals=true&interim_results=true"
+        f"&language={language}&smart_format={str(smart_format).lower()}"
+        "&numerals=true&interim_results=true"
         f"&encoding=linear16&sample_rate={SAMPLE_RATE}&channels=1"
         "&keyterm=EMI&keyterm=rupees&keyterm=lakh&keyterm=crore"
     )
@@ -77,9 +82,37 @@ async def transcribe(settings: Settings, pcm: bytes, language: str) -> dict:
     return {"transcript": " ".join(finals), "metadata": metadata}
 
 
+NUMBER_PHRASES = [
+    "two fifty rupees",
+    "two hundred and fifty rupees",
+    "twenty five hundred rupees",
+    "twelve thousand five hundred",
+    "thirteen thousand",
+    "two point five",
+    "on the twentieth of September",
+    "fifteen percent",
+]
+
+
+async def numbers(settings: Settings) -> None:
+    """`--numbers`: the same amounts with smart_format on and off, language=en-IN."""
+    print("\n=== nova-3-general, language=en-IN, numerals=true ===")
+    for phrase in NUMBER_PHRASES:
+        pcm = await synthesise(settings, phrase)
+        on = await transcribe(settings, pcm, "en-IN", smart_format=True)
+        off = await transcribe(settings, pcm, "en-IN", smart_format=False)
+        print(f"  said        : {phrase}")
+        print(f"  smart_format on : {on['transcript']!r}")
+        print(f"  smart_format off: {off['transcript']!r}")
+
+
 async def main() -> None:
     settings = Settings()
     settings.validate_for_boot()
+
+    if "--numbers" in sys.argv:
+        await numbers(settings)
+        return
 
     for language in ("en", "en-IN"):
         print(f"\n=== nova-3-general, language={language} ===")

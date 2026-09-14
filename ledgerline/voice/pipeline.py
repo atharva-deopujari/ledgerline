@@ -49,6 +49,7 @@ from ledgerline.config import LlmApi, Settings, TtsProvider, TurnStrategy
 from ledgerline.domain.models import FinancialState
 from ledgerline.observability.attributes import conversation_attributes
 from ledgerline.voice.filler import ActionFiller
+from ledgerline.voice.spoken import SpokenText
 
 # Spike 2026-09-11: nova-3 accepts "en-IN" and reports the same model id as "en"
 # (general-nova-3, 2025-04-17.21547), with slightly cleaner sentence segmentation and no
@@ -57,6 +58,11 @@ from ledgerline.voice.filler import ActionFiller
 STT_LANGUAGE = "en-IN"
 
 STT_MODEL = "nova-3-general"
+# Off, measured 14 Sep (table in spike-findings.md). With it on, "two fifty rupees" comes back as
+# "$2.50" — the owner's call recorded 2.50 twice because the correction arrived through the same
+# formatter. Off, the same phrase is "2 50 rupees": unparsed rather than confidently wrong, and
+# every other amount arrives as a plain integer.
+STT_SMART_FORMAT = False
 TTS_MODEL = "sonic-3.6"  # set explicitly: Pipecat's default is still sonic-3.5
 DEEPGRAM_VOICE = "aura-2-thalia-en"
 
@@ -124,7 +130,7 @@ def _build_stt(settings: Settings) -> DeepgramSTTService:
         settings=DeepgramSTTService.Settings(
             model=STT_MODEL,
             language=STT_LANGUAGE,
-            smart_format=True,
+            smart_format=STT_SMART_FORMAT,
             numerals=True,
             interim_results=True,
             keyterm=KEYTERMS,
@@ -274,6 +280,9 @@ def build_worker(
         [
             transport.input(),
             stt,
+            # Between the STT and the aggregator: the model must never read a figure the person
+            # did not say, and a currency symbol in a transcript is the formatter's, not theirs.
+            SpokenText(),
             user_aggregator,
             llm,
             # Between the LLM and the TTS: it needs the function-call frame the LLM pushes,

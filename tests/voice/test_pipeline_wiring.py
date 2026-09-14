@@ -27,6 +27,7 @@ from ledgerline.domain.models import FinancialState
 from ledgerline.observability.attributes import Attr
 from ledgerline.voice import pipeline as pl
 from ledgerline.voice.filler import ActionFiller
+from ledgerline.voice.spoken import SpokenText
 
 
 async def a_tool(params, value: float) -> None:
@@ -107,14 +108,17 @@ def test_processor_order_matches_the_scaffold(build):
     processors = stages(worker)
     assert processors[0] is transport.input()
     assert isinstance(processors[1], DeepgramSTTService)
-    assert processors[3] is llm
-    assert isinstance(processors[4], ActionFiller)
-    assert isinstance(processors[5], CartesiaTTSService)
-    assert processors[6] is transport.output()
+    # The transcript guard sits between the STT and the aggregator, so the model never reads a
+    # figure the formatter invented.
+    assert isinstance(processors[2], SpokenText)
+    assert processors[4] is llm
+    assert isinstance(processors[5], ActionFiller)
+    assert isinstance(processors[6], CartesiaTTSService)
+    assert processors[7] is transport.output()
     # user aggregator before the LLM, assistant aggregator last
-    assert processors[2].__class__.__name__.startswith("LLMUser")
-    assert processors[7].__class__.__name__.startswith("LLMAssistant")
-    assert len(processors) == 8
+    assert processors[3].__class__.__name__.startswith("LLMUser")
+    assert processors[8].__class__.__name__.startswith("LLMAssistant")
+    assert len(processors) == 9
 
 
 def test_tools_reach_the_context(build):
@@ -140,7 +144,7 @@ def test_function_call_timeout_is_set(build):
 
 def test_cartesia_is_the_default_tts(build):
     worker, _, _, _ = build()
-    tts = stages(worker)[5]
+    tts = stages(worker)[6]
     assert isinstance(tts, CartesiaTTSService)
     assert tts._settings.model == "sonic-3.6"
     assert tts._settings.voice == Settings(_env_file=None).cartesia_voice_id
@@ -150,13 +154,13 @@ def test_cartesia_is_the_default_tts(build):
 
 def test_deepgram_tts_when_selected(build):
     worker, _, _, _ = build(tts_provider="deepgram")
-    assert isinstance(stages(worker)[5], DeepgramTTSService)
+    assert isinstance(stages(worker)[6], DeepgramTTSService)
 
 
 def test_rupee_transform_registered_on_every_tts(build):
     for provider in ("cartesia", "deepgram"):
         worker, _, _, _ = build(tts_provider=provider)
-        tts = stages(worker)[5]
+        tts = stages(worker)[6]
         assert any(fn is pl.speak_rupees for _, fn in tts._text_transforms), provider
 
 
@@ -171,7 +175,8 @@ def test_stt_settings(build):
     worker, _, _, _ = build()
     stt = stages(worker)[1]
     assert stt._settings.model == "nova-3-general"
-    assert stt._settings.smart_format is True
+    # Off since 14 Sep: it read "two fifty rupees" as $2.50 in a live call.
+    assert stt._settings.smart_format is False
     assert stt._settings.numerals is True
     assert stt._settings.interim_results is True
     assert "EMI" in stt._settings.keyterm
@@ -181,7 +186,7 @@ def test_stt_settings(build):
 def test_smart_turn_decides_when_and_our_gate_decides_whether(build):
     """Smart Turn's own finalization is deferred; the gate's completion frame ends the turn."""
     worker, _, _, _ = build()
-    strategies = stages(worker)[2]._params.user_turn_strategies
+    strategies = stages(worker)[3]._params.user_turn_strategies
     assert isinstance(strategies.start[0], MinWordsUserTurnStartStrategy)
 
     held, resolver = strategies.stop
@@ -194,7 +199,7 @@ def test_smart_turn_decides_when_and_our_gate_decides_whether(build):
 def test_our_domain_hints_reach_the_models_completion_brief(build):
     """One judge, not two: the model decides completion, our rule is guidance inside its brief."""
     worker, _, _, _ = build()
-    resolver = stages(worker)[2]._params.user_turn_strategies.stop[1]
+    resolver = stages(worker)[3]._params.user_turn_strategies.stop[1]
     instructions = resolver.config.completion_instructions
     assert "INCOMPLETE SHORT" in instructions  # Pipecat's own framework is still there
     assert "THIS CONVERSATION IS ABOUT MONEY" in instructions
@@ -204,13 +209,13 @@ def test_our_domain_hints_reach_the_models_completion_brief(build):
 
 def test_timeout_turn_strategy_when_selected(build):
     worker, _, _, _ = build(turn_strategy="timeout")
-    stop = stages(worker)[2]._params.user_turn_strategies.stop[0]
+    stop = stages(worker)[3]._params.user_turn_strategies.stop[0]
     assert isinstance(stop, SpeechTimeoutUserTurnStopStrategy)
 
 
 def test_vad_and_idle_on_the_user_aggregator(build):
     worker, _, _, _ = build()
-    params = stages(worker)[2]._params
+    params = stages(worker)[3]._params
     assert params.vad_analyzer is not None
     assert params.user_idle_timeout == pl.USER_IDLE_TIMEOUT_SECS
 
@@ -235,14 +240,14 @@ def test_construction_opens_no_socket(build, monkeypatch):
 
 def test_cartesia_speed_and_emotion_come_from_settings(build):
     worker, _, _, _ = build(cartesia_speed=1.15, cartesia_emotion="calm")
-    generation = stages(worker)[5]._settings.generation_config
+    generation = stages(worker)[6]._settings.generation_config
     assert generation.speed == 1.15
     assert generation.emotion == "calm"
 
 
 def test_cartesia_voice_comes_from_settings(build):
     worker, _, _, _ = build(cartesia_voice_id="some-other-voice-id")
-    assert stages(worker)[5]._settings.voice == "some-other-voice-id"
+    assert stages(worker)[6]._settings.voice == "some-other-voice-id"
 
 
 def test_responses_service_when_llm_api_is_responses(build):
@@ -282,7 +287,7 @@ def test_the_conversation_span_carries_the_call_dimensions(build):
 
     attrs = worker._additional_span_attributes
     assert attrs[Attr.TRACE_NAME] == "coach-call"
-    assert attrs[Attr.METADATA_SESSION_ID] == "9876543210-20260913T141502Z"
+    assert attrs[Attr.SESSION_ID] == "9876543210-20260913T141502Z"
     assert "source:voice" in attrs[Attr.TAGS]
 
 
@@ -300,7 +305,7 @@ def test_the_caller_is_the_langfuse_user_and_session(build, settings):
         settings_with_keys, session_id="9876543210-20260913T141502Z", user_id="9876543210"
     )
     assert attrs[Attr.USER_ID] == "9876543210"
-    assert attrs[Attr.SESSION_ID] == "9876543210"
+    assert attrs[Attr.SESSION_ID] == "9876543210-20260913T141502Z", "one call, one session"
 
 
 def test_the_conversation_id_is_our_session_id(build):

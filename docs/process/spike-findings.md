@@ -727,3 +727,42 @@ From `langfuse._client.attributes` in 4.15.2: the user and session attributes ar
 and **`session.id`**, not `langfuse.user.id` / `langfuse.session.id`. Trace metadata is
 `langfuse.trace.metadata.<key>`, as the HLD said. A wrong name here is silent: the span exports
 and the field is simply never populated.
+
+## STT number formatting · 14 September
+
+Deepgram Aura-2 speech through `spike/probe_stt.py --numbers`, nova-3-general, `language=en-IN`,
+`numerals=true`, each clip sent twice over the same socket settings but for `smart_format`:
+
+| said | `smart_format=true` | `smart_format=false` |
+|---|---|---|
+| two fifty rupees | `$2.50 rupees.` | `2 50 rupees` |
+| two hundred and fifty rupees | `200And50Rupees,` | `250 rupees` |
+| twenty five hundred rupees | `2,500 rupees,` | `2500 rupees` |
+| twelve thousand five hundred | `12500.` | `12500` |
+| thirteen thousand | `13000.` | `13000` |
+| two point five | `2Point5` | `2.5` |
+| on the twentieth of September | `On the September 20` | `on 20th september` |
+| fifteen percent | `15%.` | `15 percent` |
+
+The formatter earns nothing here and costs twice. On the amounts it gets right it only adds a
+comma or a full stop to what `numerals` already produced — `2,500` against `2500`, `12500.`
+against `12500` — and `numerals=true` carries the digits on its own with formatting off. On the
+amounts it gets wrong it is wrong *confidently*: "two fifty rupees" comes back as `$2.50 rupees.`,
+a currency symbol and a decimal point the person never said, and "two hundred and fifty rupees"
+and "two point five" come back as `200And50Rupees,` and `2Point5`, which parse as nothing at all.
+Off, the two hard cases land: `250 rupees` is right, and `2 50 rupees` is unparsed rather than
+plausible. That difference is the whole point. A transcript the model cannot read makes it ask
+again; a transcript that reads as `$2.50` makes it record 2.50 and move on, which is what the
+owner's call did — twice, because the correction arrived through the same formatter.
+
+**Decided, and in the code.** `pipeline.STT_SMART_FORMAT = False`: formatting off at the source,
+`numerals=true` kept, so amounts arrive as plain digits and the ambiguous ones arrive ambiguous.
+Beside it, `voice/spoken.py` holds `SpokenText`, a frame processor that strips a currency symbol
+sitting immediately before a figure and logs what Deepgram sent beside what the model was given.
+The only currency on this call is rupees, so a symbol in a transcript is the formatter's and
+never the person's; the guard stays because the setting could be changed back or a future model
+could format anyway, and because the log line is what explains a figure nobody spoke.
+
+The honest limit is the same as item 5's: this is synthetic American-accented speech, so it shows
+what the formatter does to clean audio, not how a real speaker fares. The failure it reproduces
+came from a real call, which is the evidence that matters.
