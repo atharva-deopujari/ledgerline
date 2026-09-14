@@ -12,6 +12,10 @@ dependencies = [
   "python-dotenv>=1.0",
   "loguru>=0.7",
   "httpx>=0.27",
+  "langfuse>=4",
+  "opentelemetry-sdk>=1.30",
+  "opentelemetry-exporter-otlp-proto-http>=1.30",
+  "psycopg[binary,pool]>=3.2",
 ]
 
 [dependency-groups]
@@ -42,6 +46,7 @@ markers = [
   "llm: calls a paid LLM, needs OPENAI_API_KEY",
   "e2e: drives a browser with Playwright",
   "voice: needs live Daily/Deepgram/Cartesia keys",
+  "db: needs DATABASE_URL pointing at a Postgres (docker compose up -d postgres); skips otherwise",
 ]
 addopts = "-m 'not llm and not e2e and not voice' -q"
 
@@ -58,22 +63,40 @@ root_package = "ledgerline"
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
-name = "layers: api -> voice -> agent -> domain"
+name = "layers: api -> voice -> memory -> judge -> agent -> domain"
 type = "layers"
-layers = ["ledgerline.api", "ledgerline.voice", "ledgerline.agent", "ledgerline.domain"]
+layers = ["ledgerline.api", "ledgerline.voice", "ledgerline.memory", "ledgerline.judge", "ledgerline.agent", "ledgerline.domain"]
+
+[[tool.importlinter.contracts]]
+name = "judge and memory are pure of infrastructure"
+type = "forbidden"
+source_modules = ["ledgerline.judge", "ledgerline.memory"]
+forbidden_modules = ["pipecat", "fastapi", "psycopg", "langfuse", "opentelemetry", "ledgerline.store", "ledgerline.observability", "ledgerline.voice", "ledgerline.api"]
 
 [[tool.importlinter.contracts]]
 name = "domain is pure"
 type = "forbidden"
 source_modules = ["ledgerline.domain"]
-forbidden_modules = ["pipecat", "openai", "fastapi", "httpx", "ledgerline.agent", "ledgerline.voice", "ledgerline.api"]
+forbidden_modules = ["pipecat", "openai", "fastapi", "httpx", "langfuse", "opentelemetry", "psycopg", "ledgerline.agent", "ledgerline.voice", "ledgerline.api", "ledgerline.store", "ledgerline.judge", "ledgerline.memory", "ledgerline.observability"]
 
 [[tool.importlinter.contracts]]
-name = "agent never imports pipecat"
+name = "agent never imports pipecat or infrastructure"
 type = "forbidden"
 source_modules = ["ledgerline.agent"]
-forbidden_modules = ["pipecat", "fastapi"]
+forbidden_modules = ["pipecat", "fastapi", "langfuse", "opentelemetry", "psycopg", "ledgerline.store", "ledgerline.judge", "ledgerline.memory", "ledgerline.observability"]
 
+
+[[tool.importlinter.contracts]]
+name = "store imports only domain models and psycopg"
+type = "forbidden"
+source_modules = ["ledgerline.store"]
+forbidden_modules = ["ledgerline.agent", "ledgerline.judge", "ledgerline.memory", "ledgerline.observability", "ledgerline.voice", "ledgerline.api", "ledgerline.config", "pipecat", "openai", "fastapi", "langfuse", "opentelemetry"]
+
+[[tool.importlinter.contracts]]
+name = "observability imports only config and domain"
+type = "forbidden"
+source_modules = ["ledgerline.observability"]
+forbidden_modules = ["ledgerline.agent", "ledgerline.judge", "ledgerline.memory", "ledgerline.store", "ledgerline.voice", "ledgerline.api", "pipecat", "fastapi", "psycopg"]
 
 [[tool.importlinter.contracts]]
 name = "domain internal layers: cards -> engine -> state -> policy -> models"

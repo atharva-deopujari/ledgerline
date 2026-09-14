@@ -16,6 +16,20 @@ jobs:
   python:
     name: python · ruff, import contracts, pytest
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ledgerline
+          POSTGRES_PASSWORD: ledgerline
+          POSTGRES_DB: ledgerline
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ledgerline -d ledgerline"
+          --health-interval 2s --health-timeout 2s --health-retries 15
+    env:
+      DATABASE_URL: postgresql://ledgerline:ledgerline@localhost:5432/ledgerline
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -26,7 +40,7 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run lint-imports
-      - run: uv run pytest             # offline only; llm, voice and e2e markers are deselected by default
+      - run: uv run pytest -m "not llm and not voice and not e2e"   # db tests run against the service container
 
   frontend:
     name: frontend · eslint, prettier, tsc, vitest, build

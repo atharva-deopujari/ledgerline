@@ -1,0 +1,25 @@
+# Development overlay: hot reload inside the container.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+# The Python source is mounted over the image copy and uvicorn restarts on any change under
+# ledgerline/. The built frontend is mounted too, so `npm run build -- --watch` on the host
+# updates what the container serves (refresh the page); for hot module reload use the Vite
+# dev server instead: `cd frontend && npm run dev`, which proxies /api to this container.
+services:
+  ledgerline:
+    volumes:
+      - ./ledgerline:/app/ledgerline:ro
+      - ./frontend/dist:/app/frontend/dist:ro
+      - ./evals/runs:/app/evals/runs
+    command:
+      - uv
+      - run
+      - --no-sync
+      - uvicorn
+      - ledgerline.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "7860"
+      - --reload
+      - --reload-dir
+      - /app/ledgerline

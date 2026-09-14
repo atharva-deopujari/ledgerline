@@ -9,11 +9,33 @@ services:
     env_file:
       - .env
     environment:
-      HOST: 0.0.0.0
-      PORT: "7860"
+      DATABASE_URL: postgresql://ledgerline:ledgerline@postgres:5432/ledgerline
+    depends_on:
+      postgres:
+        condition: service_healthy
     # A demo should fail loudly, not restart-loop past a missing API key.
     restart: "no"
     init: true
     volumes:
       # recordings of every call, real or simulated; the eval corpus must outlive the container
       - ./evals/runs:/app/evals/runs
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ledgerline
+      POSTGRES_PASSWORD: ledgerline
+      POSTGRES_DB: ledgerline
+    ports:
+      - "5432:5432"
+    volumes:
+      # a person's remembered facts must outlive the container, like the recordings
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledgerline -d ledgerline"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+volumes:
+  pgdata:
