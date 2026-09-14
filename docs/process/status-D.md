@@ -1027,3 +1027,347 @@ Zero console errors; the `page` fixture fails the test on any `pageerror`, and a
 **Not mine, for the record:** kiro `F1` (late `play()` rejection stranding a replacement call) is
 addendum 14's fix — the recheck is at `useDailyCall.ts:139` and `blockedAudio.test.ts` has the
 deferred-rejection regression test. kiro `F2` is `evals/checks.py`, Session B's file.
+
+---
+
+# Observability phase · steps 1 and 2, and the ponytail pass
+
+## Step 1 · the phone number on the start screen
+
+`src/phone.ts` holds the whole rule: `normalisePhone` (ten digits, or E.164 — a plus, a country
+digit, 8 to 15 digits — with spaces, dashes and brackets stripped), and read/remember/forget over
+`localStorage`. Every storage access is in a `try/catch`, because a private window throws rather
+than returning null, and a stored value is re-validated on read so a stale bad one can never reach
+the server. `App` refuses to post an invalid number and says what it wants instead; the number is
+remembered only when a call actually starts, not as it is typed.
+
+Granted as request **F-1**, in `call/`: `start` takes the phone, the POST carries `{phone}`, and a
+422 gets its own sentence — matched on the status code alone, so C's detail string is free to
+change. The 69 existing `start()` call sites took the argument mechanically; the four `App` test
+files seed `localStorage` in `beforeEach`, which is the returning-caller state they were already
+about.
+
+## Step 2 · the judge's verdict on screen
+
+`verdict/useVerdict.ts` polls `GET /api/sessions/{id}/verdict` every two seconds for a minute from
+the moment the call ends. A 202, a network error, and a body that is not a verdict are all "not
+yet"; after a minute it says the review did not come back rather than reviewing for ever. The
+result is keyed to the `(session, ended)` pair, so the previous call's verdict cannot appear under
+the next one, and no state is set synchronously inside the effect.
+
+`components/VerdictPanel.tsx` prints the deterministic rules with the sentence that broke each one,
+the intent criteria with all three outcomes written out as words and the turn quoted, the summary
+score, the judge model, and the Langfuse trace link **only** when `trace_url` is there. A failed
+verdict says so in a line; an empty panel would read as a pass.
+
+Granted as request **F-2**, in `mock/`: `?mock=1` answered any URL containing `/api/sessions` with
+the session-start body, which would have handed the poll a room URL to read as a verdict. It now
+answers only the POST that starts a call and the DELETE that cancels one; everything else reaches
+the real fetch, where the browser test's `page.route` can mock it.
+
+## Step 3 so far
+
+The `carried` status word ("from last call", styled with `provisional` rather than `warn` — nothing
+on the card is wrong, it is last call's figure waiting to be confirmed), a test over A's `returning`
+frame that a carried card survives the parser and says where its figures came from, `useRoute`, and
+the forget button. The button asks in the page before it deletes anything — it is the only
+destructive control in the product and `DELETE /api/users/{phone}` cannot be undone — and never
+through a browser `confirm()`, which an automated session cannot dismiss. Forgetting also clears the
+remembered number from this browser. The `/review/users/{phone}` page waits on `protocol/review.ts`.
+
+## The ponytail pass over this diff
+
+| cut | before | after |
+|---|---|---|
+| `verdict/constants.ts`: two constants, one consumer | 3 | deleted, inlined into the hook |
+| `VerdictPanel`: `OUTCOME_LABEL` reproduced `keyAsWords`, already imported | 90 | 85 |
+| `VerdictPanel`: unreachable `verdict === null` branch, removed by making `VerdictState` a discriminated union | | |
+| `route.ts`: `useSyncExternalStore` + a popstate subscription for a path that only changes on a full navigation | 33 | 21 |
+| `useVerdict.ts`: took the two constants in | 82 | 84 |
+| **total** | **208** | **190** |
+
+Kept deliberately: `verdict/parse.ts`. It is a trust boundary — the body comes off the network and
+several shapes are served under `/api/sessions` — and a guard there is the thing that stops a room
+URL being rendered as a verdict.
+
+## Gates
+
+| gate | result |
+|---|---|
+| `npm run lint` / `format:check` / `typecheck` | clean |
+| `npm run test -- --run` | **324 passed**, 34 files (265 before the phase) |
+| `npm run build` | built |
+| `uv run pytest -m e2e tests/e2e` | **11 passed** (7 before the phase) |
+
+Eleven screenshots under `docs/process/screens/`, `11-review-phone.png` being the new one.
+
+---
+
+# Observability phase · step 3, the memory page
+
+`/review/users/{phone}` is what Langfuse cannot show: what the system remembers about one
+person, and their own control to delete it. `review/useUserReview.ts` reads
+`GET /api/review/users/{phone}` once — the page is a snapshot, not a live view — and checks the
+body is a review before the page maps over it, so a 404 page can never be rendered as a person.
+`review/ReviewPage.tsx` renders four blocks: what is remembered, what it replaced, what the
+person said in words, and their calls.
+
+Three semantics from C, each rendered as its own thing rather than folded into a neighbour:
+
+- `memory_read: false` says the store could not answer, in the warn colour, above the lists. It
+  is **not** "no history" — a first-time caller and an unreadable store look identical if you
+  print the same line for both, and only one of them means the figures below are incomplete.
+- A fact with `ended: true` has a null value by design. It reads as "ended", set in the serif
+  italic, never as a missing figure.
+- `trace_url` is null without `LANGFUSE_PROJECT_ID`, so the link is conditional. The sample's
+  second call has none, and the row simply has no link — a dead link would be worse.
+
+Superseded rows get the board's own `data-retired` treatment: struck, `aria-hidden`, with a
+visually-hidden "was X, replaced" for assistive tech, and the date beside it. An empty calls
+list renders as an empty list and says nothing, because C's store read is still a fallback
+there and "no calls" would be a claim this page cannot make.
+
+Routing is `route.ts`: `routeFor` reads `location.pathname`, and refuses a path whose phone is
+not a phone rather than asking the server about nonsense. The e2e static server now serves the
+app for any path, as FastAPI's catch-all does — it is `tests/e2e/static_server.py`, shared by
+`conftest.py` and `capture_screens.py`, because the capture needs the same behaviour and two
+copies of it would have drifted.
+
+## The ponytail pass over the page
+
+| change | before | after |
+|---|---|---|
+| four hand-wired `<section>` + `<h2 id>` + `<ul>` blocks became one `Block` with `useId` | 153 | 155 |
+
+**This one is not a cut and is recorded as what it is: +2 lines.** I kept it because it removes
+four hand-written element ids that have to stay unique by hand, which is a class of mistake
+rather than a line count. Everything else on the page was already at its first working shape.
+`useUserReview`'s body check stays for the same reason `verdict/parse.ts` does: it is a trust
+boundary.
+
+## Gates
+
+| gate | result |
+|---|---|
+| `npm run lint` / `format:check` / `typecheck` | clean |
+| `npm run test -- --run` | **339 passed**, 36 files |
+| `npm run build` | built |
+| `uv run ruff check tests/e2e` / `ruff format --check` | clean |
+| `uv run pytest -m e2e tests/e2e` | **14 passed** (7 before the phase) |
+
+Twelve screenshots under `docs/process/screens/`; `12-memory-phone.png` is the new one.
+
+---
+
+# Agent redesign · the none row and the low point on screen
+
+## A kind the person has none of
+
+`build_cards` now sends the card with one `["None", "", ""]` row instead of omitting it, because
+"no loans" and "nobody asked about loans" looked identical when the card was simply absent.
+`CardRows` renders that as a single serif-italic answer with no amount cell beside it — a blank
+amount column reads as a figure still to come. The predicate is `isNoneRow` in
+`protocol/markers.ts`, requested rather than written on my side so the wire vocabulary keeps one
+home; it matches a "None" label with an empty value, so a real item someone calls "None" with a
+figure against it is not swallowed. Five tests, one of them that exact case.
+
+## Why the month gets that low
+
+`components/LowPointWorking.tsx` prints the derivation under the figure and the chart: the
+starting balance, every movement before the low day with its own date, the low itself, what
+arrives after, and where the month closes. A spread item reads "to 30 Sep" rather than as a
+payment on that day, because that is what `spread` means.
+
+**The totals are added up in the page from the lines shown, not restated from the message.** The
+contract guarantees `opening + sum(before) === b` and `b + sum(after) === closing`; the panel
+computes both and renders what it computed. When the two disagree — a truncated derivation, or a
+bug upstream — it says so and names the figure the plan actually used, rather than printing a
+number that looks like arithmetic and is not. That case has its own test, and the browser test
+asserts the agreement flag on the real snapshot rather than comparing strings.
+
+## The regenerated sample
+
+A's `scripts/dump_sample.py` regenerated `protocol/sample.json` from the real domain, and it had
+drifted badly: an essentials note from the pre-cut conflict machinery, timeline balances the
+engine does not produce, and a low point of −1,800 on 5 Oct where the engine says 0 on 25 Sep.
+Nine tests in my files were asserting those values. All nine now assert the regenerated ones, and
+none of them was weakened to pass:
+
+- the `" ?"` provisional mark builds its own row, because no row in the current sample carries the
+  suffix and the rule is about any row that does;
+- the card-note test moved to the summary, the card the engine actually writes a note on;
+- the Timeline "claims no figure of its own" test now passes `showLow={false}`, which is how the
+  board renders it whenever the summary carries a lowest — the old sample's low simply was not on
+  an event day, so the assertion passed for the wrong reason;
+- the "every account on the board" test scopes its Salary lookup to the income card, since the
+  low-point working legitimately names the salary too.
+
+## Ponytail pass
+
+Nothing to cut in this increment. `LowPointWorking` is 74 lines with one `Line` component and one
+`sum` helper used twice; the none row is seven lines inside the existing `CardRows` branch chain.
+The three total lines could fold into a fourth component to save two lines, which is indirection
+bought with nothing. Lean already.
+
+## Gates
+
+| gate | result |
+|---|---|
+| `npm run lint` / `format:check` / `typecheck` | clean |
+| `npm run test -- --run` | **357 passed**, 38 files |
+| `npm run build` | built |
+| `uv run ruff check tests/e2e` / `ruff format --check` | clean |
+| `uv run pytest -m e2e tests/e2e` | **16 passed** |
+
+Twelve screenshots regenerated; `2-gathering-phone.png` now shows both — the `None` row under
+Loans & cards, and the working under the chart.
+
+---
+
+# Agent redesign · advisory rules on the verdict panel
+
+Nine of the judge's eighteen deterministic rules are advisory: reported, never gating. The panel
+now shows them in their own list under "Advisory, not gating", and they do not borrow the word the
+gates use — an advisory result reads "clear" or "noted", stays in the panel's quiet colour, and
+carries `data-advisory` rather than `data-passed`. A failed advisory rule is worth reading and is
+not the call failing, and on screen those two must not look alike. Three tests: the two lists never
+borrow from each other, a failed advisory is reported without the gates' failure word, and the
+advisory list is absent entirely when every rule gates. The browser test asserts the same split on
+a mocked verdict carrying one failed advisory rule.
+
+`isVerdict` now requires `advisory` to be a boolean, because a rule without it is not the shape the
+contract describes, and this guard is the one place that decides whether a body is a verdict at all.
+
+## Ponytail pass
+
+One change attempted and **reverted**: the two rule lists are near-identical markup, so I folded
+them into a `RuleList` component with an `advisory` flag. It came to 114 lines against 105, and the
+outcome word became a nested ternary. The duplication is nine lines of plain JSX; the abstraction
+was longer and harder to read, so it went back. Recorded because the attempt is the useful part —
+a repetition is only worth removing if removing it actually costs less.
+
+## Gates
+
+| gate | result |
+|---|---|
+| `npm run lint` / `format:check` / `typecheck` | clean |
+| `npm run test -- --run` | **360 passed**, 38 files |
+| `npm run build` | built |
+| `uv run ruff check tests/e2e` / `ruff format --check` | clean |
+| `uv run pytest -m e2e tests/e2e` | **16 passed** |
+
+Twelve screenshots regenerated; `11-review-phone.png` shows the advisory block under the gates.
+
+---
+
+# Dead-code sweep · census
+
+Two read-only censuses first, one over every TypeScript export and file, one over every CSS
+selector, custom property and `public/` asset, each cross-referencing `frontend/src`,
+`frontend/index.html`, `vite.config.ts` and `tests/e2e`. Everything below was then verified by hand
+before it was touched. Delete-only; no visual change.
+
+## Removed outright
+
+| symbol or file | where | evidence nothing referenced it |
+|---|---|---|
+| `isMockMode` | `src/mock/install.ts` | no importer anywhere; `main.tsx` reads `?mock=1` inline with its own `URLSearchParams` check, then lazy-imports `installMock` |
+| `rowKey` | `src/components/useChangedRows.ts` | `export const rowKey = key` — an alias of the module-local `key`; no file imports it, and `key` itself is still used inside the module |
+| `FakeCall.off()` | `src/call/testDouble.ts` | seven lines; `DailyCall` in `call/types.ts` declares no `off`, and `grep -rn "\.off(" src/` returns nothing, tests included |
+| `"preview": "vite preview"` | `frontend/package.json` | not referenced by CI, the Dockerfile, compose, any script or any doc |
+| `--ground-pinned` (light and dark) | `src/styles/tokens.css` | defined twice, never read by `var(--ground-pinned)` in any stylesheet |
+| `--blocked` (light and dark) | `src/styles/tokens.css` | defined twice, never read; the `[data-status='blocked']` rules use `--warn` and `--warn-on-panel` |
+
+## Exports narrowed to module scope
+
+Each of these is still used inside its own file and by nothing outside it, so the `export` was the
+dead part, not the declaration:
+
+| symbol | file |
+|---|---|
+| `Route` | `src/route.ts` |
+| `CallState` | `src/state/sessionReducer.ts` |
+| `CALL_STOPPED` | `src/call/messages.ts` (used by `callStopped` in the same file) |
+| `DailyHandlers` | `src/call/dailyEvents.ts` |
+| `DailyCallApi` | `src/call/useDailyCall.ts` |
+| `DailyFactory` | `src/call/types.ts` (used by its own `declare global`) |
+| `Handler` | `src/call/testDouble.ts` |
+| `ReviewState` | `src/review/useUserReview.ts` |
+
+## Looked at and deliberately kept
+
+- **`routeFor` and `SessionState`** are imported only by test files. A test is a consumer: `routeFor`
+  is the pure function the routing rules are tested through, and `SessionState` types the reducer's
+  fixtures. Neither is dead.
+- **`verdict/parse.ts` and `useUserReview`'s body check** stay, as agreed: validation at a network
+  boundary, and the thing that stops another endpoint's body rendering as a verdict or a person.
+- **`public/fonts/OFL-Archivo.txt` and `OFL-Source-Serif-4.txt`** have no code reference and are not
+  dead: the SIL Open Font License requires the licence to ship with the fonts. Removing them would
+  be a licensing defect, not a cleanup.
+- **`@testing-library/dom`** is not imported directly; it is the peer `@testing-library/react`
+  resolves against, so it stays in `devDependencies`.
+- **`conftest.py`'s `page(frontend_url)`** argument is unused by the body but orders the fixtures so
+  the "dist is not built" skip fires before Chromium launches. Ordering, not dead code.
+- **Nothing else was found.** No file without an importer (every one is an entry point: `main.tsx`
+  from `index.html`, `src/test/setup.ts` from `vite.config.ts`, and the 38 test files), no component
+  nobody renders, no prop nobody passes, no CSS class or attribute selector nothing produces, no
+  `@media` or keyframes block without a target, and no branch of `mock/script.ts` that does not play.
+
+## Contract files: orphans reported, not touched
+
+Per the brief these mirror the Python side and are not mine to trim; each is exported and used
+only within `protocol/`:
+
+- `types.ts`: `RtviMessage`, `Incoming` — used by `parse.ts` only.
+- `markers.ts`: `UNPAID`, `NOT_KNOWN`, `NONE`, `LOWEST` — each read only by its own predicate in the
+  same file. They are the vocabulary's single definition, which is the point of the module, so I
+  would leave them exported even if they were mine.
+
+## Gates
+
+| gate | result |
+|---|---|
+| `npm run lint` / `format:check` / `typecheck` | clean |
+| `npm run test -- --run` | **360 passed**, 38 files (unchanged: nothing removed had a test) |
+| `npm run build` | built |
+| `uv run pytest -m e2e tests/e2e` | **16 passed** |
+
+Screenshots not regenerated: nothing removed was reachable from the rendered page — two custom
+properties no rule read, one npm script, and exports that changed only visibility.
+
+---
+
+# Judge fold · advisory rules gone from the screen
+
+The judge's twenty deterministic checks became three and the advisory tier was deleted, so the
+panel's second list had nothing left to hold. Removed, not hidden:
+
+| removed | where | why it is dead |
+|---|---|---|
+| the `advisory` filter pair and the whole advisory `<ul>` with its subhead | `src/components/VerdictPanel.tsx` | `RuleResult.advisory` no longer exists in `protocol/verdict.ts`; every rule gates |
+| `typeof v.advisory === 'boolean'` | `src/verdict/parse.ts` | the guard would reject every real verdict; it still requires every field the contract does have |
+| `.verdict__subhead` and `.verdict__row[data-advisory] .verdict__outcome` | `src/styles/app.css` | no element carries `data-advisory` any more, and nothing else used the subhead |
+| three tests: the two lists never borrowing, a failed advisory not reading as failure, the list vanishing when every rule gates | `src/components/verdictPanel.test.tsx` | they tested the tier that was deleted; nothing covering surviving behaviour was weakened |
+| the advisory rule in the mocked verdict, and its two assertions | `tests/e2e/test_journey.py` | same |
+
+Updated rather than deleted: the sample-contract test now pins the three rule names
+(`money_traceable`, `state_matches_call`, `speakable`) instead of counting gates against advisories;
+the e2e mock carries those three; the summary in two tests moved from 0.81 to the sample's 0.60. A
+failed rule's detail now opens with the sub-rule that failed
+("state_matches_facts: rent 12,000 stated on turn 6 was not recorded") and renders through the same
+`verdict__detail` span as any other detail — no new UI, three rows instead of four.
+
+## Gates
+
+| gate | result |
+|---|---|
+| `npm run lint` / `format:check` / `typecheck` | clean |
+| `npm run test -- --run` | **357 passed**, 38 files (360 before; the three advisory tests went with the tier) |
+| `npm run build` | built |
+| `uv run ruff check tests/e2e` / `ruff format --check` | clean |
+| `uv run pytest -m e2e tests/e2e` | **16 passed** |
+
+Screenshots regenerated. `11-review-phone.png` is the one whose content changed: the review now
+reads three gating rules and the three intent criteria, with no advisory block. The capture script
+writes all twelve in one run, so the other eleven are re-encodes of the same page rather than
+visual changes.

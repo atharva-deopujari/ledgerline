@@ -2,12 +2,15 @@
 
 A real-time voice assistant that helps a person plan the next thirty days of their money. You talk; it asks
 about what comes in and what goes out and when; it records every fact; a deterministic engine computes a
-day-by-day plan; live cards update the moment you correct anything; and you hear the two actions that matter
-most, with their consequences. Built on Pipecat 1.9 and Daily, with OpenAI `gpt-5.6-luna`, Deepgram Nova-3
-and Cartesia Sonic. FastAPI backend, React + Vite + TypeScript frontend, one Docker image.
+day-by-day plan; live cards update the moment you correct anything; and it walks you through the month in
+plain words, with what you could do about it and what each thing costs. Built on Pipecat 1.9 and Daily,
+with OpenAI `gpt-5.6-luna`, Deepgram Nova-3 and Cartesia Sonic. FastAPI backend, React + Vite + TypeScript
+frontend, one Docker image.
 
-**The one rule: the model never computes.** Every number the bot speaks came back in a tool result, and an
-evaluation check fails any run where that is not true.
+**The one rule: the model never computes.** Every number the bot speaks came back in a tool result or was
+just said by the person, and an evaluation check fails any run where that is not true. The one licence beyond
+that is a reading offered as a question when an amount is implausibly small ("twelve rupees, or twelve
+thousand?"), in the turn whose result asked for it.
 
 ## Run it
 
@@ -18,7 +21,10 @@ cp .env.example .env      # fill in the four keys
 docker compose up --build
 ```
 
-Open **http://localhost:7860** in Chrome or Edge, click Start, allow the microphone, and talk.
+Open **http://localhost:7860** in Chrome or Edge, type a phone number, click Start, allow the microphone, and
+talk. The phone number is the person's identity: the facts they state are remembered against it and read back,
+as provisional, at the start of their next call. Compose also starts a Postgres container for that; without it,
+or without `DATABASE_URL`, calls still work and nothing is remembered.
 
 First build takes 3 to 5 minutes (Node build of the frontend, Python dependencies, model files). Later starts
 take seconds. Use `localhost`, not `127.0.0.1`: browsers only grant microphone access on a secure context, and
@@ -27,6 +33,12 @@ is mounted into the container.
 
 To see the interface without keys or a call, open `http://localhost:7860/?mock=1`: a scripted conversation
 replays through the real components from generated snapshots.
+
+With Langfuse keys in `.env`, every call is one trace in Langfuse: turns, each tool call with its arguments and
+result, latency and tokens per service, the judge's scores. When a call ends the screen shows the judge's
+verdict within about twenty seconds. `http://localhost:7860/review/users/<phone>` shows what is remembered
+about a number, with the history of every changed figure and a forget button. The design is in
+`docs/architecture/04-observability-hld.md`.
 
 ## Environment variables
 
@@ -41,14 +53,18 @@ replays through the real components from generated snapshots.
 | `TTS_PROVIDER` | no | `cartesia` (default) or `deepgram` | |
 | `CARTESIA_VOICE_ID`, `CARTESIA_SPEED`, `CARTESIA_EMOTION` | no | voice, speaking rate 0.6 to 1.5, optional emotion tag; three voices documented in `.env.example` | |
 | `TURN_STRATEGY`, `SMART_TURN_STOP_SECS` | no | `smart` (default, Smart Turn model) or `timeout`; how long a turn stays open after a hesitation, default 1.5 | |
-| `PROMPT_VERSION` | no | which file under `ledgerline/agent/prompts/` to load, default `v1` | |
+| `PROMPT_VERSION` | no | which file under `ledgerline/agent/prompts/` to load, default `v2`, the only version shipped since the redesign; it also names the prompt in Langfuse and is recorded against each call as `v2@N` | |
 | `ROOM_EXPIRY_SECS` | no | Daily room lifetime, default 3600; rooms are private, self-clean, and are deleted after each call | |
 | `IDLE_TIMEOUT_SECS` | no | cancel a call after this much silence, default 300 | |
 | `JOIN_TIMEOUT_SECS` | no | free the call slot if the browser never joins, default 45 | |
 | `END_GRACE_SECS` | no | after the goodbye, hang up when speech ends or after this many seconds, default 6 | |
-| `HOST`, `PORT` | no | server bind, default `0.0.0.0` and `7860`; keep `0.0.0.0` inside Docker | |
 | `LOG_LEVEL` | no | default `INFO` | |
-| `ENABLE_TRACING`, `OTEL_EXPORTER_OTLP_ENDPOINT` | no | OpenTelemetry spans per turn to any OTLP endpoint, off by default | |
+| `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` | no | tracing of every call (turns, tool calls, latency, tokens), prompt versions, judge scores; the keys' presence turns it on | https://cloud.langfuse.com, project settings, API Keys. Hobby plan is free, 50k units a month, 30 days retention |
+| `LANGFUSE_ENVIRONMENT`, `LANGFUSE_PROJECT_ID` | no | `production`, `development` (default) or `simulation`; the project id only builds the trace link shown after a call | |
+| `DATABASE_URL` | no | Postgres for who called and the facts they stated, so the next call from the same phone starts from them; Compose sets it for the app container; empty means no memory | the `postgres` service in `docker-compose.yml` |
+| `PROFILE_MAX_AGE_DAYS` | no | facts older than this are history and never carried into a call, default 60 | |
+| `PROMPT_SOURCE` | no | `langfuse` (default, versions with the `production` label, the file as fallback) or `file` | |
+| `JUDGE_MODEL`, `JUDGE_REASONING_EFFORT`, `NOTES_MODEL` | no | the end-of-call judge and the soft-notes extractor; empty disables each; effort default `low` | |
 
 Keys are read from `.env` by Compose and validated at boot; a missing required key stops the container with a
 message naming every missing variable. Never commit `.env`.
@@ -59,29 +75,36 @@ message naming every missing variable. Never commit `.env`.
    token.
 2. You speak. Deepgram transcribes; turn end is judged once, by the model's own turn-completion protocol with
    a few domain hints appended, so "I have..." followed by a pause does not end your turn.
-3. For every fact you state the model calls a tool silently (`upsert_item`, `remove_item`, `mark_unknown`),
-   the tool writes into one `FinancialState` object, and the result string comes back as compact facts with
-   the numbers already computed: `rent: 12,000 -> 14,000; confirm which is right before moving on`. The
+3. For every fact you state the model calls a tool silently, in the words a person would use: `note`,
+   `forget`, `nothing_more`. The tool writes into one `FinancialState` object, and the result comes back as
+   facts with the numbers already computed: `rent 12,000 before, now 14,000`, then a line saying which
+   categories are on the books, which you have said there are none of, and which have not come up yet. The
    model speaks once, after the result.
 4. Every tool call re-runs the plan engine and pushes a full card snapshot to the browser over Daily's data
    channel. Correct a number and every affected card changes, because there is only one copy of the truth.
-5. When nothing blocks it, the model calls `finalize_plan`. The engine simulates each of the thirty days,
-   classifies the result (fine, timing shortfall, structural shortfall, unsolvable), proposes actions in a
-   fixed priority order, and says plainly what stays unpaid if nothing works. It never proposes new borrowing.
-6. The model explains the top two actions with their consequences, checks that you have understood, records
-   that, says one goodbye and ends the call.
+5. `show_month` can be called at any point and returns the whole picture. The engine simulates each of the
+   thirty days, classifies the result (fine, timing shortfall, structural shortfall, unsolvable), proposes
+   actions in a fixed priority order, and says plainly what stays unpaid if nothing works. It never proposes
+   new borrowing. The result also carries the lowest point written out as a line per step, so when you ask
+   why a figure is what it is the coach reads you the arithmetic rather than doing any of its own.
+   `what_if` reruns the same engine over a copy for "skip the gym" or "pay the card in full" and reports
+   what moved.
+6. The model explains what you could do and what each thing costs, and when you agree it marks the plan
+   final and calls `done` with whether you understood. The goodbye is its own words.
 
-Code owns what must be correct: money (`Decimal`), dates, priority order, what is missing, what blocks the
-plan, every figure in a result. The model owns what needs understanding: whether a new number is a correction
-or a contradiction, whether an amount sounds implausible, what to ask next and how, whether you have
-understood. `docs/process/cut-brief.md` is that line written down.
+Code owns what must be correct: money (`Decimal`), dates, priority order, what has not come up yet, what
+blocks the plan, every figure in a result. The model owns what needs understanding: whether a new number is a
+correction or a contradiction, whether an amount sounds implausible, what to ask next and in what order,
+when it knows enough to plan, whether you have understood. The coach leads the conversation; code informs it
+with facts and commands only where a wrong move loses money. `docs/process/cut-brief.md` is that line written
+down and `docs/process/agent-redesign-brief.md` is where it was redrawn.
 
 ## Repository layout
 
 ```
 ledgerline/            Python package; imports flow one way: domain <- agent <- voice <- api (enforced)
   domain/              pure: models (contract), policy, state/ (fact store), engine/ (plan maths), cards
-  agent/               tools/ the model calls, result strings, system prompt, prompts/v1.md
+  agent/               tools/ the model calls (plain.py) and the result strings (facts.py), prompt, prompts/v2.md
   voice/               Pipecat pipeline, one call's lifecycle, filler, recorder, Daily transport
   api/                 FastAPI routes and the single-slot session registry
 frontend/              React + Vite + TypeScript; protocol/types.ts mirrors domain/cards.py
@@ -109,6 +132,19 @@ Every push and pull request runs the same gates on GitHub Actions (`.github/work
 browser job (the Playwright journey against the built frontend) and a Docker image build. Nothing in CI needs an
 API key.
 
+Hot reload while developing, two ways:
+
+```bash
+# backend in the container restarts on any change under ledgerline/
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+# frontend with hot module reload, proxying /api to that container
+cd frontend && npm run dev            # http://localhost:5173
+```
+
+The dev overlay mounts the source over the image copy and runs uvicorn with `--reload`; it also mounts
+`frontend/dist`, so `npm run build -- --watch` refreshes what the container serves at 7860 if you would
+rather not run Vite.
+
 Paid or networked work is opt in, so plain `uv run pytest` never spends anything:
 
 ```bash
@@ -121,12 +157,12 @@ TTS_PROVIDER=deepgram ./spike/run_once.sh <name>            # headless voice che
 
 | Gate | Result |
 |---|---|
-| `uv run pytest` | 871 passed |
-| `npm run test` | 252 passed, 25 files |
-| `uv run pytest -m e2e tests/e2e` | 7 passed |
-| `ruff check`, `ruff format --check`, `lint-imports` | clean, 4 contracts kept |
+| `uv run pytest` | 1148 passed offline; 31 more with `DATABASE_URL` set (the store, against a real Postgres, as CI runs it) |
+| `npm run test` | 357 passed, 38 files |
+| `uv run pytest -m e2e tests/e2e` | 16 passed |
+| `ruff check`, `ruff format --check`, `lint-imports` | clean, 7 contracts kept |
 | `eslint`, `prettier`, `tsc` | clean |
-| system prompt | under a 620-token ceiling, measured with a tokenizer in the test suite |
+| system prompt | about 330 tokens, under a 400-token ceiling measured with a tokenizer in the test suite |
 
 The evaluation report is `evals/REPORT.md`. It records every simulation matrix in run order, replays the
 current checks over 300 saved transcripts split by era, and states what the checks found and what they cannot
@@ -141,10 +177,28 @@ see. Three results from it:
   passed: a balance given in two fragments was stored as half its value. It is open, with a code-side fix
   and a result-string fix both specified and the measurement that decides between them named.
 
-Open, in order of risk: the dropped half of the balance above; one recorded case of the model doing
-arithmetic (14,000 minus 1,000 spoken as "thirteen thousand short"), fixed offline by always emitting surplus
-and shortfall as a pair, not yet measured live; first audio at 1.8 to 2.2 seconds against a 1.4 second target;
-one unexplained 9.3 second outlier in a single headless run; no live call yet on the post-cut build.
+Since then (13 Sep): the balance defect is closed (0 to 100 percent on `state_matches_facts`, both fixes needed
+and the cell showed why), the arithmetic case is closed by the surplus and shortfall pair, and the observability
+phase landed: every call traced to Langfuse with its tool calls, a Postgres memory keyed by phone that the next
+call reads back as provisional until confirmed (ten of ten simulated returning calls clean, a carried rent giving
+way to the newly spoken one in five of five), a soft-notes extractor bounded in code, and an end-of-call judge.
+The judge is advisory: its first two calibration tables (`evals/REPORT.md` sections 10.6 to 10.8) show it
+punishing deliberate brevity until its criterion was rewritten, missing the money defects the deterministic
+rules caught, and never failing a register criterion the owner judges the model holds by default.
+
+Since then (14 Sep): the owner's live call read as a bot working through a form, so the agent layer was
+rebuilt as a coach that leads. The owner's own call was scripted from the recording and run five times on
+each build (`docs/process/owner-call-1-report.md`): planning before a whole category had been raised went
+from every run to none, traceable numbers from 60 to 100 percent, values claimed but never recorded from 80
+to 100, and a decimal spoken aloud from 80 to 100 percent clean. The honest other half: two of the five
+after runs never reached a plan at all, because the same instinct that stops premature planning has no brake
+on it, and the run that states the lowest point still recites it rather than reading out the derivation the
+result handed it.
+
+Open, in order of risk: first audio at 1.8 to 2.2 seconds against a 1.4 second target; one unexplained 9.3
+second outlier in a single headless run; the judge's agreement with human readings is measured on thirteen
+runs and not yet trusted as a gate; knowing when to stop gathering, which is the cause of the runs that end
+with nothing decided; no live call yet on the redesigned build.
 
 ## How this was built
 

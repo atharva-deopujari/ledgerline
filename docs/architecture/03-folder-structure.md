@@ -12,7 +12,7 @@ every verified fact from the research (pytest `pythonpath`, `addopts` markers, N
   `domain` imports nothing of ours and nothing of Pipecat or OpenAI. Enforced with an `import-linter` contract.
 - **Frontend is a real project:** React 19 + Vite + TypeScript in `frontend/`, built in a Node stage of the same
   Dockerfile, `dist/` served by FastAPI. Still one compose service, one command, one port.
-- **Tests mirror the package:** `tests/domain`, `tests/agent`, `tests/voice`, `tests/api`, `tests/e2e`. Free tests run
+- **Tests mirror the package:** `tests/domain`, `tests/agent`, `tests/judge`, `tests/memory`, `tests/store`, `tests/voice`, `tests/api`, `tests/e2e`. Free tests run
   on plain `uv run pytest`; paid and browser tests are opt-in markers.
 - **`evals/` is separate from `tests/`:** paid, non-deterministic, produces reports into `docs/eval-results/`.
 - **Config is typed:** `ledgerline/config.py` with pydantic-settings, validated at boot, names the missing variable.
@@ -34,6 +34,7 @@ ledgerline/
 ├── .gitignore  .dockerignore
 ├── Dockerfile                    stage 1 node:22 builds frontend; stage 2 python:3.11-slim + uv, NLTK prebaked
 ├── docker-compose.yml            ONE service, port 7860, env_file .env
+├── docker-compose.dev.yml        overlay: source mounted, uvicorn --reload; pair with `npm run dev` for frontend HMR
 │
 ├── ledgerline/                   the Python package. import root: `from ledgerline.domain.engine import build_plan`
 │   ├── config.py                 Settings(BaseSettings); TtsProvider, TurnStrategy, LlmApi enums
@@ -43,6 +44,7 @@ ledgerline/
 │   │   ├── models.py             FinancialState and item models; enums PlanStatus, Phase, ActionType, RowKind, UnknownReason, OutcomeStatus
 │   │   ├── policy.py             Policy: TierKey enum, tier order, consequence and ask text, allowed action types
 │   │   ├── cards.py              (state, plan) -> CardsMessage; CardId and CardStatus enums; 4 KB guard. no transport
+│   │   ├── rupees.py             whole(), reconciled(), in_rupees(summary): one rounding rule, totals derived from rounded parts
 │   │   ├── state/                the fact store. public API re-exported from __init__ (upsert, remove, mark_unknown, ...)
 │   │   │   ├── names.py          normalise_name, possessive_of, label_for, field_of, group_inr, resolve_day
 │   │   │   ├── items.py          upsert overwrites and reports Outcome.changes (old -> new, speakable); remove
@@ -56,47 +58,82 @@ ledgerline/
 │   │       └── plan.py           build_plan as an ordered orchestration of the steps above; summary
 │   │
 │   ├── agent/                    talks to the LLM. imports domain only, never pipecat
-│   │   ├── prompt.py             load prompts/<version>.md, per-turn block (today, snapshot, missing, confirmations)
-│   │   ├── prompts/v1.md         the base prompt (package data)
-│   │   └── tools/                the seven direct-function handlers, re-exported (build_tools, ToolContext, describe)
+│   │   ├── prompt.py             load prompts/<version>.md; per-turn block: today and window, then the coverage lines
+│   │   ├── prompts/v2.md         the base prompt (package data): who you are, what you are here to do, money, how you sound
+│   │   └── tools/                build_tools(ctx, version), re-exported with ToolContext and facts
 │   │       ├── context.py        ToolContext: state, cards version, replay guard, push
 │   │       ├── coercion.py       argument coercion and allowed-value validation
-│   │       ├── handlers.py       upsert_item, remove_item, resolve_conflict, mark_unknown, finalize_plan, record_understanding, end_call
-│   │       ├── describe.py       result strings, one function per outcome kind
+│   │       ├── plain.py          note, forget, nothing_more, show_month, what_if, done. Names and arguments a person would say
+│   │       ├── facts.py          result strings: facts and options, no orders; coverage lines, the lowest point a step per line
 │   │       └── phrases.py        every result-string fragment and template as a named constant
+│   │
+│   ├── judge/                    recording in, Verdict out. imports agent (phrases) + domain; never infra (docs/architecture/04-observability-hld.md)
+│   │   ├── checks/               the three deterministic checks (checks.py; spoken_numbers.py, provenance.py as helpers): money_traceable, state_matches_call, speakable
+│   │   ├── criteria.py           four intent criteria with applies_when predicates in code
+│   │   ├── llm.py                one structured-output call; model and reasoning effort supplied by the caller
+│   │   ├── judge.py              run(recording) -> Verdict: deterministic first, then intent; never raises
+│   │   └── models.py             Verdict, RuleResult, CriterionResult, Outcome (CONTRACT, mirrored in protocol/verdict.ts)
+│   │
+│   ├── memory/                   recording + existing notes in, soft notes out. imports judge.checks (amount parser) + domain
+│   │   ├── vocabulary.py         NoteCategory StrEnum compiled into the structured-output schema
+│   │   ├── extractor.py          one call at session end; notes with amounts, invented turns or bad indexes dropped in code
+│   │   └── models.py             Note, NewNote, ExtractedNotes
+│   │
+│   ├── observability/            OpenTelemetry + Langfuse. imports config + domain only; Null twins when keys are empty
+│   │   ├── tracing.py            one TracerProvider with the resource attributes, handed to Langfuse(tracer_provider=...); should_export_span keeps pipecat and ledgerline scopes
+│   │   ├── attributes.py         StrEnum of every span attribute we set (user.id, session.id, langfuse.trace.*, ledgerline.*)
+│   │   └── langfuse.py           LangfuseClient protocol, RealLangfuse (scores, prompts, trace url), NullLangfuse
+│   │
+│   ├── store/                    Postgres. imports domain.models + psycopg only; never config (open_store takes the dsn)
+│   │   ├── schema.sql            users, sessions (slim), profile_facts, profile_notes; CREATE TABLE IF NOT EXISTS; money as text
+│   │   ├── db.py                 async pool, schema at boot, Store protocol, PostgresStore, NullStore, open_store(dsn)
+│   │   ├── models.py             SessionRow, ProfileFact, ProfileNote
+│   │   ├── sessions.py           create, end, get
+│   │   ├── profile.py            load_active(phone, deadline) -> facts | None; record_call(loaded=) diff + supersession; hydrate; history; forget
+│   │   └── notes.py              same shape for soft notes
 │   │
 │   ├── voice/                    touches Pipecat and Daily. imports agent + domain
 │   │   ├── pipeline.py           build_worker(state, settings) -> PipelineWorker. STT, LLM, TTS, VAD, aggregators, observers
 │   │   ├── session.py            run_session(room_url, token): ordered steps; join, greeting, card push, prompt refresh, teardown
 │   │   ├── lifecycle.py          GoodbyeWatcher, JoinWatchdog, CallEnder, Teardown
-│   │   ├── recorder.py           per-call transcript to evals/runs; EndedBy, Role, LlmWarning enums
+│   │   ├── recorder.py           per-call transcript to evals/runs; EndedBy, Role, LlmWarning enums; the `call` span with trace input and output
+│   │   ├── tool_trace.py         observer: one `tool` span per executed function call, keyed by tool_call_id, under the current turn
 │   │   └── transport.py          Daily room (private), tokens, transport; REST client bounded at 10 s
 │   │
 │   └── api/                      HTTP surface. imports voice
-│       ├── routes.py             POST /api/sessions -> {room_url, token, session_id}; DELETE /api/sessions/{id}; GET /api/health
+│       ├── routes.py             POST /api/sessions {phone} -> {room_url, token, session_id}; DELETE /api/sessions/{id}; GET /api/health;
+│       │                         GET /api/sessions/{id}/verdict (202 while pending); DELETE /api/users/{phone}; GET /api/review/users/{phone}
+│       ├── review.py             UserReview, ReviewFact, ReviewNote, ReviewCall (CONTRACT, mirrored in protocol/review.ts) and their builder
+│       ├── aftercall.py          the post-call task: end the session row, record_call(loaded=), extractor, judge, scores, verdict held in process
 │       └── sessions.py           SessionRegistry: single slot reserved before the first await, cancel awaits teardown
 │
 ├── frontend/                     React + Vite + TypeScript. built into the image, never served by Vite in prod
 │   └── src/
-│       ├── main.tsx  App.tsx
+│       ├── main.tsx  App.tsx  phone.ts (validate and remember the number)  route.ts (useRoute over location.pathname, no router dependency)
 │       ├── call/                 useDailyCall.ts (thin hook) over lifecycle.ts (CallLifecycle class), dailyEvents.ts (typed adapter),
-│       │                         types.ts, constants.ts, messages.ts, testDouble.ts
-│       ├── protocol/             types.ts (CONTRACT), parse.ts, markers.ts (untyped marker words, one definition each), sample.json
+│       │                         types.ts, constants.ts, messages.ts, testDouble.ts; the POST carries {phone}, 422 is PHONE_REJECTED
+│       ├── protocol/             types.ts, verdict.ts, review.ts (CONTRACTS) with sample.json, verdict.sample.json, review.sample.json generated from Python;
+│       │                         parse.ts, markers.ts (untyped marker words, one definition each), fixtures.test.ts (every sample survives its type)
 │       ├── state/sessionReducer.ts
-│       ├── mock/                 install.ts, script.ts, snapshots.json (generated by scripts/dump_mock_snapshots.py)
-│       ├── components/           CardStack, FocusCard, CardRows, CardKv, StatusBadge, PlanPanel, PhaseStrip, Timeline,
-│       │                         MissingChips, QuestionHeadline, VoiceBar, ErrorBanner, format.ts
+│       ├── mock/                 install.ts (answers only the POST and DELETE that start and cancel a call), script.ts, snapshots.json (generated; five frames, `returning` first)
+│       ├── components/           LedgerCard, CardRows, CardKv, CardStack, StatusBadge, PlanPanel, PhaseStrip, Timeline, TotalsBar, LowestPoint,
+│       │                         MissingChips, QuestionHeadline, VoiceBar, ErrorBanner, VerdictPanel, ForgetButton, format.ts, useChangedRows.ts
+│       ├── verdict/              useVerdict.ts (poll GET /api/sessions/{id}/verdict after `ended`, two seconds, one minute), parse.ts (type guard, a trust boundary)
+│       ├── review/               ReviewPage.tsx (/review/users/{phone}: remembered, replaced, said in words, calls), useUserReview.ts
 │       └── styles/
 │
 ├── tests/                        free, offline, fast. `uv run pytest` runs exactly this
 │   ├── conftest.py
 │   ├── domain/                   state/ (mirrors the package), test_engine.py, test_cards.py, test_policy.py, fixtures/
-│   ├── agent/                    test_tools.py, test_describe.py, test_prompt.py, test_integration_domain.py
+│   ├── agent/                    test_plain.py, test_prompt.py, test_integration_domain.py, test_harness*.py, test_run_suite.py, test_managed_prompt.py
+│   ├── judge/  memory/           checks/ moved with the code; criteria, llm (fake model), judge, extractor
+│   ├── observability/            in-memory exporter over a real TurnTraceObserver: tree, types, parents, attributes, trace id
+│   ├── store/                    marker db: real Postgres from compose or the CI service container; NullStore tests always run
 │   ├── voice/  api/
-│   └── e2e/                      Playwright, marker e2e
+│   └── e2e/                      Playwright, marker e2e; static_server.py serves the built app for any path, shared by conftest.py and capture_screens.py
 │
 ├── evals/                        paid, non-deterministic, opt-in
-│   ├── harness.py  sim_user.py  checks.py  spoken_numbers.py  provenance.py
+│   ├── harness.py  sim_user.py  checks.py  spoken_numbers.py  provenance.py   (the last three are shims over ledgerline/judge/checks)
 │   ├── scenarios/*.yaml
 │   └── runs/                     recorded calls, real and simulated
 │
@@ -234,15 +271,15 @@ evals
 !README.md
 ```
 
-## Why this and not agents-service's shape
+## Why this and not a larger service's shape
 
-agents-service has `graph/ supervisor/ agents/ nodes/ tools/ models/ services/ api/ workers/ infrastructure/
-config/ prompts/ observability/ migrations/`. That is right for a multi-agent service with Redis checkpoints,
-Alembic and 243 test files. Here it would mean fourteen folders for eight modules, and the first live question
-becomes "why is there an `infrastructure/` package with one file". The four-concern split keeps the property
-that matters from agents-service (one-way imports, tests mirroring code, typed config) and drops the folders
-that have not earned a second file yet. When persistence arrives it becomes `ledgerline/storage/`, and `domain`
-still does not know about it.
+A production multi-agent chat service the owner has worked on has `graph/ supervisor/ agents/ nodes/ tools/
+models/ services/ api/ workers/ infrastructure/ config/ prompts/ observability/ migrations/`. That is right for a
+service with Redis checkpoints, Alembic and 243 test files. Here it would mean fourteen folders for eight
+modules, and the first live question becomes "why is there an `infrastructure/` package with one file". The
+four-concern split keeps the property that matters from that shape (one-way imports, tests mirroring code,
+typed config) and drops the folders that have not earned a second file yet. Persistence arrived on 13 Sep as
+`ledgerline/store/` and `domain` still does not know about it.
 
 ## Appendix A. Original flat-layout research: why flat and not src/
 
@@ -271,8 +308,8 @@ directories, and the first question in the live session becomes "why are there t
 **`evals/SMOKE.md`, not `tests/voice/SMOKE.md`.** It is a human checklist, not a collected test.
 Under `tests/` it would be the only file pytest never runs.
 
-**Prompt files, not Python constants.** `git diff --no-index prompts/v1.md prompts/v2.md` is a one-line
-answer to "show me what changed between prompt versions". Constants force a git-history diff, which is
+**Prompt files, not Python constants.** `git log -p prompts/v2.md` is a one-line answer to "show me what
+changed in the prompt", and a second file beside it is how a new version starts. Constants force a git-history diff, which is
 slower to produce on a shared screen. The `prompts/` directory costs one `COPY` line in the Dockerfile.
 
 **`engine.py`, not `planner.py`.** "Planner" in agent vocabulary means an LLM that decides steps; this

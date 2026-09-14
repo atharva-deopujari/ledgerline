@@ -1,11 +1,19 @@
 # Prompt rule provenance
 
-One row per rule in `ledgerline/agent/prompts/v1.md`. A rule earns its tokens by naming the
-scenario and check that would fail without it. **A rule with no named case is a cut candidate**
-(OAP Step 0b: a rule re-enters only with a named failing case).
+One row per rule. A rule earns its tokens by naming the scenario and check that would fail without
+it. **A rule with no named case is a cut candidate** (OAP Step 0b: a rule re-enters only with a
+named failing case).
+
+**Read the first two tables as history, not as the product.** They are the v1 prompt and the v1
+result strings, and both were deleted on 14 September once the after table was read: there is no
+`prompts/v1.md`, no `agent/tools/handlers.py` and no `agent/tools/describe.py` any more, and the
+nine result-carried instructions are down to four. The rows stay because the CASES stay — every
+one of them is a real failure that really happened, and a rule may only come back by naming one.
+What is live today is the last three sections: what v2 cut, what came back with a case, and what
+the deletion retired.
 
 Scenario ids are the `evals/scenarios/*.yaml` names run by `evals/run_suite.py`; checks are the
-rule names in `evals/checks.py`. "live call 3" is
+rule names in `ledgerline/judge/checks/checks.py`. "live call 3" is
 `evals/runs/voice-2ac2a01f28e9-20260912-141347.json`, the owner's third call.
 
 **Status of this file**: seeded 2026-09-12 from `status-B.md`'s documented failure history while
@@ -41,10 +49,10 @@ verdict. Filled in as each cut lands.
 | A yes is understanding: record_understanding confirmed true | none — acceptance-in-any-shape is luna's strongest measured default (pass^5) | — | 2026-09-11 | **cut candidate (C5)** |
 | Say one goodbye and call end_call in the same reply; never twice | live call 3 turn 22 (goodbye, no `end_call`) and turn 24 ("Goodbye.Goodbye."); matrix passes 1-2 at 16-20% | `one_goodbye_with_the_end_call` | 2026-09-12 | keep |
 
-## Result-carried instructions
+## Result-carried instructions (v1 · deleted 14 September)
 
-Not prompt rules, but rules all the same, and the ledger was misleading without them. Eight
-instructions ride on result strings now, and across every matrix a rule carried by a result has
+Not prompt rules, but rules all the same, and the ledger was misleading without them. Nine
+instructions rode on v1's result strings, and across every matrix a rule carried by a result has
 held where the same rule in the prompt alone sat between 0% and 80%. One per result, because a
 turn holds one question.
 
@@ -58,6 +66,11 @@ turn holds one question.
 | `say the total back and ask` (balance changes only) | with `confirm which is right` on a balance the result asked the person to choose between half and all of their own money; `changed_value_acknowledged` 0% in 5 of 5 | `changed_value_acknowledged` | 2026-09-13 | 0% -> **100%** |
 | `ready to plan; if you have not yet asked whether anything else goes out this month, ask once, then finalize_plan` | `fragmented_balance-20260912-220810` — finalised on cash, rent and salary, 54,000 surplus, groceries/card/gym never asked about (review 13 F2) | `state_matches_facts`; watch `one_question_per_turn`, `no_question_after_unknown` | 2026-09-13 | 100%, no rule cost |
 | `no actions needed: every payment is covered in full; explain the lowest point and propose nothing` | `fragmented_balance-20260913-003557` — plan came back with a 63,500 surplus and no actions, and the model invented two actions plus "paying only the minimum leaves 1,800 rupees still due" (B-13) | `numbers_traceable` | 2026-09-13 | 80% -> **100%** |
+
+| `carried from last call: <each figure>; say each back, then ask whether all still hold, confirm or change each before the plan` | `returning_confirms_all` — the domain blocks the plan until carried figures are confirmed, and `confirm_carried(all)` clears that in one call, so nothing in code can tell whether the person was ever told what they agreed to | `carried_confirmed_before_plan` | 2026-09-13 | 100% on both returning cells |
+
+| `new item; if they meant a carried one, say which and move it: <each>` | `fragmented_correction` — "My red went up to / thirteen thousand" filed as an opening balance nobody named, then stated as a fact; 80% before | `state_matches_facts` | 2026-09-14 | see the ten-run cell |
+| `call this BEFORE you say you have noted anything` (upsert_item docstring, not a result) | C's third live call — "I've noted rent as 13,000 rupees" with no tool call at all | `claimed_values_recorded` | 2026-09-14 | 100% on 5 runs |
 
 The counter-example belongs beside them: a card's `min_due` is read back next to its amount and
 always has been, and the model still sent the full balance as the minimum in 4 of 13 post-cut
@@ -109,3 +122,94 @@ yet. One so far.
   because the retirement half was inert and the invention half never sees a figure the model
   derived from two it was given. Not yet fixed — it is a prompt or result-shape question and it
   belongs to the luna pass, where it is the named case that keeps this rule off the cut list.
+
+
+## Superseded by the goal · prompt v2, 14 September
+
+`prompts/v2.md` is 270 tokens against a 400 ceiling, where v1 was 599 against 620. The rules below
+are gone from it. Each one was added against a real failing case and each case is still real; what
+changed is that the brief replaces them with a goal the model can reason from, on the evidence that
+55 of the 109 constraints in the census were about language, order and tone and 54 had no recorded
+failing case at all. Recorded here so that if a case comes back, the line that closed it is one
+lookup away rather than a rediscovery.
+
+| Rule cut from v2 | The case it was added for | Where to find it |
+|---|---|---|
+| One or two short sentences, exactly one question | live call 3, four questions in one turn | `one_question_per_turn` — instrument retired 14 Sep, rule already cut from v2 |
+| Start every reply with the figure on the result's first line | F2, `amounts_repeated` 0% then 80% | `amounts_repeated` — instrument retired 14 Sep, rule already cut from v2 |
+| Ask about missing fields in the given order, one at a time | live call 3 turn 16 | superseded by the goal's "in whatever order the conversation takes" |
+| …and never ask again about what you marked unknown | duplicate of `phrases.PARKED` | C3, already a cut candidate |
+| Ask once if that and what happens if they skip it make sense | the scripted close | the brief calls it a script; V0 Finding A1 warned against steering |
+| A yes is understanding | luna's strongest measured default (pass^5) | C5, already a cut candidate |
+| Say one goodbye and call end_call in the same reply | live call 3 turns 22 and 24; 16-28% before the fix | `one_goodbye_with_the_end_call` — instrument retired 14 Sep; the goodbye is the model's own in v2, asked for by `phrases.GOODBYE` |
+| Results are notes to you (the `missing:`/`blocked:`/`parked` legend) | F7, a label read out verbatim | superseded: v2 results are facts, not orders |
+| upsert_item for every fact; income certainty and ranges | duplicates of field descriptions | C1, C2 |
+| Never claim an action is done, or mention cards or the system | none on record | C4 |
+| If a value differs and they did not call it a correction, ask which is right | the cut removed the conflict machinery | C7; the result still shows old and new |
+| If an amount sounds implausible, confirm it once | `stt_implausible_amount`, 0% then 100% | `implausible_amount_confirmed` — instrument retired 14 Sep; `phrases.CONFIRM_AMOUNT` still rides the result, because a twelve-rupee rent is money |
+
+**Kept in v2, and why each survives a 250-token budget:** every figure comes from a tool and you
+never work one out "not even a subtraction, not even when someone challenges you and you can see
+they are right" — that sentence is the owner's call verbatim, where conceding a correct challenge
+was exactly when the bot computed; read them the derivation when asked why; record before you say
+you have noted it (`claimed_values_recorded`, C's third call); never suggest new borrowing and
+never say approved or guaranteed (`banned_phrases`, and one `owner_call_1` run offered credit);
+the voice rules, which code cannot carry.
+
+## Added back to v2, each with the run that failed without it · 14 September
+
+The redesign cut a rule only where nothing failed without it. Two came back on the first v2 runs,
+and one line was reworded on measured vendor guidance rather than on a failure here.
+
+| rule (v2) | the failing case | the check |
+|---|---|---|
+| "Short spoken sentences, spoken not written: no lists, no bullets, no headings" | `owner_call_1-20260914-021734`, turns 30 and 42: "walk me through" answered with a markdown bullet list, twice in one run | `no_markdown`, a gate |
+| "usually one question at a time — two only when they belong together" | not a failure here: every voice vendor recommends it (Vapi, Retell, LiveKit), and `one_question_per_turn` is advisory now, so the harness cannot push it back off | `one_question_per_turn`, advisory |
+
+The second row is the one place a rule in v2 rests on outside evidence rather than on a run of our
+own. What was cut with it is the part no vendor recommends and the census could not source: the
+**fixed order** and the word *exactly*. `docs/research/13-agent-design.md` is the citation.
+
+**And one result line that is neither a rule nor an order.** `in minus out 12,000` was added to
+the month view after two v2 runs did that subtraction out loud when challenged — "thirty minus
+eighteen is twelve" — which is the one thing this product forbids. The figure is the commonest
+question a person asks about their own month, and no result contained it. Nothing was said to the
+model about it; the answer was simply put where it would be read. Three runs later the same
+challenge produced "the fifty-seven thousand figure is not the result", with every figure from a
+result. This is the mechanism the repo keeps rediscovering, stated as plainly as it goes:
+**a model asked a question its results cannot answer will answer it anyway.**
+
+
+## Retired by the v1 deletion · 14 September
+
+The rules below are gone because the code that carried them is gone, not because the case stopped
+being real. Nothing replaced them except the goal in v2 and the four instructions `facts.py` still
+carries.
+
+| rule | where it lived | what carries the case now |
+|---|---|---|
+| `say this back, then ask` | `describe._asked_back` | nothing: the result states what was recorded and the model decides whether to read it back |
+| `confirm which is right before moving on` | `describe._change_lines` | the line itself — "rent 11,000 before, now 12,000" — and the model's judgement about correction versus contradiction |
+| `say the total back and ask` (balance) | `phrases.BALANCE_TOTAL` | `phrases.BALANCE_PARTS`, which survives: a half-counted balance is money lost |
+| `ready to plan; ask once, then finalize_plan` | `phrases.READY_TO_PLAN` | the coverage fact, which says what has not come up instead of when to stop |
+| `no actions needed … propose nothing` | `phrases.NO_ACTIONS` | `facts.NOTHING_TO_DO`, same sentence without the order: "nothing to do: every payment is covered in full" |
+| `new item; if they meant a carried one …` | `phrases.NEW_WHILE_CARRIED` | nothing; carried items are listed as facts and the model decides |
+| `carried … say each back, then ask whether all still hold` | `phrases.CARRIED_SETTLE` | the turn block's `From their last call:` line, a fact with no instruction attached |
+| `understood, say one goodbye and call end_call in this reply` | `phrases.UNDERSTOOD` | `phrases.GOODBYE`, which survives on `done` |
+| `parked, do not ask again` / `missing:` / `blocked:` legend | `phrases.PARKED`, `MISSING` | the coverage lines and `phrases.BLOCKED` |
+
+The measured pass rates those instructions bought are in `evals/REPORT.md` and stay quotable; what
+cannot be re-run is the v1 column of §10.13, because the build that produced it no longer exists.
+
+
+## Instruments retired with the three-check fold · 14 September
+
+Nine advisory rules and `explains_on_request` were deleted when the twenty deterministic checks
+folded into three (`evals/REPORT.md` §10.16). Where a row above cites one as its instrument, the
+row now says so: **instrument retired 14 Sep, rule already cut from v2**. The cases stay real and
+the rules stay cut; what is gone is the measurement, because how the coach talks is
+`led_like_a_coach`'s question now — a criterion a model answers, which a harness cannot ratchet.
+
+The one that earned its deletion by failing quietly: `changed_value_acknowledged` read v1's
+`rent: 11,000 -> 12,000`, v2 writes `rent 11,000 before, now 12,000`, and the rule went on
+reporting 100% on runs it was no longer looking at.

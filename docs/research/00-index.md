@@ -21,6 +21,8 @@ before it is treated as settled.
 | 09 | `09-plan-engine.md` | Data model, day simulation, priority tiers, 10 test scenarios | ~3800 |
 | 10 | `10-state-and-tools.md` | Tool granularity, upsert/conflict semantics, prompt skeleton | ~4100 |
 | 11 | `11-testing-evals.md` | Test pyramid, text harness, judge rubric, regression evidence | ~3000 |
+| 12 | `12-observability.md` | Voice observability: Pipecat OpenTelemetry, Langfuse, alternatives, memory, persistence | ~2750 |
+| 13 | `13-agent-design.md` | Agent design: goal versus rules, instruction overload, voice vendors, discovery, the model-never-computes split | ~4900 |
 
 ## Stack, one line each
 

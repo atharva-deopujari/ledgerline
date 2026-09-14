@@ -386,6 +386,130 @@ rarely fire, since a bad kind no longer reaches the raw enum error, and REFUSAL_
 wording is already inside my message. `tests/domain` 325 -> 348.
 
 
+### A-12 · `ledgerline/store/` exists; three small things it needs from other owners
+
+The package imports and its tests pass against the compose container (11 tests, `tests/store`).
+`ledgerline/store/__init__.py` exports `Store`, `NullStore`, `PostgresStore`, `open_store`,
+`SessionRow`, `ProfileFact`, `ProfileNote`, `PROFILE_TIMEOUT_SECS`. It imports psycopg and its own
+models only — no agent, judge, memory, voice or api — so the import-linter contracts can go in.
+
+1. **`pyproject.toml` (orchestrator): register the `db` marker.** `tests/store` is marked `db` and
+   every test there skips itself when `DATABASE_URL` is unset, so a plain `uv run pytest` is green
+   on a fresh clone either way; without the marker registered pytest warns on each file. No
+   `addopts` change is needed — skipping is better than deselecting here, because the skip reason
+   names the compose command that fixes it.
+2. **`ledgerline/config.py` (C): `database_url: str = ""`.** The store deliberately does not import
+   config: `open_store(dsn)` takes the string, and an empty one returns `NullStore`. So the wiring
+   is `store = await open_store(settings.database_url)` at boot and `await store.close()` at
+   shutdown, and "unconfigured means off" needs no branch at the call site.
+3. **Nothing else.** `create_session`, `end_session`, `get_session`, `load_active`, `load_notes`,
+   `forget` and `close` are on both twins. `load_active` returns `None` on timeout or error and
+   `[]` when there is simply nothing remembered — the two are different answers and the caller has
+   to keep them apart (`NullStore` always answers `[]`: a first-time caller, not a failure).
+
+
+### A-13 · The carried-facts API, for B's tool and C's loader call
+
+Domain and store are green (`tests/domain` 390, `tests/store` 26). The exact signatures the other
+two layers need:
+
+**B, the `confirm_carried` tool.**
+
+```python
+from ledgerline.domain.state import carried_items, confirm_carried
+confirm_carried(state)                 # "it is all the same as last time"
+confirm_carried(state, ["my rent"])    # one item; aliases resolve like any other name
+carried_items(state) -> list[_Item]    # for the `carried from last call:` result line
+```
+
+It returns an `Outcome`: `UPDATED` with `detail="confirmed: rent, salary"`, or `NOOP` with
+`detail="nothing was carried"`. It **raises `ValueError`** when a name is not carried, listing what
+is — the blocker exists so a plan is never built on unconfirmed figures, and a mistyped name must
+not clear it. Your handler's existing refusal path carries the message as written. An income's
+certainty resets to CONFIRMED on confirmation, which is a change the describe line may want to
+mention.
+
+Also for `describe`: `Readiness.blockers` now reads `PlanResult.blockers + ["carried"] +
+missing_fields`, so `blocked: carried` is a bare field id like the others and `carried_items`
+gives you the names and figures to list beside it. `PlanResult.blockers` is unchanged — the engine
+still computes a plan from carried money and reports `provisional` instead, because a survival
+plan with the rent missing is a wrong plan.
+
+**C, the loader call.**
+
+```python
+facts = await store.load_active(phone)            # None on timeout/error, [] if nothing is known
+state = hydrate(today, facts or [])               # ledgerline.store.profile.hydrate
+notes = await store.load_notes(phone)             # same contract
+...
+await store.record_call(phone, session_id, final_state, loaded=facts)
+await store.record_notes(phone, session_id, new_notes, active=notes or [])
+```
+
+`loaded=facts` must be **the value `load_active` returned, `None` included**. `None` means the
+memory was not read this call, and then nothing is tombstoned: without that, one slow database
+would delete every fact the person did not happen to repeat. Passing `[]` where it was `None` is
+the one way to lose someone's profile.
+
+`record_notes` takes `store.NewNote(category, text, evidence_turn, supersedes)` — `supersedes` is
+an **index into the `active` list you pass**, never an id, because the extractor picks from a list
+it can see. An index that points at nothing is ignored rather than raised: a model mistake must
+not lose the note or break aftercall.
+
+**D, two things.** `CardStatus` gains `carried` and an item card carries the note "From your last
+call. Confirm or change each." No snapshot changed, because no mock state holds a carried item —
+say the word and I will add a fifth frame to `snapshots.json` showing one, which would be the
+only way for the carried rendering to have a fixture. `store.history(phone, kind=, name=, field=)`
+returns every value a field has ever had, oldest first, for the memory page.
+
+
+### A-14 · The redesign's four domain facts, for B, C and D
+
+Domain 404, store 30, whole suite 1151 passed. Signatures and shapes:
+
+**B.**
+
+```python
+from ledgerline.domain.state import coverage, none_of
+none_of(state, ItemKind.DEBT)      # "I have no loans" -- one Outcome, never asked again
+coverage(state)                    # {"opening_balance"|"income"|"essential"|"debt"|"optional": Coverage}
+                                   # Coverage.STATED | NONE | UNASKED
+plan.low_point                     # LowPoint | None: the arithmetic behind summary.lowest_balance
+```
+
+`none_of` records an `Unknown` on the bare kind name with reason NOT_APPLICABLE — the same
+mechanism the blanket income answer has always used, so `none_of(state, ItemKind.INCOME)` **is**
+the old `mark_unknown("income", NOT_APPLICABLE)` and there is one way to say "there are none of
+these", not two. Confirmed absence: nothing excluded, plan not provisional.
+
+`coverage` gives three answers and no fourth. What exists outranks what was said (a person who
+said "no subscriptions" and then remembered the gym has optional spending). **"I do not know"
+leaves a category UNASKED**, because coverage answers what there is to plan with; that they were
+asked and could not say is in `state.unknowns`, which is where a question is decided. If you want
+a fourth state for it, ask and I will add it rather than have you infer it.
+
+`low_point` answers the live call's question. Its rows are the events the simulation booked, so
+`opening_balance + sum(before) == balance` and `balance + sum(after) == closing_balance` hold by
+construction; a spread item is one running total to the low day, flagged `spread=True`, not thirty
+lines. `low_point` is `None` only when the plan is BLOCKED.
+
+**The `carried` blocker is gone.** `Readiness.blockers` is the engine's blockers plus
+`missing_fields` again. Carried items keep their flag — cards still say `carried`, `record_call`
+still knows what nobody refreshed, and the plan is still `provisional` while any remain — but
+nothing holds `finalize_plan` shut. Telling the person what was carried, and deciding whether to
+ask, is yours now. `missing_fields` is a list of facts and no longer claims an order.
+
+**D.** `CardsMessage.low_point` is additive: `{d, b, opening, closing, before[], after[]}` with
+each line `{d, label, amt, spread}`, whole rupees, signed the way the balance moves; `null` while
+blocked. An item card for a kind the person says they have none of now appears with one row
+`["None", "", ""]` rather than being omitted. Snapshot bytes are in A's ledger and were sent to D
+directly.
+
+**Orchestrator.** `protocol/types.ts` needs `low_point` on `CardsMessage` (and the two line types)
+to match, plus `Coverage` if the frontend ever reads it. `models.py` gained `Coverage`, `LowPoint`,
+`LowPointRow` and `PlanResult.low_point`, all additive with defaults.
+
+
 ## B
 
 ### B-1 · `describe` gained an optional third argument
@@ -405,9 +529,102 @@ call, unless they offer a rough figure."
 
 ## C
 
+### C-obs-1: an import-linter contract for `observability` (orchestrator owns `pyproject.toml`)
+
+`ledgerline/observability/` exists and `voice` imports it, but no contract names it, so nothing
+would catch it importing `agent`, `judge` or `store` later. The HLD's wording is
+"store and observability import only domain and config: forbid agent, judge, memory, voice, api
+and each other". Suggested, in the same style as the existing ones:
+
+```toml
+[[tool.importlinter.contracts]]
+name = "observability imports only config and domain"
+type = "forbidden"
+source_modules = ["ledgerline.observability"]
+forbidden_modules = [
+    "ledgerline.agent", "ledgerline.judge", "ledgerline.memory",
+    "ledgerline.store", "ledgerline.voice", "ledgerline.api",
+]
+```
+
+Nothing in my code breaks it today: `observability` imports `config`, `langfuse` and
+`opentelemetry` only.
+
+**Answered (orchestrator, 13 Sep):** added as written plus `pipecat`, `fastapi`, `psycopg` in the forbidden list; seven contracts kept.
+
+### C-obs-2: HLD section 3 attribute names are wrong in two places
+
+Read out of `langfuse._client.attributes` in 4.15.2 and confirmed on a live trace: the user and
+session attributes are `user.id` and `session.id`, **not** `langfuse.user.id` and
+`langfuse.session.id`. `langfuse.trace.metadata.<key>` is right as written. Getting one wrong is
+silent — the span exports and the field stays empty. `observability/attributes.py` uses the
+correct names; the HLD table is what needs the edit.
+
+**Answered (orchestrator, 13 Sep):** HLD section 3 corrected to `user.id` and `session.id`; the four ingestion findings are summarised there too and point at spike-findings.
+
+### C-obs-3: two store queries the review page needs (A)
+
+`GET /api/review/users/{phone}` is built and green against fakes; both of these are worked
+around rather than blocking, so nothing of A's is urgent.
+
+1. **`calls_for(phone) -> list[SessionRow]`, newest first.** The protocol has `get_session(id)`
+   only, so there is no way to list a person's calls. Without it the review page shows the
+   memory and an empty call list, and logs one warning.
+2. **`history_all(phone) -> list[ProfileFact]`, oldest first.** `history(phone, kind=, name=,
+   field=)` is per field, so the page can only walk the fields that are still active — which
+   hides the history of an item the person has since ended, which is exactly what someone opens
+   the page to see. The per-field walk is the fallback in the meantime.
+
+### C-obs-4: the managed prompt's name should carry the version (B)
+
+`ensure_prompt` and `managed_prompt` both default to `MANAGED_NAME = "ledgerline-coach"`, so one
+Langfuse prompt holds whichever version booted last. The first live v2 call ran on **v1's text**:
+boot published the v1 file under that name, the v2 fetch asked for the same name by label, the
+fetch succeeded, and the fallback never came near it. Nothing in the log said so — the tools were
+v2's and the prompt was v1's.
+
+C now passes `name=f"{prompt.MANAGED_NAME}-{settings.prompt_version}"` from both call sites, with a
+`ponytail:` comment saying it belongs beside `MANAGED_NAME`. Suggested: a
+`managed_name(version)` in `agent/prompt.py` and the two defaults derived from it, so a caller
+cannot get this wrong by omission.
+
+Second, smaller: the recording's `prompt_version` is now Langfuse's numeric version of the
+version-scoped prompt, so a v2 call reads `prompt_version: 1`. True, but easy to misread as v1.
+`v2@1` would say both things; that is B's field to shape.
+
 ## D
 
-### D-1 · How a plan row says "not paid this cycle" (for A, `build_cards`)
+#### C-obs-3: two store queries the review page needs (A)
+
+`GET /api/review/users/{phone}` is built and green against fakes; both of these are worked
+around rather than blocking, so nothing of A's is urgent.
+
+1. **`calls_for(phone) -> list[SessionRow]`, newest first.** The protocol has `get_session(id)`
+   only, so there is no way to list a person's calls. Without it the review page shows the
+   memory and an empty call list, and logs one warning.
+2. **`history_all(phone) -> list[ProfileFact]`, oldest first.** `history(phone, kind=, name=,
+   field=)` is per field, so the page can only walk the fields that are still active — which
+   hides the history of an item the person has since ended, which is exactly what someone opens
+   the page to see. The per-field walk is the fallback in the meantime.
+
+### C-obs-4: the managed prompt's name should carry the version (B)
+
+`ensure_prompt` and `managed_prompt` both default to `MANAGED_NAME = "ledgerline-coach"`, so one
+Langfuse prompt holds whichever version booted last. The first live v2 call ran on **v1's text**:
+boot published the v1 file under that name, the v2 fetch asked for the same name by label, the
+fetch succeeded, and the fallback never came near it. Nothing in the log said so — the tools were
+v2's and the prompt was v1's.
+
+C now passes `name=f"{prompt.MANAGED_NAME}-{settings.prompt_version}"` from both call sites, with a
+`ponytail:` comment saying it belongs beside `MANAGED_NAME`. Suggested: a
+`managed_name(version)` in `agent/prompt.py` and the two defaults derived from it, so a caller
+cannot get this wrong by omission.
+
+Second, smaller: the recording's `prompt_version` is now Langfuse's numeric version of the
+version-scoped prompt, so a v2 call reads `prompt_version: 1`. True, but easy to misread as v1.
+`v2@1` would say both things; that is B's field to shape.
+
+## D-1 · How a plan row says "not paid this cycle" (for A, `build_cards`)
 
 `PlanPanel` splits the `plan` card's rows into what the plan covers and what it deliberately
 leaves for later, and renders the second group under its own heading with the amount in the warn
@@ -423,7 +640,37 @@ the per-row amount, which the panel currently shows.
 
 Nothing is blocked either way: if no row ever matches, the group simply does not render.
 
-### D-2 · A-1 facts are handled
+#### C-obs-3: two store queries the review page needs (A)
+
+`GET /api/review/users/{phone}` is built and green against fakes; both of these are worked
+around rather than blocking, so nothing of A's is urgent.
+
+1. **`calls_for(phone) -> list[SessionRow]`, newest first.** The protocol has `get_session(id)`
+   only, so there is no way to list a person's calls. Without it the review page shows the
+   memory and an empty call list, and logs one warning.
+2. **`history_all(phone) -> list[ProfileFact]`, oldest first.** `history(phone, kind=, name=,
+   field=)` is per field, so the page can only walk the fields that are still active — which
+   hides the history of an item the person has since ended, which is exactly what someone opens
+   the page to see. The per-field walk is the fallback in the meantime.
+
+### C-obs-4: the managed prompt's name should carry the version (B)
+
+`ensure_prompt` and `managed_prompt` both default to `MANAGED_NAME = "ledgerline-coach"`, so one
+Langfuse prompt holds whichever version booted last. The first live v2 call ran on **v1's text**:
+boot published the v1 file under that name, the v2 fetch asked for the same name by label, the
+fetch succeeded, and the fallback never came near it. Nothing in the log said so — the tools were
+v2's and the prompt was v1's.
+
+C now passes `name=f"{prompt.MANAGED_NAME}-{settings.prompt_version}"` from both call sites, with a
+`ponytail:` comment saying it belongs beside `MANAGED_NAME`. Suggested: a
+`managed_name(version)` in `agent/prompt.py` and the two defaults derived from it, so a caller
+cannot get this wrong by omission.
+
+Second, smaller: the recording's `prompt_version` is now Langfuse's numeric version of the
+version-scoped prompt, so a v2 call reads `prompt_version: 1`. True, but easy to misread as v1.
+`v2@1` would say both things; that is B's field to shape.
+
+## D-2 · A-1 facts are handled
 
 Confirming the four points in A-1 are honoured and covered by tests
 (`frontend/src/components/contract.test.tsx`): cards are reconciled strictly by `id` so an omitted
@@ -433,7 +680,37 @@ and the chart's text alternative, so comma-joined labels and sparse days are fin
 one-line summaries on collapsed cards. The truncation sentence in the `summary` note needs no
 special handling — it renders as note text.
 
-### D-3 · Frontend dependency notes (no action needed)
+#### C-obs-3: two store queries the review page needs (A)
+
+`GET /api/review/users/{phone}` is built and green against fakes; both of these are worked
+around rather than blocking, so nothing of A's is urgent.
+
+1. **`calls_for(phone) -> list[SessionRow]`, newest first.** The protocol has `get_session(id)`
+   only, so there is no way to list a person's calls. Without it the review page shows the
+   memory and an empty call list, and logs one warning.
+2. **`history_all(phone) -> list[ProfileFact]`, oldest first.** `history(phone, kind=, name=,
+   field=)` is per field, so the page can only walk the fields that are still active — which
+   hides the history of an item the person has since ended, which is exactly what someone opens
+   the page to see. The per-field walk is the fallback in the meantime.
+
+### C-obs-4: the managed prompt's name should carry the version (B)
+
+`ensure_prompt` and `managed_prompt` both default to `MANAGED_NAME = "ledgerline-coach"`, so one
+Langfuse prompt holds whichever version booted last. The first live v2 call ran on **v1's text**:
+boot published the v1 file under that name, the v2 fetch asked for the same name by label, the
+fetch succeeded, and the fallback never came near it. Nothing in the log said so — the tools were
+v2's and the prompt was v1's.
+
+C now passes `name=f"{prompt.MANAGED_NAME}-{settings.prompt_version}"` from both call sites, with a
+`ponytail:` comment saying it belongs beside `MANAGED_NAME`. Suggested: a
+`managed_name(version)` in `agent/prompt.py` and the two defaults derived from it, so a caller
+cannot get this wrong by omission.
+
+Second, smaller: the recording's `prompt_version` is now Langfuse's numeric version of the
+version-scoped prompt, so a v2 call reads `prompt_version: 1`. True, but easy to misread as v1.
+`v2@1` would say both things; that is B's field to shape.
+
+## D-3 · Frontend dependency notes (no action needed)
 
 `vitest` is pinned to `^5.0.0`: npm's resolver crashes on the vitest 3/4 optional peer chain on
 this machine (`Cannot read properties of null (reading 'edgesOut')`), and 5 is also the first line
@@ -442,7 +719,37 @@ without the `@vitest/mocker` path-traversal advisory. The Vite 8 `react-ts` temp
 is pinned to `0.92.2` as research 07 verified, installed from npm rather than a CDN, and assigned
 to `window.Daily` in `main.tsx` so the call hook stays testable with a fake global.
 
-### D-4 · Contract edit: `Phase` gained `"done"` (authorised by the orchestrator)
+#### C-obs-3: two store queries the review page needs (A)
+
+`GET /api/review/users/{phone}` is built and green against fakes; both of these are worked
+around rather than blocking, so nothing of A's is urgent.
+
+1. **`calls_for(phone) -> list[SessionRow]`, newest first.** The protocol has `get_session(id)`
+   only, so there is no way to list a person's calls. Without it the review page shows the
+   memory and an empty call list, and logs one warning.
+2. **`history_all(phone) -> list[ProfileFact]`, oldest first.** `history(phone, kind=, name=,
+   field=)` is per field, so the page can only walk the fields that are still active — which
+   hides the history of an item the person has since ended, which is exactly what someone opens
+   the page to see. The per-field walk is the fallback in the meantime.
+
+### C-obs-4: the managed prompt's name should carry the version (B)
+
+`ensure_prompt` and `managed_prompt` both default to `MANAGED_NAME = "ledgerline-coach"`, so one
+Langfuse prompt holds whichever version booted last. The first live v2 call ran on **v1's text**:
+boot published the v1 file under that name, the v2 fetch asked for the same name by label, the
+fetch succeeded, and the fallback never came near it. Nothing in the log said so — the tools were
+v2's and the prompt was v1's.
+
+C now passes `name=f"{prompt.MANAGED_NAME}-{settings.prompt_version}"` from both call sites, with a
+`ponytail:` comment saying it belongs beside `MANAGED_NAME`. Suggested: a
+`managed_name(version)` in `agent/prompt.py` and the two defaults derived from it, so a caller
+cannot get this wrong by omission.
+
+Second, smaller: the recording's `prompt_version` is now Langfuse's numeric version of the
+version-scoped prompt, so a v2 call reads `prompt_version: 1`. True, but easy to misread as v1.
+`v2@1` would say both things; that is B's field to shape.
+
+## D-4 · Contract edit: `Phase` gained `"done"` (authorised by the orchestrator)
 
 `frontend/src/protocol/types.ts` line 11 now reads:
 
@@ -468,7 +775,37 @@ user has agreed, and keying on `confirm` hides it during the phase named for con
 depending on which way round `plan` and `confirm` run. If you want it literal, it is one condition
 in `PlanPanel.tsx` and one test.
 
-### D-5 · F6 (mock snapshots) — done
+#### C-obs-3: two store queries the review page needs (A)
+
+`GET /api/review/users/{phone}` is built and green against fakes; both of these are worked
+around rather than blocking, so nothing of A's is urgent.
+
+1. **`calls_for(phone) -> list[SessionRow]`, newest first.** The protocol has `get_session(id)`
+   only, so there is no way to list a person's calls. Without it the review page shows the
+   memory and an empty call list, and logs one warning.
+2. **`history_all(phone) -> list[ProfileFact]`, oldest first.** `history(phone, kind=, name=,
+   field=)` is per field, so the page can only walk the fields that are still active — which
+   hides the history of an item the person has since ended, which is exactly what someone opens
+   the page to see. The per-field walk is the fallback in the meantime.
+
+### C-obs-4: the managed prompt's name should carry the version (B)
+
+`ensure_prompt` and `managed_prompt` both default to `MANAGED_NAME = "ledgerline-coach"`, so one
+Langfuse prompt holds whichever version booted last. The first live v2 call ran on **v1's text**:
+boot published the v1 file under that name, the v2 fetch asked for the same name by label, the
+fetch succeeded, and the fallback never came near it. Nothing in the log said so — the tools were
+v2's and the prompt was v1's.
+
+C now passes `name=f"{prompt.MANAGED_NAME}-{settings.prompt_version}"` from both call sites, with a
+`ponytail:` comment saying it belongs beside `MANAGED_NAME`. Suggested: a
+`managed_name(version)` in `agent/prompt.py` and the two defaults derived from it, so a caller
+cannot get this wrong by omission.
+
+Second, smaller: the recording's `prompt_version` is now Langfuse's numeric version of the
+version-scoped prompt, so a v2 call reads `prompt_version: 1`. True, but easy to misread as v1.
+`v2@1` would say both things; that is B's field to shape.
+
+## D-5 · F6 (mock snapshots) — done
 
 `src/mock/script.ts` now imports the four snapshots from `snapshots.json` and holds nothing but
 the RTVI text cues around them. The JSON is not edited by the frontend and not reformatted —
@@ -476,7 +813,37 @@ the RTVI text cues around them. The JSON is not edited by the frontend and not r
 file's mtime is still A's. All three inconsistencies the review named are gone with the
 hand-written data.
 
-### D-6 · The timeline no longer prints a figure that competes with `summary.lowest`
+#### C-obs-3: two store queries the review page needs (A)
+
+`GET /api/review/users/{phone}` is built and green against fakes; both of these are worked
+around rather than blocking, so nothing of A's is urgent.
+
+1. **`calls_for(phone) -> list[SessionRow]`, newest first.** The protocol has `get_session(id)`
+   only, so there is no way to list a person's calls. Without it the review page shows the
+   memory and an empty call list, and logs one warning.
+2. **`history_all(phone) -> list[ProfileFact]`, oldest first.** `history(phone, kind=, name=,
+   field=)` is per field, so the page can only walk the fields that are still active — which
+   hides the history of an item the person has since ended, which is exactly what someone opens
+   the page to see. The per-field walk is the fallback in the meantime.
+
+### C-obs-4: the managed prompt's name should carry the version (B)
+
+`ensure_prompt` and `managed_prompt` both default to `MANAGED_NAME = "ledgerline-coach"`, so one
+Langfuse prompt holds whichever version booted last. The first live v2 call ran on **v1's text**:
+boot published the v1 file under that name, the v2 fetch asked for the same name by label, the
+fetch succeeded, and the fallback never came near it. Nothing in the log said so — the tools were
+v2's and the prompt was v1's.
+
+C now passes `name=f"{prompt.MANAGED_NAME}-{settings.prompt_version}"` from both call sites, with a
+`ponytail:` comment saying it belongs beside `MANAGED_NAME`. Suggested: a
+`managed_name(version)` in `agent/prompt.py` and the two defaults derived from it, so a caller
+cannot get this wrong by omission.
+
+Second, smaller: the recording's `prompt_version` is now Langfuse's numeric version of the
+version-scoped prompt, so a v2 call reads `prompt_version: 1`. True, but easy to misread as v1.
+`v2@1` would say both things; that is B's field to shape.
+
+## D-6 · The timeline no longer prints a figure that competes with `summary.lowest`
 
 Swapping in the real snapshots made an existing frontend problem visible: with the `plan`
 snapshot, the chart's own label read **"7,700 on 11 Sep"** while the summary card read
@@ -551,3 +918,178 @@ no actions and nothing unpaid, the result says so in words the model can use —
 needed: every payment is covered in full; explain the lowest point and propose nothing`. It rides
 only that case; beside an unpaid bill the same sentence would tell somebody who is short that they
 are fine.
+
+## Frontend
+
+### F-1 · `start()` must take the phone and post it — **answered**: `call/` is mine for this phase, scoped to these three changes; done, with the 422 matched on the status code only so C's detail string is free
+
+`POST /api/sessions` now carries `{phone}`, but the fetch lives in `src/call/useDailyCall.ts`,
+which is not mine. Everything else in phase 2 — the field, the validation, remembering it for the
+next visit — is in my files and is being built now. Three small changes, all in `call/`:
+
+1. `useDailyCall(dispatch)` -> the returned `start` takes the phone:
+   `start: (phone: string) => Promise<void>`. `App` holds the value; the hook only sends it.
+2. The POST gains a body: `body: JSON.stringify({ phone })` beside the existing
+   `content-type: application/json` header. Nothing else about the request changes.
+3. A message for the server's `422`: the client validates first, so this is the case where the
+   two disagree. Suggested, in `call/messages.ts` beside `CALL_ALREADY_RUNNING`:
+   `PHONE_REJECTED = 'That number was not accepted. Check it and try again.'`, used on
+   `response.status === 422` exactly as `HTTP_CONFLICT` is used today.
+
+Until this lands `App` cannot call `start(phone)` without a type error, so I am holding the call
+site and the e2e journey on it. Nothing else in phase 2 is blocked.
+
+### B-obs-1 · `judge.checks` imports `agent`, which the proposed layer contract forbids
+
+Raised before the move lands rather than after. HLD section 2 puts the new contract at
+`layers: api -> voice -> (agent | judge | memory | store | observability) -> domain`, which makes
+`agent` and `judge` siblings and forbids one importing the other. But `checks.py` — the file being
+moved into `ledgerline/judge/checks/` — carries `from ledgerline.agent.tools import phrases`, and
+it is there on purpose. `_offered_readings` recognises a turn the product told the model to settle
+by matching `phrases.CONFIRM_AMOUNT` in the result, and the constant is imported rather than
+copied so that if the product's wording changes the rule follows it. The asymmetry is deliberate
+and documented: the implausibility *floors* are copied into the checks precisely so an eval cannot
+inherit a drifting threshold, while this one is imported precisely so it cannot drift apart.
+
+Three ways out, and the choice is yours because `pyproject.toml` is yours:
+
+1. **Let `judge` import `agent`** — `layers: api -> voice -> judge -> agent -> domain`, with
+   `memory`, `store` and `observability` as the siblings. Honest about what is actually true: the
+   judge reads the agent's output, so it is above it. Costs nothing and needs no code change.
+2. **Move `phrases.py` under `domain`** so both sides import downwards. Bigger change, touches
+   Session A's package, and phrases are not domain knowledge — they are how the agent speaks.
+3. **Copy the constant into the checks.** Cheapest to the contract and the worst of the three: it
+   silently breaks the check the day the product rewords the instruction, and the check would keep
+   passing while measuring nothing.
+
+I recommend 1 and have changed nothing. If you pick 3, say so explicitly and I will add a test that
+fails when the two strings diverge, because that failure mode is otherwise invisible.
+
+**Answered by the orchestrator: option 1.** The judge reads the agent's output, so it sits above
+it. The chain becomes `api -> voice -> memory -> judge -> agent -> domain`, with `memory` above
+`judge` because the extractor uses `judge.checks` for the amount parser; `store` and
+`observability` sit outside the chain with a forbidden-imports contract of their own. The
+`phrases` import stays exactly as it is, no copy of the constant and no divergence test. The
+reasoning goes into HLD section 2; the orchestrator adds the contracts once `judge/` and
+`memory/` import.
+
+### B-obs-2 · `JUDGE_MODEL` and `NOTES_MODEL` settings, for C
+
+`ledgerline/config.py` is C's file. The judge and the notes extractor both need a model id and
+neither may carry a literal — a default baked into the package outlives the setting, which is how
+a deployment ends up grading itself with the model it is grading.
+
+Nothing is blocked. `ledgerline/judge/` imports no config at all: `llm.ask(..., model=...)` and
+`judge.run(..., model=...)` take the id from whoever calls them, which is C's `aftercall`. That is
+also what keeps the package pure of infra as HLD section 2 requires, so it is the right shape
+regardless of where the setting lives. `ledgerline/memory/` will follow the same pattern.
+
+What C needs to add when convenient:
+
+- `judge_model: str = ""` — empty disables the intent layer, and `judge.run` then returns a verdict
+  carrying only the deterministic rules. The default should be a different model from the coach's,
+  so the writer does not grade itself.
+- `notes_model: str = ""` — empty disables extraction entirely, per the brief.
+
+Tell me the attribute names if they differ from these and I will match them in the call sites.
+
+### F-2 · `mock/install.ts` swallows the verdict endpoint (phase 5 screen half)
+
+`?mock=1` replaces `globalThis.fetch` and answers **any** URL containing `/api/sessions` with the
+session-start body:
+
+```ts
+if (url.includes('/api/sessions')) { return new Response(JSON.stringify({ room_url, token, session_id })) }
+```
+
+`GET /api/sessions/{id}/verdict` contains that string, so in mock mode the poll would read a
+room URL as a verdict, and a Playwright `page.route` cannot help because the real fetch is never
+reached. One narrowing, in `src/mock/install.ts`, which is not mine:
+
+```ts
+const isStart = url.endsWith('/api/sessions') && (init?.method ?? 'GET').toUpperCase() === 'POST'
+const isCancel = /\/api\/sessions\/[^/]+$/.test(url) && init?.method === 'DELETE'
+if (isStart || isCancel) { ...as today... }
+return realFetch(input, init)
+```
+
+Everything the mock answers today it still answers; anything else, including the verdict poll,
+falls through to the real fetch, where the browser test's `page.route` can mock it. Until this
+lands the verdict panel is built and tested against a local fixture, and the e2e half of step 2
+is held.
+
+### B-obs-3 · `ToolContext` takes an optional `carried`, for C
+
+Additive with a default, so nothing C has today changes: `ToolContext(state, push_cards,
+request_end=None, carried=None)`. `carried` is a list of `(name, spoken value)` pairs — for
+example `[("rent", "12,000 on the 5th"), ("salary", "45,000 on the 1st")]` — and it is spent on
+the **first** tool result of the call and never repeated. The greeting's turn block carries the
+same sentence, via `prompt.turn_block(state, carried=..., notes=...)`, so a returning caller hears
+the figures whether or not their first utterance triggers a tool.
+
+What C needs to pass when hydrating a returning caller: the same pairs it used to set
+`_Item.carried`, formatted the way the person would hear them. Nothing is needed for a first-time
+caller, and a first-time caller's prompt and results are byte-identical to today — there is a test
+for exactly that (`test_a_first_time_caller_s_block_is_unchanged`).
+
+The notes line is `prompt.turn_block(state, notes=[...])`, plain strings, present only when notes
+exist, and marked untrusted in the line itself rather than in the base prompt — the base prompt
+says nothing about memory at all, which is what keeps the first-time path unchanged.
+
+### B-redesign-1 · the judge's criterion ids changed; two contract samples still name the old ones
+
+For the orchestrator (contracts) and Session D (e2e fixtures). Nothing breaks: `criterion` is a
+free-text string on the wire and `frontend/src/protocol/verdict.ts` does not enumerate the ids. But
+two files carry retired ones as sample data and now describe a verdict the judge cannot produce:
+
+- `frontend/src/protocol/verdict.sample.json` — `register_fit`, `explanation_comprehensible`,
+  `corrections_handled`.
+- `tests/e2e/test_journey.py:323,329` — `explanation_comprehensible`, `corrections_handled`.
+
+The four live ids are `coverage_before_plan` (named `full_month_before_planning` when this was written), `low_point_explained`,
+`challenge_answered_without_computing`, `led_like_a_coach`
+(`ledgerline/judge/criteria.py`; the reasoning is in `evals/REPORT.md` §10.10).
+
+The same section is worth a glance for one other thing: `Verdict.deterministic` now lists eighteen
+rules rather than sixteen, nine of them advisory. The wire shape is unchanged — `RuleResult` has no
+new field — so a row that fails and does not gate the matrix is indistinguishable on the screen
+from one that does. If the review panel should say which is which, that is a contract change and
+the orchestrator's call; Session B did not make it.
+
+### B-redesign-2 · `build_tools` takes a version; the v2 greeting shrinks (for C)
+
+Additive, nothing C has today changes: `build_tools(ctx)` is now
+`build_tools(ctx, version: str = "v1")` and returns the plain-word set when the version is not
+`v1`. `prompt.turn_block(state, ..., version="v1")` and `prompt.system_instruction(state, version)`
+follow the same rule, so one setting switches the prompt, the tools and the block together.
+
+What C needs when `PROMPT_VERSION=v2` is set: pass `config.prompt_version` into `build_tools`, and
+shrink `session.GREETING` to something like "The call just connected." The goal in v2 says what the
+call is for and the model opens in its own words; the eval harness already does this
+(`evals/harness.OPENING_V2`), and the first line of a form is the first thing the redesign is
+trying to stop being. `IDLE_NUDGE` is untouched.
+
+The v2 tool names, for anything that matches on them: `note`, `forget`, `nothing_more`,
+`show_month`, `what_if`, `done`. `record_understanding` and `end_call` are folded into `done`, so
+the hang-up path is the same — `done` sets `call_ended`, calls `request_end`, and returns
+`phrases.GOODBYE` exactly as `end_call` did.
+
+### B-redesign-3 · a `Summary` field for in minus out (for A, when convenient)
+
+Not blocking, and already worked around. `facts._cashflow_lines` prints
+`in 30,000, out 18,000, in minus out 12,000`, and that last figure is a subtraction of two figures
+the engine already publishes, done in the agent layer with a `ponytail:` comment saying so. It was
+added because two v2 runs did the subtraction out loud when challenged — the one thing the product
+forbids — and no result contained the answer. If `Summary` grows a field for it (`total_in -
+total_out_planned`), the agent layer will read it instead and the arithmetic leaves this layer
+entirely.
+
+### B-sweep-1 · one import line in `tests/voice/test_recorder.py` (for C)
+
+The v1 deletion removed the module aliases left over from the checks move.
+`evals/provenance.py` and `evals/spoken_numbers.py` are gone; `evals/checks.py` is still there for
+one reason only — `tests/voice/test_recorder.py:24` does `from evals import checks`. The canonical
+path is `from ledgerline.judge.checks import checks`, and the docstring references to
+`evals/checks.py` in `voice/recorder.py` and `voice/session.py` point at the same moved module.
+Once that line moves, delete `evals/checks.py`; nothing else imports it (`grep -rn "evals.checks"
+--include="*.py"`).

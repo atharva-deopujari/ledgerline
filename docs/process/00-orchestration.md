@@ -56,10 +56,10 @@ whole picture.
 
 | Session | Owns (create and edit freely) | Reads, never edits |
 |---|---|---|
-| **A · domain** | `ledgerline/domain/state.py`, `engine.py`, `policy.py`, `cards.py`; `tests/domain/**` | `models.py` (contract; ask before changing) |
-| **B · agent** | `ledgerline/agent/tools.py`, `prompt.py`, `prompts/*.md`; `tests/agent/**`; `evals/**` | `ledgerline/domain/**` |
-| **C · voice + api** | `ledgerline/config.py`, `main.py`, `voice/**`, `api/**`; `tests/voice/**`, `tests/api/**`; `spike/**` (throwaway) | `ledgerline/agent/**`, `ledgerline/domain/**` |
-| **D · frontend** | `frontend/**` except `frontend/src/protocol/types.ts` and `sample.json` (contract) ; `tests/e2e/**` | `ledgerline/domain/cards.py` |
+| **A · domain** | `ledgerline/domain/state/**`, `engine/**`, `policy.py`, `cards.py`; `tests/domain/**`; from 13 Sep also `ledgerline/store/**`, `tests/store/**` | `models.py` (contract; ask before changing) |
+| **B · agent** | `ledgerline/agent/**`, `prompts/*.md`; `tests/agent/**`; `evals/**`; from 13 Sep also `ledgerline/judge/**`, `ledgerline/memory/**`, `tests/judge/**`, `tests/memory/**` | `ledgerline/domain/**` |
+| **C · voice + api** | `ledgerline/config.py`, `main.py`, `voice/**`, `api/**`; `tests/voice/**`, `tests/api/**`; `spike/**` (throwaway); from 13 Sep also `ledgerline/observability/**`, `tests/observability/**` | `ledgerline/agent/**`, `ledgerline/domain/**`, `ledgerline/store/**`, `judge/**`, `memory/**` |
+| **D · frontend** | `frontend/**` except `frontend/src/protocol/**` (contracts), `state/**`, `mock/**`; `tests/e2e/**`; `docs/process/screens/**`. Resumed 13 Sep for the observability phase on the redesigned board; `call/**` back with D from F-1 | `ledgerline/domain/cards.py`, `docs/process/status-frontend.md` |
 | **frontend (redesign, from 13 Sep)** | `frontend/src/App.tsx`, `main.tsx`, `components/**`, `styles/**`, `test/**`, `index.html`, `public/**`; `tests/e2e/**`; `docs/process/screens/**` | `frontend/src/protocol/**`, `call/**`, `state/**`, `mock/**` (request changes via `requests.md`) |
 | **Orchestrator** | `pyproject.toml`, `uv.lock`, `Dockerfile`, `docker-compose.yml`, `.env.example`, `README.md`, `tests/conftest.py`, `docs/**`, all contracts | everything |
 

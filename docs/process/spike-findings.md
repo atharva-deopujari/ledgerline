@@ -573,3 +573,157 @@ One honest limitation of the new fields: in this run `user_speaking_secs` was 0.
 because each recorded turn contained a single VAD stop, so the two anchors coincided. The
 separation is implemented and unit tested, but this data had nothing to separate. A turn that
 genuinely spans fragments is what will show the difference.
+
+# 2026-09-13 · Phase 0 spikes S1 to S3: tracing shape, read from the source
+
+Pipecat 1.9.0, langfuse 4.15.2, opentelemetry-sdk 1.44.0. S1 to S3 are answered by reading the
+installed packages rather than by a call: each one is a question about an API surface, and the
+source is the authority. S4 (hobby unit count) needs a real call and rides along with the phase 1
+live call. No Daily minutes spent.
+
+## S1 — the parent for a tool span is public API. No fallback needed.
+
+`PipelineWorker` exposes `turn_trace_observer` as a property
+(`pipecat/pipeline/worker.py:669`), and `TurnTraceObserver.get_current_turn_context()`
+(`utils/tracing/turn_trace_observer.py:236`) returns the current turn's `SpanContext`, documented
+as "can be used by services to create child spans". So `tool_trace.py` parents its span with:
+
+```python
+ctx = observer.get_current_turn_context()          # SpanContext | None
+parent = set_span_in_context(NonRecordingSpan(ctx)) if ctx else None
+span = tracer.start_span(tool_name, context=parent)
+```
+
+The HLD's fallback (tool spans under the conversation span with a `turn` attribute) is still the
+behaviour when `get_current_turn_context()` returns `None` — between turns, or with tracing off —
+and needs no separate code path: `context=None` means the ambient context, and the turn attribute
+is worth setting either way.
+
+Two facts worth having beside that:
+
+- `TracingContext` (`utils/tracing/tracing_context.py`) is pipeline-scoped, created by
+  `PipelineWorker` and handed to services through `FrameProcessorSetup`. It is the same span
+  context by another route, but it reaches the worker only as the private `_tracing_context`, so
+  the observer property is the cleaner hold.
+- **The HLD is wrong about one default.** It says both `enable_tracing` and `enable_turn_tracking`
+  default to False. In 1.9.0 `enable_tracing: bool = False` but `enable_turn_tracking: bool = True`
+  (`worker.py:296-297`), and the tracing branch is `if self._enable_tracing and
+  self._turn_tracking_observer`. Turn tracking is already on in our build; only `enable_tracing=True`
+  is missing. Passing `enable_turn_tracking=True` explicitly is still worth it as documentation.
+
+## S2 — trace id is readable after the call, from a public method
+
+`_handle_turn_started` stores every turn's span context in `_trace_context_map` and never clears
+it, and `get_turn_context(turn_number)` (`turn_trace_observer.py:249`) is public. So after the
+call, when the conversation span has already ended:
+
+```python
+ctx = worker.turn_trace_observer.get_turn_context(1)
+trace_id = format(ctx.trace_id, "032x") if ctx else None
+```
+
+Turn 1 is a child of the conversation span, so its trace id *is* the trace id. This survives
+`end_conversation_tracing()`, which clears the spans but not the map — which matters, because
+`aftercall` needs the id after the pipeline is gone. Neither HLD fallback (our own id, or a
+lookup by `metadata.session_id`) is needed. A call with zero turns has no trace id and no trace
+worth scoring; `aftercall` treats `None` as "no trace" and still writes its row.
+
+## S3 — one provider, but not the way the HLD assumed
+
+The HLD proposed a Langfuse client with `tracing_enabled=False` for scores and prompts, beside our
+own OTLP exporter. **That silently loses every score.** `Langfuse.create_score` opens with
+`if not self._tracing_enabled: return` (`_client/client.py:2017`), as do the other score entry
+points; with tracing disabled the client keeps only its REST surface (`langfuse.api`).
+
+The provider question itself is benign: `_init_tracer_provider`
+(`_client/resource_manager.py:668`) creates and installs a provider **only** when the global one is
+still a `ProxyTracerProvider`; otherwise it reuses whatever is registered. It never installs a
+second one. But it then calls `tracer_provider.add_span_processor(langfuse_processor)`
+(`resource_manager.py:265`) on that reused provider — so a Langfuse client with tracing enabled
+*plus* our own OTLP exporter on the same provider exports every span twice, once through each.
+
+So the shape for phase 1 is one provider and one exporter, and Langfuse's own:
+
+```python
+provider = TracerProvider(resource=Resource.create({"service.name": "ledgerline", ...}))
+trace.set_tracer_provider(provider)          # before any Langfuse client exists
+client = Langfuse(tracer_provider=provider)  # adds its processor to ours; tracing_enabled stays True
+```
+
+We do not call Pipecat's `setup_tracing()`: it builds a provider and calls `set_tracer_provider`
+itself (`utils/tracing/setup.py:74`), and OTel refuses a second registration with a warning rather
+than an error, so whichever ran first wins silently. Building the provider ourselves keeps the
+resource attributes and the ordering explicit. Pipecat's spans need nothing else — they come from
+`trace.get_tracer("pipecat.turn")`, which resolves to the global provider.
+
+What this buys beyond a raw OTLP exporter: the SDK owns the auth header, the `environment`,
+masking and media handling, and `create_score` works. What it costs: our exporter choice is
+Langfuse's, so the "Langfuse does not accept gRPC" trap in the HLD stops being ours to fall into.
+
+**Verification owed.** All three answers are read from source, not observed. The phase 1 in-memory
+exporter test over one recorded call is where S1 and S2 are proven — span names, types, parents and
+the trace id read back the way `aftercall` will read it — and the first live call is where S3's
+single export path is confirmed by the absence of duplicate traces in the project.
+
+# 2026-09-13 · What four live calls taught us about Langfuse ingestion
+
+Phase 1's self-audit, in the loop the Langfuse skill asks for: make a call, fetch the trace,
+read it against `https://langfuse.com/docs/observability/best-practices` (fetched fresh), fix,
+repeat. Four headless calls with `TTS_PROVIDER=deepgram`; every one found something no test had.
+
+## The SDK's default filter drops almost everything we emit
+
+The first call arrived in Langfuse as **32 loose generations and no tree at all**: no
+`conversation`, no `turn`, no tool spans, and every generation's parent pointing at an
+observation that was never ingested. Nothing in any log said so.
+
+`langfuse._client.span_filter.is_default_export_span` keeps a span only if it came from the
+Langfuse SDK's own tracer, carries a `gen_ai.*` attribute, or comes from a scope on the SDK's
+list of known LLM instrumentors. Pipecat's `stt`, `llm` and `tts` spans set `gen_ai.*`, so they
+survived; `conversation`, `turn` and our tool spans have none of the three and were dropped
+before export. The fix is the SDK's documented extension point:
+
+```python
+Langfuse(..., should_export_span=should_export_span)   # ours, in observability/tracing.py
+```
+
+which is `is_default_export_span(span) or scope.startswith(("pipecat", "ledgerline"))`. Widening
+it to *our* scopes and no further keeps unrelated HTTP and database spans out.
+
+## An observer sees a frame once per processor, not once per frame
+
+The third call recorded **four tool calls and produced twenty-four tool observations**, six per
+call. `on_push_frame` fires for every hop a frame makes through the pipeline, and
+`broadcast_frame` sends the result both ways, so deduplicating only against the spans still open
+lets a late in-progress hop — arriving after the result closed the span — open another. The
+recorder learned this in September with `_is_new(frame)`; the tool tracer had to learn it again
+as "one tool_call_id is one span, ever", including after the span is closed.
+
+## Trace input and output need a span, and that span renames the trace
+
+Pipecat's conversation span is closed before we know how the call ended, and Langfuse 4.15.2 has
+no `update_trace` on the client (that was v3) and no `start_as_current_span` either — the first
+version of this code called it and the only sign was one warning line in a live call. What works
+is a short span of our own, parented to turn 1 (whose context Pipecat keeps for the life of the
+observer, spike S2), carrying `langfuse.trace.input` and `langfuse.trace.output`.
+
+Langfuse then marks that span an application root as well, and the trace read from it came back
+named `call` with no session and no tags, while the same trace read from the conversation span
+was `coach-call` with both. Two roots, two answers. The fix is to repeat the conversation
+attributes on the `call` span so the two agree whichever one Langfuse resolves the trace from.
+
+## What the fourth call looks like
+
+One trace: `conversation` -> 4 x `turn` -> 13 `llm` + 6 `stt` + 7 `tts` generations and 5 `TOOL`
+spans (exactly the five tool calls in the recording), plus the `call` span. Both roots read
+`coach-call`, session `441e8d2391cb`, tags `prompt:v1, tts:deepgram, llm_api:chat, source:voice`.
+LLM generations carry the model (`gpt-5.6-luna`), token usage including cached tokens, and a
+computed cost. STT and TTS carry no usage and the TTS model reads `unknown` — Pipecat sets no
+model attribute on the Deepgram TTS span, which is the known limit the HLD already accepts.
+
+## Attribute names the HLD had wrong
+
+From `langfuse._client.attributes` in 4.15.2: the user and session attributes are **`user.id`**
+and **`session.id`**, not `langfuse.user.id` / `langfuse.session.id`. Trace metadata is
+`langfuse.trace.metadata.<key>`, as the HLD said. A wrong name here is silent: the span exports
+and the field is simply never populated.

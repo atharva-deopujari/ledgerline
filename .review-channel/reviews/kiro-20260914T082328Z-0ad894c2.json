@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260914T082328Z-0ad894c2",
+  "created_at": "2026-09-14T08:23:35Z",
+  "scope": "changed files since git:3fe76696a387ba42c21b76abacb45efd65eff423",
+  "base_ref": "git:3fe76696a387ba42c21b76abacb45efd65eff423",
+  "status": "findings",
+  "summary": "Static review found five correctness and lifecycle issues: two classification paths can silently assign the wrong payment priority, independent whole-rupee rounding can make tool-provided arithmetic contradict itself, second-resolution session IDs can conflate rapid consecutive calls, and cancellation during session setup bypasses resource cleanup.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "ledgerline/agent/tools/coercion.py",
+      "line": 197,
+      "title": "A clear item name can lose to the model's lower-priority filing",
+      "evidence": "The classifier only protects a recognized final word: `head = normalise_name(item).split()[-1:]`, then checks `for candidate in (kind, item)`. Consequently `_kind_of(\"rent payment\", \"everyday spending\")` returns OPTIONAL because `payment` is not recognized and the model-supplied kind is accepted before the word `rent` is examined. This conflicts with the HLD contract that the item's own name decides the filing and can move rent from its protected tier to the optional tier, where the engine may propose cutting it.",
+      "recommendation": "Claude Code should consider refusing a conflict between an unmistakable item phrase and the supplied kind rather than silently taking the model's classification. Add a real-handler regression such as `test_rent_payment_cannot_be_filed_as_optional` and cover similarly common phrases such as `credit card payment`, while retaining the existing `rent from my tenant` and `salary advance loan` cases."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "file": "ledgerline/agent/tools/coercion.py",
+      "line": 242,
+      "title": "An ambiguous loan is silently assigned an unsupported priority",
+      "evidence": "`_debt_kind_for` ends with `return DebtKind.UNSECURED_EMI` for every debt name that does not mention a card, secured asset, friend, or family member. Its comment says this guess “neither jumps ahead of a secured EMI nor drops behind an informal debt,” but the documented tiers place secured, unsecured, and informal debts at different priorities. A generic “loan” may therefore be demoted below a secured obligation or promoted above an informal one without any fact from the person supporting that choice.",
+      "recommendation": "Claude Code should consider returning a usable refusal for debt names whose subtype cannot be established, so the coach can ask what backs the loan or who it is owed to. Add `test_an_ambiguous_loan_is_not_assigned_a_priority` against the real `note` handler, alongside passing cases for cards, car/home loans, personal loans, and family debts."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "ledgerline/agent/tools/facts.py",
+      "line": 67,
+      "title": "Independent rounding can make the spoken cashflow fail its own arithmetic",
+      "evidence": "`rupees` independently applies `to_integral_value(rounding=ROUND_HALF_UP)` to every value. `_cashflow_lines` then states identities such as `opening {rupees(low.opening_balance)} plus in is {rupees(low.to_work_with)}`. With supported paise values, opening 60,000.40 and income 30,000.40 are spoken as “60,000 plus 30,000 is 90,001,” because the domain total 90,000.80 rounds separately. The same issue can affect the low-point derivation, undermining the requirement that the tool-provided arithmetic be readable without model computation.",
+      "recommendation": "Claude Code should consider making the engine expose one coherent whole-rupee projection, or otherwise ensure displayed components and totals reconcile after rounding. Add `test_spoken_cashflow_reconciles_when_inputs_have_paise` and a low-point counterpart using the real engine and amounts on opposite sides of the half-rupee boundary."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "ledgerline/api/routes.py",
+      "line": 57,
+      "title": "Rapid consecutive calls can reuse one durable session identity",
+      "evidence": "The ID uses only second resolution: `stamp = dt.datetime.now(dt.UTC).strftime(\"%Y%m%dT%H%M%SZ\")` followed by `sessions.reserve(f\"{body.phone}-{stamp}\")`. After a call is deleted, the slot is immediately free, so the same phone can start again within that second with the identical ID. The sessions table uses that ID as its primary key with `ON CONFLICT (id) DO NOTHING`, while verdicts and after-call work are also keyed by it; the two calls can therefore share or overwrite history, verdict, trace, and profile-source metadata. The changed test explicitly permits this collision rather than proving isolation.",
+      "recommendation": "Claude Code should consider retaining the readable phone/timestamp prefix while adding collision-resistant precision or a suffix. Replace the permissive assertion with `test_immediate_restart_gets_a_distinct_session_id` and add a store-backed test proving both calls produce separate session-history rows and verdict keys."
+    },
+    {
+      "id": "F5",
+      "severity": "medium",
+      "file": "ledgerline/api/routes.py",
+      "line": 63,
+      "title": "Cancellation during setup bypasses room and reservation cleanup",
+      "evidence": "Setup cleanup is only under `except Exception`, but `asyncio.CancelledError` is not an `Exception`. If the request task is cancelled after `create_room` succeeds while a token or the bounded store write is awaiting, execution skips `delete_room`, `sessions.release(session_id)`, and `sessions.start(...)`. No `run_session` task then exists to perform teardown, leaving both the private Daily room and the sole registry reservation stranded.",
+      "recommendation": "Claude Code should consider structuring setup with cancellation-safe `finally` cleanup until ownership transfers to `run_session`, shielding the room deletion as needed and then re-raising cancellation. Add `test_cancelling_start_after_room_creation_deletes_room_and_releases_slot`, cancelling while a token or store fake is parked and asserting a retry can start."
+    }
+  ]
+}

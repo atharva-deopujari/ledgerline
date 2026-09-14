@@ -11,6 +11,10 @@ Start here: `README.md` (run it), `docs/architecture/02-hld.md` (design), `docs/
 ## The one rule, and the line
 
 **The model never computes. Every number the bot speaks came back in a tool result.** Money is `Decimal`.
+Two figures are also sayable and the check knows them: a figure the person themselves just said (the read-back),
+and, only inside a question in a turn whose result asked it to settle an implausible amount, the reading the
+person probably meant ("twelve rupees, or twelve thousand?"). Neither is arithmetic; both are measured
+(`evals/REPORT.md` sections 10.7 and 10.13).
 
 Code owns what must be **correct**: money, dates, priority order, what is missing, what blocks the plan, the
 figures in results. The model owns what needs **understanding**: correction vs contradiction, implausible
@@ -19,30 +23,51 @@ Test for any new piece: "if this goes wrong, does the person lose money or trust
 is about language: model. Do not reintroduce judgement machinery in code (conflict windows, outlier
 lists, confirmation tracking, prose question generation); those were built, measured, and cut.
 
-**Instructions the model must follow ride in the tool result, not only in the prompt.** Across every
-measured change, prompt-only rules held at 0 to 80 percent; the same rule carried in the result string
-held at 96 to 100. A model asked a question its result cannot answer will answer it anyway, so results
-leave nothing to derive (e.g. `surplus 1,000, shortfall 0`, always the pair).
+**Instructions that matter ride in the tool result, at the moment the model acts, and only where a wrong
+move loses money.** Across every measured change, prompt-only rules held at 0 to 80 percent and the same rule
+carried in the result string held at 96 to 100; the defensible reading of that (see `docs/research/13-agent-design.md`)
+is "specific, non-conflicting, present at the moment of action", not "orders beat prompts". Results state facts
+and what is still open; they instruct only where money moves (a balance in parts, an implausible amount, a plan
+with nothing to do, the goodbye). A model asked a question its result cannot answer will answer it anyway, so
+results leave nothing to derive (`surplus 1,000, shortfall 0`, always the pair; the low point with its
+derivation). The agent-layer redesign of 14 Sep (`docs/process/agent-redesign-brief.md`) moved the conversation
+back to the model: identity and goal instead of rules, plain-word tools, facts instead of orders, gates only
+for money and state.
 
 ## Layout and import direction
 
-`ledgerline/domain` (pure: `models.py` contract, `policy.py`, `state/`, `engine/`, `cards.py`) <-
-`ledgerline/agent` (tools/, prompt, prompts/v1.md; never imports pipecat) <- `ledgerline/voice`
-(pipeline, session, lifecycle, filler, recorder, transport, trace) <- `ledgerline/api`. Inside domain:
-`models` <- `policy` <- `state` <- `engine` <- `cards`. Enforced: `uv run lint-imports` (4 contracts).
-Frontend in `frontend/`, contract files `frontend/src/protocol/types.ts` and `sample.json` mirror
-`domain/cards.py`; the parser `parse.ts` builds messages field by field, so a new wire field needs both.
-Tests mirror the package tree under `tests/`; paid or networked tests carry markers `llm`, `voice`, `e2e`.
+`ledgerline/domain` (pure: `models.py` contract, `policy.py`, `state/`, `engine/`, `cards.py`, `rupees.py` the one
+whole-rupee rounding rule, totals derived from rounded parts so spoken and shown identities hold) <-
+`ledgerline/agent` (tools/plain.py the six plain-word tools, tools/facts.py the result strings, prompt,
+prompts/v2.md; the v1 handlers, describe and prompt were deleted on 14 Sep after the redesign, and
+`Settings.prompt_version` survives only as a name and a record, deriving the Langfuse prompt name and landing
+on the recording as `v2@N`; never imports pipecat) <- `ledgerline/judge` (checks/, three deterministic checks over the
+recording, `money_traceable`, `state_matches_call`, `speakable`, each folding the sub-rules it grew from; criteria,
+llm, judge, `models.Verdict` contract) <-
+`ledgerline/memory` (soft-notes extractor, one call at session end) <- `ledgerline/voice` (pipeline, session,
+lifecycle, filler, recorder, tool_trace, transport, trace) <- `ledgerline/api` (routes, sessions, aftercall).
+Beside the chain, importing only domain and config: `ledgerline/store` (Postgres: users, slim sessions,
+profile_facts, profile_notes; `NullStore` when `DATABASE_URL` is empty) and `ledgerline/observability`
+(one TracerProvider handed to the Langfuse SDK; Null twins when keys are empty). Inside domain:
+`models` <- `policy` <- `state` <- `engine` <- `cards`. Enforced: `uv run lint-imports` (7 contracts).
+Design of the observability, memory and judge additions: `docs/architecture/04-observability-hld.md`.
+Frontend in `frontend/`, contract files `frontend/src/protocol/types.ts`, `sample.json`, `verdict.ts`,
+`verdict.sample.json` (and `review.ts`) mirror `domain/cards.py` and `judge/models.py`; the parser `parse.ts`
+builds messages field by field, so a new wire field needs both.
+Tests mirror the package tree under `tests/`; paid or networked tests carry markers `llm`, `voice`, `e2e`;
+`db` tests need `DATABASE_URL` (`docker compose up -d postgres`) and skip otherwise.
 Evals in `evals/` (harness, sim user, checks, scenarios, run_suite; recordings in `evals/runs`).
 
 ## Commands
 
 ```
 uv run pytest                      # offline suite, fast; must be green before any report
+docker compose up -d postgres      # then the db-marked store tests run too
 uv run ruff check . && uv run ruff format --check . && uv run lint-imports
 cd frontend && npm run test -- --run && npm run typecheck && npm run lint && npm run format:check && npm run build
 uv run pytest -m e2e tests/e2e     # Playwright journey over the mock feed
 docker compose up --build          # http://localhost:7860 ; .env from .env.example
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build   # same, plus uvicorn --reload on ledgerline/
 PYTHONPATH=. uv run python -m evals.run_suite --runs 5   # paid text simulation, ~$0.45 per 6x5 matrix
 ./spike/run_once.sh <name>         # headless voice check with a fake participant, no Cartesia spend
 ```
@@ -65,9 +90,13 @@ every push; keep it green, it needs no keys.
   `evals/runs` before trusting it; a check whose fixtures no longer match what the code emits is a test of
   nothing. `state_matches_facts` (recorded state vs what the person said) is the net the others lack.
 - **Prompt ceiling** is measured with tiktoken `o200k_base` (closest public tokenizer, not luna's own) in
-  `tests/agent/test_prompt.py`; ceiling 620.
+  `tests/agent/test_prompt.py`; ceiling 400.
 - **Turn completion has one judge**: Pipecat's LLM turn-completion protocol with our hints appended to its
   instructions (`voice/pipeline.py`). Do not add a second gate; the model's own completion frames win.
+- **Observability never touches the call path.** Langfuse and Postgres writes are bounded or fire-and-forget,
+  never awaited on the turn path, never able to raise into the pipeline; unconfigured means off. Memory is
+  facts from tool calls plus one bounded extractor call at session end; a carried fact is provisional until the
+  person confirms or changes it, and `record_call` must get exactly what `load_active` returned, `None` included.
 - **Voice minutes are scarce.** Cartesia about 27 minutes a month; run headless checks with
   `TTS_PROVIDER=deepgram`. Daily rooms are private, expire, and are deleted after each call.
 - Pipecat 1.9 renamed most tutorial names (`PipelineWorker`, `WorkerRunner`, `LLMContext`,

@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260914T050806Z-72a1d136",
+  "created_at": "2026-09-14T05:18:00Z",
+  "scope": "changed files since git:3fe76696a387ba42c21b76abacb45efd65eff423",
+  "base_ref": "git:3fe76696a387ba42c21b76abacb45efd65eff423",
+  "status": "findings",
+  "summary": "The review found thirteen defects affecting the central numeric-provenance guarantee, payment priority, correction handling, cross-call memory, card arithmetic, database degradation, what-if accuracy, and trace completeness. Most importantly, the deterministic check explicitly permits figures that never appeared in a tool result, the agent result layer performs new arithmetic, and tool coercion can silently change an optional expense into a survival essential or guess a generic loan's priority.",
+  "findings": [
+    {
+      "id": "KIRO-001",
+      "severity": "high",
+      "file": "ledgerline/judge/checks/checks.py",
+      "line": 128,
+      "title": "The provenance gate permits numbers that never came from a tool result",
+      "evidence": "`_numbers_traceable` describes its rule as `Every figure the assistant says came back in a tool result or from the person`, then authorizes `allowed = _sources_up_to(turns, i) | _offered_readings(turn) | carried`. `_sources_up_to` adds every user number with `allowed |= said | _in_thousands(said)`, and `_offered_readings` explicitly licenses a guessed `twelve thousand` that was in neither a result nor a user turn. This contradicts README.md and 02-hld.md: every spoken number must have come back in a tool result.",
+      "recommendation": "Restrict spoken-number authorization to tool results, with carried figures represented as an explicit deterministic result/source. If an implausible-reading candidate may be spoken, compute and return it from the tool rather than exempting it in the checker. Add a regression test named `test_user_number_without_tool_result_fails_money_traceable` and update the existing user-number and offered-reading fixtures to require tool-result provenance."
+    },
+    {
+      "id": "KIRO-002",
+      "severity": "high",
+      "file": "ledgerline/agent/tools/facts.py",
+      "line": 325,
+      "title": "The agent result layer computes new money figures",
+      "evidence": "`facts.py` says that it computes nothing, but `_cashflow_lines` emits `rupees(low.opening_balance + low.total_in)`, then derives `surplus = gap if gap > 0 else Decimal(\"0\")` and `shortfall = -gap if gap < 0 else Decimal(\"0\")`. These are figures the model can speak that were not published as such by the domain result.",
+      "recommendation": "Publish available-to-work-with, nonnegative surplus, and nonnegative shortfall as explicit `Summary` fields computed by the engine, and have `facts.py` only format those fields. Add `test_summary_publishes_every_cashflow_figure_used_by_facts` and a result-layer test proving the output uses those fields without arithmetic."
+    },
+    {
+      "id": "KIRO-003",
+      "severity": "high",
+      "file": "ledgerline/agent/tools/coercion.py",
+      "line": 193,
+      "title": "A rigid optional expense is reclassified as a survival essential",
+      "evidence": "The `note` contract says `must_pay` also applies when a person insists a discretionary expense stays, and the domain models this as `OptionalExpense.flexible=False`. Instead `_kind_of` executes `if domain_kind is ItemKind.OPTIONAL and must_pay: return ItemKind.ESSENTIAL`; `plain.note` then sets `survival=True`. This moves an optional from tier 7 to tier 0. If it was already recorded as optional, the later note creates a second essential item with the same name, so the expense can be counted twice.",
+      "recommendation": "Keep a discretionary item in `ItemKind.OPTIONAL` and map `must_pay=True` to `flexible=False`; reserve essential/survival classification for facts that actually identify necessities. Add `test_must_pay_optional_stays_optional_and_becomes_fixed` covering both first insertion and updating an existing optional, asserting one item and one outflow."
+    },
+    {
+      "id": "KIRO-004",
+      "severity": "high",
+      "file": "ledgerline/agent/tools/coercion.py",
+      "line": 226,
+      "title": "A generic loan is silently assigned an unsecured priority",
+      "evidence": "`_debt_kind_for` ends with `return DebtKind.UNSECURED_EMI`, and its docstring acknowledges this is `a wrong guess`. That guess determines whether the payment receives secured, unsecured, or informal priority, while the result string suppresses the `kind` field. A caller who merely says `loan` can therefore receive a plan based on a priority they never stated and cannot see.",
+      "recommendation": "Refuse an ambiguous generic debt kind and return a clarification route asking whether it is secured, unsecured, a card, or money owed informally. Add `test_generic_loan_requires_priority_clarification` and an engine-integrated case with scarce funds proving no debt is filed or prioritized until the answer is supplied."
+    },
+    {
+      "id": "KIRO-005",
+      "severity": "high",
+      "file": "ledgerline/domain/state/items.py",
+      "line": 203,
+      "title": "Changing a spread essential to a dated payment leaves it spread",
+      "evidence": "`_proposal` always proposes the resolved date but handles the mode independently with `if kind is ItemKind.ESSENTIAL: proposed[\"spread\"] = spread`. A spoken date produces `day_of_month` while `spread` remains `None`, so the filter drops the spread update. An existing `spread=True` essential consequently retains that flag, and the engine ignores the newly recorded due date and continues prorating it.",
+      "recommendation": "When an essential receives an explicit date, deterministically set `spread=False`; when it is explicitly made spread, clear or consistently ignore its old date. Add `test_dating_a_spread_essential_stops_proration` at the state layer and a `note` integration test asserting the timeline contains one dated event rather than thirty slices."
+    },
+    {
+      "id": "KIRO-006",
+      "severity": "high",
+      "file": "ledgerline/store/profile.py",
+      "line": 146,
+      "title": "Corrections back to default flags are not persisted",
+      "evidence": "`_stated` drops every value equal to its model default: `if value == type(item).model_fields[name].default: ... continue`. This cannot distinguish an untouched default from a correction. For example, changing persisted `flexible=False` back to `True`, `spread=True` back to `False`, or `survival=True` back to `False` omits the corrected field; the old active row remains and is hydrated again on the next call.",
+      "recommendation": "Compare the final state with the loaded active facts or retain touched-field information so explicitly changed default values supersede prior non-default rows. Add database tests `test_flexible_correction_back_to_true_supersedes_false` and `test_spread_correction_back_to_false_survives_round_trip`."
+    },
+    {
+      "id": "KIRO-007",
+      "severity": "medium",
+      "file": "ledgerline/domain/cards.py",
+      "line": 303,
+      "title": "Independent whole-rupee rounding can break the displayed low-point identities",
+      "evidence": "`_low_point` rounds `balance`, `opening_balance`, and `closing_balance` independently with `_whole`, while `_low_point_line` independently rounds every movement. Therefore the documented wire identities need not hold. For example, an opening balance of 0.40 and a later income of 0.40 produce rounded opening 0, movement 0, and closing 1, so `b + sum(after) != closing`; the frontend then displays its `These do not add up` warning for a valid domain plan.",
+      "recommendation": "Round the derivation as a reconciled whole-rupee ledger, assigning rounding residuals deterministically so both identities remain exact. Add a property test named `test_wire_low_point_identities_hold_with_paise` using arbitrary quantized paise values, including the 0.40 plus 0.40 case."
+    },
+    {
+      "id": "KIRO-008",
+      "severity": "medium",
+      "file": "ledgerline/store/profile.py",
+      "line": 31,
+      "title": "PROFILE_MAX_AGE_DAYS is documented but cannot be configured",
+      "evidence": "The implementation fixes `PROFILE_MAX_AGE_DAYS = 60`, while `Settings` has no `profile_max_age_days` field and `PostgresStore.load_active` does not pass an override. Because settings use `extra=\"ignore\"`, the documented `PROFILE_MAX_AGE_DAYS` environment variable is silently discarded.",
+      "recommendation": "Add the typed setting and pass it through the store's profile and note reads. Add `test_profile_max_age_days_env_override` in the config tests and a database read test proving a fact outside the configured window is excluded while remaining in history."
+    },
+    {
+      "id": "KIRO-009",
+      "severity": "medium",
+      "file": "ledgerline/store/db.py",
+      "line": 203,
+      "title": "A configured Postgres outage prevents the application from starting",
+      "evidence": "`open_store` degrades only for an empty DSN. With any configured DSN it runs `await pool.open(wait=True, timeout=5)` and `await store.apply_schema()` without fallback, so either failure escapes the FastAPI lifespan. This conflicts with the README promise that calls still work without Postgres and the architecture rule that an unavailable database degrades to the product without memory.",
+      "recommendation": "Catch pool/schema startup failures, close any partially opened pool, log the degradation, and return `NullStore`. Add `test_unreachable_configured_database_falls_back_to_null_store` and a lifespan smoke test proving `/api/health` still starts when the database connection fails."
+    },
+    {
+      "id": "KIRO-010",
+      "severity": "medium",
+      "file": "ledgerline/api/routes.py",
+      "line": 69,
+      "title": "The session-row write is unbounded on the call-start request path",
+      "evidence": "`start_session` directly awaits `request.app.state.store.create_session(...)`. The surrounding `try` makes exceptions nonfatal but supplies no deadline, so a slow pool or database can hold the HTTP request indefinitely after the Daily room and tokens have already been created. The observability HLD requires this write to be bounded and nonfatal.",
+      "recommendation": "Bound the write with the documented timeout and continue the call after timeout just as after an exception. Add `test_start_session_does_not_wait_for_slow_store`, using a delayed fake store and asserting the route returns within the configured bound."
+    },
+    {
+      "id": "KIRO-011",
+      "severity": "medium",
+      "file": "ledgerline/agent/tools/plain.py",
+      "line": 443,
+      "title": "The pay-in-full what-if can claim an alias edit was applied without applying it",
+      "evidence": "The branch first accepts aliases through `_find_kind`, but clears the minimum only when `normalise_name(debt.name) == normalise_name(full.group(\"item\"))`. Thus a stored `hdfc card` requested as `pay my hdfc card in full` is recognized as debt, matches no row in the exact loop, and still returns `pay my hdfc card in full`; the hypothetical plan is unchanged while the result says the edit was applied.",
+      "recommendation": "Resolve exactly one concrete debt using the same domain identity rules before mutating the copy, and refuse ambiguous or unmatched aliases. Add `test_what_if_pay_in_full_applies_possessive_alias` asserting `min_due` is removed and the returned plan delta reflects full payment."
+    },
+    {
+      "id": "KIRO-012",
+      "severity": "medium",
+      "file": "ledgerline/domain/cards.py",
+      "line": 121,
+      "title": "Every TIMING card instructs the user to contact a lender even when no lender action exists",
+      "evidence": "`NOTE_FOR_STATUS` hard-codes `PlanStatus.TIMING: \"the money arrives after the due date; ask the lender to move it\"`. The engine can produce TIMING with only a `DEFER_OPTIONAL` action and no unpaid debt or `ASK_LENDER`, as covered by `test_a_spread_optional_is_deferred_as_one_action_and_one_timeline_row`. In that case the card invents an action not present in the plan.",
+      "recommendation": "Derive the note from the actual actions and unpaid rows, or use a neutral timing description when there is no lender request. Add `test_timing_card_without_unpaid_debt_does_not_ask_a_lender` using the existing spread-optional timing state."
+    },
+    {
+      "id": "KIRO-013",
+      "severity": "medium",
+      "file": "ledgerline/voice/session.py",
+      "line": 176,
+      "title": "The recorder and tool observer use different ToolTracer instances",
+      "evidence": "`run_session` creates a `ToolTracer` and passes it to `CallRecorder(... spans=tool_tracer)`, then later reassigns `tool_tracer = ToolTracer(...)` and registers only the second instance as an observer. Teardown closes and reads `trace_id` from the second instance. Exchange spans belong to the first instance and are not closed at teardown; additionally, a call with no tool execution leaves the registered tracer's `trace_id` unset, so its session row and after-call scores cannot be linked even though `record_call_io` can still create a trace span.",
+      "recommendation": "Create one tracer, pass that same object to the recorder and worker, close it once, and capture the trace id from the surviving turn/call context even when no tool ran. Add `test_zero_tool_call_still_records_trace_id_and_closes_exchange_span` plus an identity assertion that the recorder's span sink is the registered observer."
+    }
+  ]
+}

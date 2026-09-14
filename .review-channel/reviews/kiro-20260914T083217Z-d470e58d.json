@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260914T083217Z-d470e58d",
+  "created_at": "2026-09-14T08:32:21Z",
+  "scope": "changed files since git:3fe76696a387ba42c21b76abacb45efd65eff423",
+  "base_ref": "git:3fe76696a387ba42c21b76abacb45efd65eff423",
+  "status": "findings",
+  "summary": "Three correctness issues remain: explicitly named dates can be silently moved to another day or year, the month result can speak two different rounded closing balances, and reconciliation can distort an individual low-point movement by multiple rupees.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "ledgerline/agent/tools/coercion.py",
+      "line": 119,
+      "title": "Named dates are validated only by month and can be silently moved",
+      "evidence": "After parsing a named month, the code only checks `landing.month != month`: `landing = _resolve(today, day)` followed by `if landing is None or landing.month != month`. `_resolve` clamps impossible days, so with today 11 September 2026, `31 September` is accepted and ultimately stored as 30 September. The parser also removes four-digit years before finding the day but never validates the year, so `5 October 2027` is accepted as 5 October 2026. Both cases move money to a date the person did not state, contrary to the requirement that code own date correctness.",
+      "recommendation": "Claude Code should consider validating an explicitly named calendar date, including its year when supplied, before reducing it to `day_of_month`; reserve day 31 clamping for phrases such as `end of September`. Add tests such as `test_an_impossible_named_date_is_refused_not_clamped` for `31 September` and `test_a_named_year_outside_the_window_is_refused` for `5 October 2027`."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "file": "ledgerline/agent/tools/facts.py",
+      "line": 409,
+      "title": "The low-point derivation can contradict the cashflow closing balance",
+      "evidence": "`_cashflow_lines` renders the reconciled view from `in_rupees(plan.summary)` and says `closing {group(low.closing_balance)}`, while `_low_point_lines` independently executes `closing = whole(low.closing_balance)`. These policies can disagree: opening 0.49, income 0.49 and outflow 0.01 produce a reconciled cashflow closing of 0 (`0 + 0 - 0`) but an exact Decimal closing of 0.97, which `whole` renders as 1. The same `show_month` result can therefore contain both `closing 0` and `closing 1`, violating the HLD's single whole-rupee answer and the requirement that spoken arithmetic reconcile.",
+      "recommendation": "Claude Code should consider deriving the cashflow and low-point terminal figures from one shared whole-rupee ledger view. Add a test such as `test_the_cashflow_and_low_point_speak_the_same_closing_balance_with_paise` that builds a paise-valued plan, renders `facts.month`, and asserts every closing occurrence agrees; also assert the cards' low-point closing uses that same value."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "ledgerline/domain/rupees.py",
+      "line": 34,
+      "title": "Reconciliation can assign a multi-rupee rounding error to one item",
+      "evidence": "`reconciled` computes `residual = total - sum(rounded)` and then applies the entire residual to one entry: `rounded[biggest] += residual`. Despite the docstring saying rounding leaves \"up to a rupee of residual\", four parts of 100.49 reconciled to the rounded aggregate 402 produce `[102, 100, 100, 100]`. The first low-point line is therefore spoken as 102 even though its underlying movement was 100.49; with more rows the distortion can grow further.",
+      "recommendation": "Claude Code should consider distributing residual rupees deterministically across multiple eligible rows rather than concentrating them in one movement. Extend `tests/domain/test_rupees.py` with a multi-part residual case and a property test proving the rendered parts sum to the target while no individual part differs from its independently rounded value by more than one rupee."
+    }
+  ]
+}

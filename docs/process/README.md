@@ -14,9 +14,9 @@ under a fixed division of labour:
 |---|---|---|
 | Orchestrator | one session, renamed as it was replaced | verification, integration, contracts (`models.py`, `types.ts`), `pyproject.toml`, Docker, README, `docs/**` |
 | A | domain | `ledgerline/domain/**`, `tests/domain/**` |
-| B | agent and evals | `ledgerline/agent/**`, `evals/**`, `tests/agent/**` |
+| B | agent and evals | `ledgerline/agent/**`, `evals/**`, `tests/agent/**`; a fresh B took the layer over for the redesign, onboarded from `status-B.md` alone |
 | C | voice and api | `ledgerline/voice/**`, `ledgerline/api/**`, `config.py`, `main.py`, `spike/**`, their tests |
-| D | frontend | `frontend/**` except the contract files, `tests/e2e/**` |
+| D | frontend | `frontend/**` except the contract files, `tests/e2e/**`; a later frontend session rebuilt the board from the design canvas and kept its own ledger, `status-frontend.md` |
 | Reviewer | Kiro, a different vendor's model, read-only | nothing; it produces findings |
 
 Rules every session worked under are in `00-orchestration.md`: nobody commits, nobody edits another
@@ -55,6 +55,10 @@ yardstick (README, HLD, cut brief) and forbids it from touching the decision jou
 | 12 Sep, late | The cut: the state layer stopped re-implementing judgement the model already has. Forty of the first fifty-five review findings had been in that machinery | `cut-brief.md`, `status-A.md`, `status-B.md` |
 | 13 Sep, early | Agent layer of the cut landed; eval matrix rerun; instruments audited and three found wrong; `state_matches_facts` added and found the dropped half of a balance | `evals/REPORT.md` §5 to §10, `prompt-provenance.md` |
 | 13 Sep | Tree frozen for the first commits | end of each `status-*.md` |
+| 13 Sep, later | Observability phase: every call traced to Langfuse, sessions and facts in Postgres keyed by phone, a soft-notes extractor bounded in code, an end-of-call judge | `observability-brief.md`, `docs/architecture/04-observability-hld.md`, `evals/REPORT.md` §10.6 to §10.8 |
+| 14 Sep, early | The owner's live call of the evening before was read as a bot rather than a coach. A census of the 109 mechanisms shaping the model found 54 with no recorded failing case, and every check a hard gate, so nothing could push a constraint back off | `agent-redesign-brief.md`, `luna-capabilities.md`, `docs/research/13-agent-design.md` |
+| 14 Sep | Agent layer redesigned: prompt v2 (identity and goal, not prohibitions), six plain-word tools, results that state facts instead of issuing orders, checks split into gates and advisory. The owner's call re-run five times before and five after; the before-and-after table and both transcripts are in the report | `owner-call-1-report.md`, `evals/REPORT.md` §10.13 to §10.15, `status-B.md`, `status-C.md` |
+| 14 Sep, later | The owner read the after table and ordered the cleanup: the v1 tools, prompt and result strings deleted, then a dead-code census per layer, each removal with the grep that proved it had no caller and the snapshots byte-identical throughout. The twenty deterministic checks folded into three (money, state, speakable) and the nine advisory rules deleted, accepted by replaying all 448 saved runs with zero mismatches; the judge keeps its four criteria. Cost named: the before column of §10.13 can never be re-run | `status-A.md`, `status-B.md`, `status-C.md`, `status-D.md` (cleanup censuses), `evals/REPORT.md` §10.16 |
 
 ## Files
 
@@ -69,6 +73,11 @@ yardstick (README, HLD, cut brief) and forbids it from touching the decision jou
 | `cut-brief.md` | The decision that moved language judgement to the model and kept arithmetic in code; the contract after it; acceptance |
 | `prompt-provenance.md` | One row per prompt rule: the named case that fails without it, or the mark that says it is a cut candidate |
 | `luna-capabilities.md` | What the model does by default at the effort setting used, and which prompt lines that makes redundant |
+| `observability-brief.md` | The work split, the order and the acceptance line per phase for tracing, sessions, memory and the judge |
+| `agent-redesign-brief.md` | The decision to rebuild the agent layer as a coach: the prompt, the plain-word tool set, results as facts, the checks split, the order of work and the acceptance line |
+| `owner-call-1-report.md` | The owner's own call scripted as a scenario and run five times on each build: the two transcripts side by side, the check table, and a plain reading of where it still does not sound like an expert |
+| `status-frontend.md` | The ledger of the board rebuild, kept separately from `status-D.md` |
+| `design/` | The design canvas the board was drawn from, with a README saying which parts were built and which were canvas fiction |
 | `screens/` | Screenshots of the interface at each phase, regenerated from the mock feed |
 
 ## Where the numbers are

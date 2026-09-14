@@ -963,3 +963,461 @@ Three tests: the 3,000 / 1,200 action text, the card row, and the guard that a m
 the whole balance leaves no remainder to state (with the state-layer refusal of a minimum larger
 than the bill still holding). `tests/agent` run read-only afterwards: 405 passed, 1 deselected --
 only saved eval transcripts carry the old "and carry 1,800" wording, and those are artifacts.
+
+## Observability phase: store (phase 2) and carried facts (phase 3)
+
+**361 -> 416 tests.** `tests/domain` 390, `tests/store` 26 (23 of them `db`, against the compose
+container; they skip with a message naming the compose command when `DATABASE_URL` is unset, so a
+fresh clone is green either way). Whole suite `uv run pytest`: 991 passed, 23 skipped. ruff check
+and format clean on my files, `lint-imports` green. **Snapshots byte-identical** (863 / 860 /
+1571 / 1570): no mock state holds a carried item, so nothing the frontend renders moved.
+
+### `ledgerline/store/` — what it is and what it refuses to be
+
+`schema.sql` is the only schema source, applied at boot every boot, every statement
+`IF NOT EXISTS`. Four tables as the HLD lists them. Money is `text` holding the Decimal's own
+string: `numeric` would be correct too, but every driver between here and it is one float
+coercion away from losing a paisa.
+
+Two shapes I decided and the orchestrator accepted. `sessions.phone` is **nullable**, so `forget`
+detaches the row rather than deleting it and the call stays countable while nothing about it
+points at the person. `forget` deletes **notes as well as facts**: the notes are the softer half
+of the same personal data, and a forget button that leaves them is a lie.
+
+`load_active` returns `None` on timeout or error and `[]` when nothing is remembered. Different
+answers, and every caller has to keep them apart -- which is also why `record_call` takes
+`loaded:`. If the memory was not read this call (`None`), an item's absence from the final state
+says nothing about whether the person still has it, so **nothing is tombstoned**. Without that
+distinction one slow database would quietly delete every fact the person did not happen to repeat.
+
+`record_call` is the diff: unchanged is no row and only `last_confirmed_at` moves; changed or new
+inserts and stamps the old row's `superseded_by`; an ended item or a `NOT_APPLICABLE` field gets a
+tombstone row with no value, and `load_active` skips tombstones because a tombstone exists so that
+nothing carries. A flag sitting at its model default is not written at all -- "the rent is not
+spread" is not something anybody said.
+
+`hydrate(today, facts)` rebuilds a `FinancialState` with every item `carried`. The parsing is
+pydantic's: the values come back as text and the models already know which field is a Decimal, a
+date, a flag or an enum, so there is no parser table to keep in step.
+
+### Domain: a fact from last month is provisional until the person says otherwise
+
+`_Item.carried` is set only by the loader and cleared by any `upsert` of that item -- restating a
+figure is confirming it, even when the figure has not moved, because what made it provisional was
+that nobody had mentioned it this call. `confirm_carried(names | all)` is the other way through,
+and it refuses a name nobody carried: the blocker exists so a plan is never built on unconfirmed
+figures, and a mistyped name must not be able to clear it. Confirming an income resets its
+certainty to CONFIRMED -- "may or may not come" was about last month.
+
+The blocker goes in `Readiness.blockers`, **not** `PlanResult.blockers`: the engine keeps counting
+carried money, because a survival plan with the rent missing is a wrong plan, and reports
+`provisional` instead. `finalize_plan` refuses meanwhile. The documented identity now reads
+`Readiness.blockers == PlanResult.blockers + ["carried"] + missing_fields`.
+
+The carry policy is a table beside the tiers, because it is the same kind of thing. Everything
+recurring carries. Two do not: the opening balance changes daily, and a credit card's statement
+balance changed the day it was printed -- but an EMI is the same figure every month, so
+`carries(DEBT, "amount", debt_kind=...)` is True for an EMI and False for a card.
+
+### Ponytail review of my own diff
+
+Three cuts, all applied, `ledgerline/store` 747 -> 736 lines:
+
+- **Two copies of the bounded read.** `profile.load_active` and `notes.load_active` each had the
+  same timeout wrapper around the same shape of query. One `read_within(pool, sql, args, timeout,
+  what)` now serves both, and each loader is two lines.
+- **`except (TimeoutError, Exception)`** with a `noqa` explaining itself. `TimeoutError` is an
+  `Exception`; the tuple said nothing the first entry did not, and a dead database, a timeout and
+  an unreadable row are all the same answer to the caller.
+- **Two lookup tables for one mapping.** A dict and its inverse for the single field whose name
+  differs between the field ids and the models. Two one-line functions replace both.
+
+One cut I tried and reverted: collapsing the field-name mapping to a single kind-free pair. Only
+a debt spells its money field `amount_due`, so the inverse direction has to know the kind, and the
+tests said so immediately -- an income came back from the database with no amount at all.
+
+Not cut, deliberately: the `Store` protocol and the `PostgresStore` delegation to `sessions.py`,
+`profile.py` and `notes.py`. The protocol has two real implementations, and the alternative to the
+delegation is one 500-line `db.py`.
+
+### The fifth snapshot frame
+
+`returning`, first in the file, agreed with ledgerline-D by name and composition before
+regenerating. **618 / 863 / 860 / 1571 / 1570** — the four existing frames are unchanged in
+content; only their `v` shifts by one, because the version is the frame's position in the journey
+and a returning caller's first screen comes before gathering.
+
+It is the state the profile loader hands over before the greeting: salary 45,000 on the 1st and
+rent 12,000 on the 5th, both carried, so both cards read `carried` with the note; no opening
+balance, because it never carries; `missing` naming the balance; `summary` blocked on it. D uses
+it as the fixture for the carried rendering and for a screenshot, and deliberately does not replay
+it in `MOCK_SCRIPT` -- the scripted demo stays a first-time caller from gathering to done, since a
+returning caller's opening is a different call rather than a step in this one.
+
+`test_the_mock_snapshots_are_real_cards_messages` now asserts the five-name list, that a frame's
+phase may differ from its name where the name says more (`returning` is still `gathering`), and
+that this frame keeps showing two carried cards with the note and a blocked summary -- so the
+fixture cannot quietly lose the thing it exists to show.
+
+**No card names the `carried` blocker in words, and that is settled.** `Readiness.blockers`
+carries it, but the cards render `missing_fields`, which is structural gaps only, so on screen
+"carried" is said by the status word and the note alone. Taken to the orchestrator rather than
+decided quietly, because a row on the "Still need" card would mix a readiness blocker into a list
+of missing fields: ruled against, no contract change. The card lists gaps; the two cards it
+applies to already say it.
+
+### Ponytail review of the domain half
+
+Run at the owner's instruction, over the other half of this phase's diff: the `carried` flag,
+`confirm_carried`, the carry policy, the cards status word, the fifth frame and its test. Three
+cuts, all applied, suite green at 390 domain and 26 store, snapshot bytes unchanged
+(618 / 863 / 860 / 1571 / 1570).
+
+- **The snapshot script kept two dicts keyed by the same five names** -- `SNAPSHOTS` of builders
+  and `FOCUS` of card ids. One table of `(builder, focus)` replaces both: **26 added lines -> 20**.
+  Not only shorter, but the shape that cannot go wrong the way I nearly did -- adding `returning`
+  to one dict and not the other is a `KeyError` at the end of a run, and I wrote exactly that bug
+  for a minute before the script told me.
+- **`getattr(item, "carried", False)` in `cards._item_card`.** A defensive read of a field that
+  lives on `_Item`, so every item model has it. `item.carried`. The default was hiding the
+  contract rather than guarding anything.
+- **`CARRIED_FIELDS.get(kind, frozenset())` in `policy.carries`.** The dict holds every member of
+  `ItemKind`, so the default could never fire; it only meant that a kind added later would
+  silently stop carrying instead of raising. `CARRIED_FIELDS[kind]` -- a new kind is now a loud
+  failure, which is what a money policy should be.
+
+**Nothing else came out, and that is the honest reading rather than a clean bill.** The domain half
+was written after the store pass, so the habits the first review taught were already in it: no
+second copy of the carry rule, no wrapper layer, no defensive branch for a case the models make
+impossible.
+
+Two candidates I looked at and left. `CARRIED_FIELDS` could collapse to "everything carries except
+the opening balance and a card's amount", two lines instead of a seven-line table -- but the table
+is not that rule: a debt's `late_fee`, `autodebit` and `lender` are deliberately absent, and a
+whitelist that must be extended to carry something new fails the safe way, while a blacklist that
+must be extended to stop something carrying fails towards a stale figure in a plan. And
+`test_confirming_the_carried_items_takes_the_word_off_the_card` is close to a mirror of the test
+above it -- but deleting a passing regression test to make a diff look leaner is the wrong trade
+in a product about money, and the ponytail rule is to cut code, not coverage.
+
+**`Unpaid.ask` removed** (owner's trim, approved contract change): written by `_ask_actions` and
+read by no production code -- the ask text reaches the model through the ASK_LENDER rationale,
+which uses `tier.ask` directly. It was read by four of my own tests, so those moved to where the
+guarantee belongs: `test_policy.py` already sweeps every tier's `ask` for borrowing language at its
+source, and the one test that checked a landlord was named now asserts it on the action's
+rationale, which is where the person actually hears it. 416 green, snapshots byte-identical,
+whole suite 1044 passed. `tests/agent/test_describe.py` still constructs `Unpaid(ask=...)` and is
+unaffected -- pydantic ignores the extra -- so nothing of B's needed touching.
+
+**Two reads for the review endpoint** (C-obs-3): `calls_for(phone)` returns the person's calls
+newest first -- the order the page reads them in, and empty for a forgotten person, since forget
+nulls the phone rather than deleting the row. `history_all(phone)` returns every row ever recorded
+for the phone, oldest first, superseded rows and tombstones included: `history()` can only be
+reached from a fact that is still active, so an item the person has since ended is invisible to
+it, which is exactly the history someone opens the page to read. Both on the protocol, both `[]`
+on `NullStore`, four `db` tests. `tests/store` 26 -> 30, 420 with domain; whole suite 1073 passed.
+
+## Redesign: the model gets the conversation back, code keeps the money
+
+Four additions after the live call. **420 -> 431 tests** (domain 401, store 30); whole suite 1145
+passed, 27 skipped; ruff and format clean; 7 contracts kept. **No fixture moved** by the whole-rupee change -- every spread amount in the eleven fixtures divides by thirty, which
+is why the paise never showed up there and did show up on a real call.
+
+### `PlanResult.low_point`: the arithmetic behind the lowest balance
+
+The live caller asked why the low point was 57,166 when thirty thousand minus eighteen was twelve,
+and the answer was nowhere in the result, so the model could only invent a step or change the
+subject. `LowPoint` carries the opening balance, everything that lands on or before the low day,
+what arrives after it and when, and the closing balance. A spread item is one running total to
+that day rather than thirty lines, because thirty lines is not an explanation.
+
+Worked example, the same shape as the call that prompted it:
+
+    low 30 Sep 8,000 | opening 30,000 | closing 51,000
+      before  20 Sep  rent       -18,000
+      before  30 Sep  groceries   -4,000  (spread, so far)
+      after    1 Oct  salary     +45,000
+      after   10 Oct  groceries   -2,000  (spread, the rest)
+
+Two identities hold by construction, since the rows are the events the simulation booked rather
+than a second calculation agreeing with the first: `opening + sum(before) == balance` and
+`balance + sum(after) == closing`. Both are asserted.
+
+### Whole rupees
+
+`_spread` allocates whole rupees a day and puts the remainder -- including any paise the person's
+own figure carried -- on the last day. 6,500 over thirty days is 216 a day and 84 on the last. The
+total is still exactly what they said; no daily balance, low point or total carries paise any
+more. One consequence worth knowing: an amount smaller than the window lands entirely on the last
+day rather than as a third of a rupee a day, which is the same remainder rule and reads better.
+
+### Coverage, and `none_of(kind)`
+
+Kiro's F2, which I argued was a judgement call rather than a defect, is now a defect with
+evidence: two `mark_unknown` rounds on the live call failed to record "no loans", so nothing in
+the state could tell "they have no debts" from "nobody has asked". `none_of(state, kind)` records
+it -- through the same blanket mechanism the income answer has always used, an `Unknown` on the
+bare kind name with reason NOT_APPLICABLE, so there is one way to say "there are none of these"
+rather than two. `coverage(state)` answers STATED / NONE / UNASKED for the four kinds and the
+balance.
+
+What exists outranks what was said: a person who said "no subscriptions" and then remembered the
+gym has optional spending. And "I do not know" leaves a category UNASKED, because coverage answers
+what there is to plan with; that they were asked and could not say is in `state.unknowns`, which
+is where a question is decided. Cards gained a `None` row for a kind settled that way -- an empty
+screen cannot distinguish a fact from an unasked question.
+
+### Readiness is money-only again
+
+The `carried` blocker is gone. The model is told what was carried and decides whether to ask; code
+keeps the flag, so the cards still say `carried` and `record_call` still knows what nobody
+refreshed, and the plan is still provisional while any remain. `missing_fields` stays a list of
+facts and its docstring no longer claims an order -- what to ask next is the model's judgement
+about the conversation it is having.
+
+### Snapshots: both shapes folded into the frames that already existed
+
+D asked for the new shapes inside the existing five frames rather than a sixth, so the frame list
+is unchanged and only bytes moved. **Every frame moved**, because `low_point` rides on the message
+rather than on a card:
+
+| frame | before | after | why |
+|---|---|---|---|
+| returning | 618 | 635 | `low_point: null` -- blocked, nothing to explain yet |
+| gathering | 863 | 1307 | a `debts` card reading `None`, plus the derivation |
+| ready | 860 | 1272 | the derivation |
+| plan | 1571 | 1983 | the derivation |
+| done | 1570 | 1982 | the derivation |
+
+`CardsMessage.low_point` is a `LowPointView`: the low day, its balance, the opening and closing
+balances, and `before` / `after` lines of `{d, label, amt, spread}` in whole rupees, like the
+timeline. The same two identities hold on the wire as in the domain, and the snapshot test asserts
+them on the plan and done frames.
+
+**The 4 KB limit bites here, and the fix keeps the arithmetic.** Forty items make forty lines, and
+`test_forty_items_still_fit_in_one_daily_app_message` went to 4,391 bytes the moment the
+derivation shipped. `_fit` now trims the low point first, before the timeline: it keeps the four
+largest movements -- the ones that explain the number -- and carries the rest as one line, "29
+smaller items", with their exact total, so `opening + before == b` and `b + after == closing`
+survive the truncation. A test asserts both identities on the crowded state after fitting.
+
+### The store tests had their own database all along, they just did not use it
+
+A live call lost its `users` row mid-call and `record_call` failed on the foreign key, because
+`tests/store/conftest.py` truncated the same database the running container was using. My fixture,
+my defect: destructive tests pointed at whatever `DATABASE_URL` happened to say.
+
+They now run against `<name>_test` on the same server -- derived from `DATABASE_URL` by swapping
+the database name, or `TEST_DATABASE_URL` if it is set -- created on demand through a maintenance
+connection (autocommit, quoted identifier: `CREATE DATABASE` takes neither a transaction nor a
+parameter). `guard()` refuses outright to truncate a database whose name does not end in `_test`,
+and four tests cover the derivation, the already-a-test-name case, query parameters surviving the
+swap, and the refusal itself -- none of them needing a database, so they run on a fresh clone too.
+
+`tests/store` 30 -> 34, 438 with domain; whole suite 1175 passed. Verified by hand afterwards:
+`ledgerline` still holds the live call's rows and `ledgerline_test` is the one the suite empties.
+
+### `sample.json` has a generator now, and it had drifted further than anyone thought
+
+`frontend/src/protocol/sample.json` is the one message the frontend parses against, and nothing
+wrote it -- tests only read it -- so it drifted from `build_cards` for days without a single
+failure. `scripts/dump_sample.py` builds it from `sample_state` the way `dump_mock_snapshots.py`
+builds the mock journey, and `test_the_sample_message_is_what_the_generator_writes` compares the
+committed file byte for byte, so drift now fails the suite instead of waiting for someone to read
+the file.
+
+What the drift had accumulated, all of it now corrected: a `note` from **before the cut**
+("Rent came through as 12. Did you mean 12,000?" -- the conflict machinery has not existed for
+days), a summary note in wording the engine no longer produces, and a timeline whose balances and
+event days were simply wrong (3,000 where the engine says 2,800; a low point of -1,800 on 5 Oct
+where it is 0 on 25 Sep). 3,572 bytes, one `low_point`, seven cards. Domain 404 -> 405.
+
+### `Summary.net_flow`: the subtraction leaves the agent layer
+
+B's `facts._cashflow_lines` was computing `total_in - total_out_planned` itself, with a `ponytail:`
+comment saying it belonged in `Summary`. It does, and it is there now. The figure exists because
+two v2 runs did that subtraction **out loud** when challenged, which is the one rule this product
+has; a result that does not answer "my salary is thirty, rent and spending are eighteen, so where
+is fifty-seven from?" gets the question answered anyway.
+
+It is the month's own flow and says nothing about what was already in the account -- the invariant
+that pins it is `closing_balance == opening_balance + net_flow`, asserted, along with
+`net_flow == total_in - total_out_planned` over all eleven fixtures and its sign matching which
+way the month runs.
+
+**Additive with a default**, and that mattered more than it looks: as a required field it broke
+145 tests across three other layers at once, every one of them a fixture that builds a `Summary`
+by hand. The engine always computes it. Domain 405 -> 417; whole suite 1309 passed.
+
+Not rounded to whole rupees on purpose, despite the instruction: it is exactly the subtraction of
+two figures that are already whole, and forcing a round would make the three stop reconciling the
+moment somebody states paise -- a figure the model speaks that does not add up against the two
+beside it is worse than a paisa.
+
+**Snapshots and sample unchanged** (635 / 1307 / 1272 / 1983 / 1982 and 3,572 bytes): the cards
+carry `in`, `out` and `lowest`, and nothing asked for this on the summary card, so no frame moved.
+
+## Cleanup sweep: the census
+
+Two passes over `domain/**`, `store/**`, `scripts/**` and their tests -- one before B deleted the
+v1 agent layer, one after, because v1 was the only caller of some of this. Method: an AST walk
+listing every def, class, model field and module constant in those trees, each name grepped across
+`ledgerline`, `tests`, `evals` and `scripts` (excluding `evals/runs`, which are artefacts), minus
+its own definition line; every survivor of that filter then read by hand, because the narrow grep
+lies in both directions -- it missed the four `_is_*` predicates in `settle.py`, which are passed
+as callables and never called by name, and it flagged `NullStore`'s no-op parameters, which exist
+to satisfy the protocol.
+
+**Gates after both passes:** `tests/domain` 415, `tests/store` 34, 449 mine; ruff and format clean;
+7 contracts kept; `db` tests against `ledgerline_test`. **`snapshots.json` and `sample.json`
+byte-identical throughout** -- 635 / 1307 / 1272 / 1983 / 1982 and 3,572 -- checked after every
+removal, which is the proof that none of this was load-bearing.
+
+### Removed, with the evidence
+
+| symbol | where | evidence it had no caller |
+|---|---|---|
+| `TIERS_BY_KEY` | `policy.py` | zero references anywhere, tests included; `tier_for()` does that lookup |
+| `_Event.late_fee` | `engine/events.py` | assigned at two sites, read at none: a write-only field |
+| `Debt.late_fee` | `models.py` | its only consumer was the above; no tool sets it, and the one fixture carrying `late_fee: 500` had it ignored by the engine |
+| `Debt.autodebit` | `models.py` | read nowhere (the "autodebit" in `voice/pipeline.py` is an STT vocabulary word) |
+| `_Event.within_day` | `engine/events.py` | always 0, so its term in `sort_key` could never order anything; the comment described fee events, which do not exist |
+| `RowKind.FEE` | `models.py` | never constructed; existed only as an entry in `_KIND_ORDER` |
+| `ActionType.PAY_ON_DATE` | `models.py` | never produced; referenced only by tests asserting it is never produced |
+| `store.get_session` + `sessions.get` | `store/db.py`, `store/sessions.py` | no production caller; five test call sites, all observing a row they had just written |
+| `StateSnapshot`, `snapshot()` | `state/readiness.py` | dead once v1 went: the last consumers were `tests/agent/conftest.py`'s fake, which B removed; `coverage()` replaced the counts it carried |
+| `income_is_answered`, `PROFILE_TIMEOUT_SECS`, `PostgresStore`, `Store` (exports only) | `state/__init__.py`, `store/__init__.py` | the functions stay and are used inside their packages; nothing imported them **through** the front door -- `main.py` takes `open_store` from `store.db` |
+| `resolve_day(..., horizon_days)` | `state/names.py` | the parameter the body never read; its own docstring said the horizon is not consulted, and both callers were passing `state.horizon_days` into nothing |
+| `_value(..., provisional)` | `cards.py` | the caller computed `provisional = amount is None`, and the function returns `"amount?"` for that case before reaching the `" ?"` suffix, so the suffix was unreachable |
+| `_item_card(..., absent=frozenset())` | `cards.py` | a default nobody took |
+
+### Tests that went with the code, and one that got stronger
+
+`test_snapshot_counts` and `test_snapshot_missing_only_lists_what_is_still_worth_asking` tested
+deleted code and went. `test_pay_on_date_is_retired` likewise. `test_nothing_is_ever_told_to_pay_late`
+became `test_every_action_is_one_the_policy_allows`: it asserts every action is in
+`allowed_actions`, which is a stronger claim than naming the one member that no longer exists. The
+five `get_session` assertions survive against a `session_row()` helper in `tests/store/conftest.py`
+that reads the row through the pool -- the assertion was never about the method.
+
+### Kept, deliberately
+
+- **`simulate`'s `lowest if lowest is not None else opening`.** Unreachable with any real
+  `horizon_days`, reachable at zero, and there it is the difference between a `None` low point and
+  a crash. A boundary, not dead code.
+- **`_summary_card`'s `if plan.blockers else None`.** Unreachable from the engine, which never
+  produces a BLOCKED plan with no blockers, but reachable from a hand-built `PlanResult` in another
+  layer's fixture, where removing it turns a `None` note into an `IndexError`.
+- **`Coverage`'s missing fourth state and `coverage` on the wire** -- the orchestrator's standing
+  instruction: a design decision, not dead code.
+
+## Kiro review 14 (`kiro-20260914T050806Z-72a1d136`): seven findings
+
+**449 -> 479 tests** (domain 440, store 39), ruff and format clean, 7 contracts kept, db tests
+against `ledgerline_test`. **Snapshots and sample byte-identical** -- 635 / 1307 / 1272 / 1983 /
+1982 and 3,572 -- including the two findings that were expected to move them; see 007 and 012.
+
+**KIRO-008 · the age window was documented and never wired.** `open_store(dsn, *,
+profile_max_age_days=PROFILE_MAX_AGE_DAYS)` stores it on `PostgresStore` and passes it to both the
+facts and the notes reads. Keyword with a default, so C can wire `Settings` whenever. Two db
+tests: a fact aged past the window leaves `load_active` and stays in `history_all`, and a store
+opened with a narrower window forgets a fact the default still carries.
+
+**KIRO-006 · a correction back to a default was never persisted.** `_stated` dropped every value
+equal to its model default, which is right for a flag nobody mentioned and wrong for one the
+person just corrected: "do not cut the gym" sets `flexible` back to True, the row stayed
+non-default, and the next call hydrated the correction away. `record_call` already had `loaded`,
+so the rule is now: a default is a stated fact when the profile remembers a value for that field.
+Two db tests, both directions, one of them round-tripped through `hydrate`.
+
+**KIRO-002 · `Summary.to_work_with`** = `opening_balance + total_in`, the second figure the agent
+layer was computing for itself. Additive with a default, like `net_flow`. Asserted over all eleven
+fixtures alongside it, with the identity that ties them: `closing == to_work_with - out_planned`.
+
+**KIRO-009 · a configured database that is down took the product with it.** `open_store` let a
+failed `pool.open` or `apply_schema` raise straight out of the FastAPI lifespan, so a Postgres
+outage meant no calls at all rather than calls without memory. It now closes the half-opened pool,
+logs the degradation once, and returns `NullStore`. Tested against an unreachable DSN.
+
+**KIRO-012 · the card invented an action the plan did not contain.** Every TIMING plan printed
+"ask the lender to move it", including one whose only action is deferring a subscription. The note
+is derived from the actions now: the lender is named when there is an `ASK_LENDER` or an unpaid
+debt, otherwise "the money arrives after it is needed; moving what can move covers it". The
+orchestrator's cited example turned out to produce an `ASK_LENDER` after all, so the test uses a
+state I built for the purpose -- a dip closed by deferring one subscription, no debts at all.
+**No snapshot moved**: every TIMING frame in the mock and the sample has an unpaid debt, which is
+why nobody noticed.
+
+**KIRO-005 · a dated essential went on being prorated.** `spread` stayed True when the person gave
+a date, because an unmentioned flag is filtered out, so the engine kept slicing rent across thirty
+days after they had put it on the 5th. A date and "spread" contradict each other and whichever was
+just said wins: dating a spread item clears the flag, calling an item spread clears the date. Only
+on an item that already exists -- there is nothing to contradict on a first mention, and the
+create path was reporting a meaningless `spread: ("", "dated")` change until I gated it. Five state
+tests, one of them asserting the timeline shows a single dated event rather than thirty slices.
+
+**KIRO-007 · the wire's low point could fail its own arithmetic.** Rounding the balance, the
+opening, the closing and every movement independently leaves up to a rupee of residual: 0.40
+opening plus 0.40 income rounds to 0 + 0 with a closing of 1, and the page checking
+`opening + before == b` tells the person their plan does not add up when it adds up perfectly. It
+is rounded as one ledger now -- totals rounded, then the residual placed on the largest movement,
+deterministically, because a rupee is least visible against the biggest figure and the alternative
+is a visible contradiction. A parametrised case for the exact example plus a hypothesis property
+over 150 quantised-paise states.
+
+### Kiro 16 F3 · one rounding rule, and the arithmetic survives it
+
+`facts.rupees()` rounded every `Summary` figure on its own, so "opening 60,000 plus in 30,000 is
+90,001" was a thing the coach could say about 60,000.40 and 30,000.40 -- and the person would be
+right to distrust everything after it.
+
+`ledgerline/domain/rupees.py` is now the single answer to "what does this look like in rupees":
+`whole()` (half a rupee away from zero, as everywhere else), `reconciled(parts, total)` (the
+residual on the largest part, deterministically), and `in_rupees(summary) -> Rupees`, a frozen
+model. The three figures a month is made of are rounded -- opening, in, out planned -- and every
+total is **derived** from them, so `to_work_with == opening + in`, `closing == to_work_with - out`
+and `net_flow == in - out` hold exactly on the integers. `shortfall_after_actions` is the closing
+balance by another name and is derived too, so the two cannot disagree; `unpaid_total` is rounded
+on its own, being outside the cashflow on purpose.
+
+The trade is a derived total sitting up to half a rupee per rounded part from the exact figure --
+one rupee on a two-part total, one and a half on three. A rupee nobody can see against a spoken
+sum that visibly does not add up is not a close call.
+
+`cards._reconciled` now calls `rupees.reconciled` rather than carrying its own copy of the same
+rule from Kiro-14 007, which is what "one rounding rule" has to mean. **Snapshots and sample
+byte-identical** (635 / 1307 / 1272 / 1983 / 1982 and 3,572): the cards already reconciled, and
+this only moved where the rule lives. Domain 440 -> 449, 488 with the store; 7 contracts kept.
+
+Two test expectations of mine were wrong before the code was: the drift bound (half a rupee per
+rounded part, not one overall) and `whole(-0.50)`, which is -1 because ROUND_HALF_UP rounds away
+from zero. Both corrected against what the rule actually does.
+
+### Kiro 17 F3 and F2 · spread the residual, and one ledger for the whole month
+
+**F3.** `reconciled` put the entire residual on one part: four movements of 100.49 against a total
+of 402 rendered as [102, 100, 100, 100], so a row was spoken two rupees from what it actually was
+-- and the docstring claiming "up to a rupee" was simply false. It is the largest-remainder method
+now: a rupee at a time to the parts that lost the most to rounding, ties by position, so every part
+stays within one rupee of its own value and the sum is still exact. The residual can never exceed
+the number of parts (half a rupee each, plus half for the total), so one adjustment each is always
+enough. Four parametrised cases including the review's, and a property over 200 lists of up to
+twelve paise-valued parts asserting both halves: the sum matches and no part drifts more than a
+rupee.
+
+**F2.** The same result could say "closing 0" in the cashflow and "closing 1" in the low point,
+because one was derived from the rounded parts and the other was `whole()` of the exact Decimal.
+`rupees.in_rupees_low_point(plan) -> LowPointLedger` is the one projection now: `opening` and
+`closing` are the summary view's own figures, and the movements are reconciled to those endpoints,
+so `opening + before == b` and `b + after == closing` hold exactly against the same numbers the
+voice speaks. `cards._low_point` rounds nothing itself any more -- it shapes that ledger for the
+wire -- so the screen and the voice cannot disagree.
+
+One case the finding did not mention and the property found: when the low day **is** the end of the
+month there are no `after` rows, so a residual between an independently rounded `b` and the
+summary's derived closing would have nowhere to go. The balance takes the closing figure directly
+in that case, which is the same number by definition; the mirror case, a low point on day one with
+no `before` rows, takes the opening.
+
+Domain 449 -> 458, 497 with the store; whole suite green; **snapshots and sample byte-identical**
+(635 / 1307 / 1272 / 1983 / 1982 and 3,572); 7 contracts kept.

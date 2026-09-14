@@ -1520,3 +1520,905 @@ names none and passes, and nothing here can see it.
 
 Gates: tests/agent 410 passed, ruff check clean, ruff format --check clean, lint-imports 4
 contracts. `REPORT.md` §2.3 and §10.5.
+
+## Observability phase · ponytail list (carried forward, do before reporting the phase done)
+
+- **Move `spoken_day` out of `prompt.py` into a leaf module and restore the module-scope import
+  of `phrases` in `turn_block`.** The function-level import there is deliberate and commented —
+  `tools.describe` imports `spoken_day` from `prompt`, so the pair deadlock at module scope, and
+  two copies of a sentence that must stay identical was the worse option — but it is not the
+  final shape. Agreed with the orchestrator to keep it for now and fix it in the phase's ponytail
+  pass, with the census showing the cycle gone.
+
+### Step 4 · carried figures, measured
+
+Two scenarios, `returning_confirms_all` and `returning_changes_rent`, both hydrated the way C's
+session will hydrate from the store: the items go into the state through `upsert` and are then
+marked `carried`, so the plan starts blocked exactly as it will in production. The suite is eight
+scenarios now.
+
+**Both cells, 5 runs each: every check 100%, all ten runs clean of every rule.** About $0.10.
+
+| check | returning_confirms_all | returning_changes_rent |
+|---|---|---|
+| carried_confirmed_before_plan | 100% | 100% |
+| state_matches_facts | 100% | 100% |
+| numbers_traceable | 100% | 100% |
+| every other rule | 100% | 100% |
+
+`state_matches_facts` at 100% on `returning_changes_rent` is the one worth naming: the person's
+rent went up to 14,000 between calls, the carried figure was 12,000, and the recorded state ends
+on 14,000 in all five runs. The carried value did not survive contact with the person saying
+otherwise, which is the entire point of reading it back.
+
+**The first cell found another two-rules-disagree case, the third of the phase.** `numbers_traceable`
+failed 3 of 5 on `returning_confirms_all`, flagging 12,000, 45,000 and 3,400 — the very figures the
+carried line had just instructed the coach to read back. They reach the model through the
+greeting's prompt block, where there is no tool result yet to name them, so the traceability rule
+saw an invented number. The figures came from the store, which is a source; the transcript now
+records `carried` alongside `hidden_facts`, and `provenance.carried_numbers` authorises them. A
+figure that was never carried is still not sayable, with a test for that edge.
+
+Same shape as the implausible-amount question and the balance total before it: the result-carried
+lever is strong enough that a correct instruction obeyed will fail a rule that has not been told
+about it. Three times now, and each time the instruction was right and the rule was incomplete.
+
+## Observability phase · ponytail pass
+
+Three cuts, all applied, suite and gates green after each. 489 tests across agent, judge and
+memory; ruff check and format clean repo-wide; lint-imports 7 kept 0 broken.
+
+**`spoken_day` moved to `phrases.py`, and the function-level import is gone.** This was the named
+item carried from step 4. `describe` needed `spoken_day` from `prompt`, and `prompt` needed the
+carried-line constants from `phrases`, so the two formed a cycle that had to be broken with an
+import inside `turn_block`. `phrases` was already the leaf — it imports nothing but
+`domain.models` — so `spoken_day` belongs there and both sides now import downwards at module
+scope. Net: one function moved, one comment about a cycle deleted, one import restored to where
+imports go.
+
+**One transcript renderer instead of two.** `judge.llm` and `memory.extractor` had near-identical
+six-line functions turning a recording into text for a model. The contract already allows
+`memory` to import `judge`, so there is one `judge.llm.transcript(recording, *, with_tools=True)`
+now. The flag earns itself rather than being speculative: the judge needs tool results, because
+half of what the coach says is something a result told it to say and a judge blind to results
+grades the coach for obedience; the extractor must NOT see them, because tool results are full of
+figures and a note carrying a figure is the one thing the extractor may never produce. Two
+callers, two settings, opposite reasons.
+
+**Six dead `ask=` kwargs deleted** from the `Unpaid` fixtures in `test_describe.py`. A removed
+the field; pydantic ignored the extra key, so nothing failed and nothing would have — which is
+exactly why it needed deleting rather than waiting to be noticed.
+
+Line counts, `ledgerline/judge/` and `ledgerline/memory/` together: **562**. What went: two
+duplicate renderers became one (-14), the cycle comment and its import (-7), the dead kwargs
+(-6). Net about **-27** across the phase's files, against roughly 1,050 added.
+
+Nothing else was cut. The rest of the phase is bounds and provenance — the schema limits in
+`vocabulary.py`, the three code-side checks in `extractor.py`, the `applies_when` predicates —
+and each of those is the reason a module exists rather than decoration on it.
+
+### Check sixteen · `claimed_values_recorded`
+
+From C's third live call: STT heard "my red went up to" with the amount in the next fragment, the
+bot said "I've noted rent as 13,000 rupees" and called no tool. State kept 11,000, the profile
+kept 11,000, and every check passed — `numbers_traceable` because the person really did say
+13,000, `state_matches_facts` because no hidden fact contradicted the state.
+
+A claim is a receipt. The person hears "noted" and stops repeating themselves, so a claim with
+nothing behind it is worse than silence: silence at least leaves them trying. The rule is that a
+coach sentence carrying a claim verb and a figure must have that figure in some tool call's
+arguments or result by that point in the call. Verbs taken from the saved runs, not imagined.
+
+**Replayed over all 343 saved runs: zero false positives, and the single flag is C's live call.**
+
+| era | runs | flagged |
+|---|---|---|
+| pre-cut | 216 | 0 |
+| post-cut | 127 | 1 — `voice-9876500042-…-001039`, C's call, "I've noted rent as 13,000 rupees" |
+
+The first version used a two-turn window and flagged six runs for true statements — "I've already
+recorded rent of eleven thousand" refers to a call made ten turns back. The window is the whole
+call to date now. That is both simpler and truer: the defect is a figure recorded **nowhere**.
+
+### The lever held, and the cell found something else
+
+`fragmented_correction` reproduces C's call: a returning caller correcting a carried rent through
+a garbled noun, with the hidden fact set so a lost correction fails `state_matches_facts` too.
+Smallest lever first, per the orchestrator: the `upsert_item` docstring now says to call it
+**before** telling anybody you have noted anything, and why. No code-side guard.
+
+**5 runs: `claimed_values_recorded` 100%.** The bot recorded before it claimed, every time.
+
+Two other cells came in under the bar and both are real:
+
+- **`state_matches_facts` 60% — the correction landed on the wrong item.** Reading run 3: the
+  persona volunteered the rent change cleanly at turn 1 and the bot recorded it correctly; the
+  scripted garbled fragments then arrived as a second statement of the same thing, and the bot
+  filed "My red went up to / thirteen thousand" as **an opening balance of 13,000** — a figure
+  nobody gave for that field. Given an unintelligible noun it guessed the item rather than asking.
+  That is a different defect from the one this work was for, and it is not fixed.
+- **`carried_confirmed_before_plan` 80%** — one run planned without saying the carried figures
+  back.
+
+Scenario flaw to note: the persona answers the correction naturally before its scripted fragments
+land, so the garbled version arrives as a duplicate rather than as the only statement. That makes
+the misfiling easier to trigger than it would be live. Worth tightening before the number is
+quoted as a rate.
+
+### The tight scenario, and what the model actually does
+
+`fragmented_correction` now scripts turn 1 as well, saying nothing about the rent, so the garbled
+two-fragment correction is the only statement of the new figure anywhere in the call.
+
+**5 runs: `claimed_values_recorded` 100%, `state_matches_facts` 80%** (was 60% on the loose
+version, which over-triggered). `carried_confirmed_before_plan` 80% — logged below as its own
+open item.
+
+Reading all five replies to "My red went up to / thirteen thousand" is the useful part:
+
+| run | what it did |
+|---|---|
+| …1915-2 | `upsert rent 13,000` — "Is your rent 13,000 rupees on the fifth, rather than 12,000?" |
+| …1915 | `upsert rent 13,000` — "Your rent is thirteen thousand, not twelve thousand. Is that right?" |
+| …1920 | `upsert rent 13,000` — "Is the rent 13,000 rupees on the fifth, rather than 12,000?" |
+| …1921 | `upsert rent 13,000` — "Is your rent 13,000 rupees on the fifth, instead of 12,000?" |
+| …1913 | `upsert balance 13,000` — "I've noted 13,000 rupees in your account." |
+
+**Four of five already do the right thing**: they map the garbled noun onto a carried item, record
+it against that item, and ask whether it is right. The fifth invents a field nobody named and
+claims it. So this is not a coach that cannot handle a garbled correction — it is one that
+occasionally guesses the wrong item and then states the guess as a fact.
+
+The failing run is also exactly the shape the orchestrator's proposed lever targets: it created a
+**new** item while carried items were still unconfirmed. Not implemented; the rate is reported
+first, as asked.
+
+### Open item · `carried_confirmed_before_plan` at 80%
+
+Two separate cells have now had one run in five plan without saying the carried figures back
+(`returning_confirms_all` was 100%, `fragmented_correction` 80% twice). Unrelated to the claim
+work and not chased. Recorded so it is not lost.
+
+### The new-while-carried lever, measured on ten runs
+
+When `upsert` creates a NEW item while any carried figure is still unconfirmed, the result now
+carries `new item; if they meant a carried one, say which and move it: rent 12,000, salary 45,000`.
+Nothing is carried for a first-time caller, so their results stay byte-identical; three tests,
+including the no-carried and the update-an-existing-item cases.
+
+**Ten runs on the tight `fragmented_correction`: `state_matches_facts` 90%**, one run still filing
+the garbled correction as an opening balance.
+
+| cell | runs | state_matches_facts |
+|---|---|---|
+| loose scenario, before the lever | 5 | 60% |
+| tight scenario, before the lever | 5 | 80% |
+| tight scenario, with the lever | 10 | 90% |
+
+**That is not evidence the lever worked, and it should not be written up as though it were.**
+Four of five against nine of ten is one extra success; at these sample sizes the two are
+indistinguishable, and the honest statement is that the failure rate is somewhere around one call
+in five to one in ten and the lever has not been shown to move it. Distinguishing 80% from 90%
+needs tens of runs, not ten, which is not what this defect is worth. It ships because the
+instruction is true, cheap and rides a case the model was already getting right most of the time
+— not because a number went up.
+
+`carried_confirmed_before_plan` came back clean across all ten, having been 80% on two earlier
+five-run cells. Same caveat in the other direction: that is not a fix either, it is the same noise
+seen from the other side. It stays an open item.
+
+One new open item from this cell: `actions_match_plan` 90%, one run naming the bike EMI in a
+proposal the plan did not contain.
+
+### Unasked-for filing flags · census, and what the number actually means
+
+From C's fourth call: on a rent correction the model sent `survival=false` explicitly though the
+person had only changed the amount, flipping a survival essential to ordinary. The domain treats
+an omitted flag as unchanged, so this was stated rather than defaulted, and the store kept `true`
+because `record_call` supersedes only stated fields — the two then disagree. Survival drives the
+tier, so the money risk is real.
+
+**Census over 369 saved runs, and the headline number needs its qualifier:**
+
+| count | what it counts |
+|---|---|
+| 253 | an `upsert` on an item already in the call carrying `spread`, `survival` or `flexible` |
+| 239 | …where the person had said nothing about how that item is filed |
+| 460 | a flag re-sent for an item and flag already sent once |
+| **9** | …where the re-sent value **contradicted** the earlier one |
+
+The first number is the one to be careful with. The model volunteers these flags constantly — 239
+of 253 — but almost every one repeats the value already held, which changes nothing. The harmful
+case is a re-send that contradicts, and that is **nine occurrences across 369 runs**: two kinds
+only, `newspaper.flexible` true to false and `electricity bill.survival` false to true. So the
+behaviour is ubiquitous and the damage is rare, which is a different problem from the one 239
+suggests on its own.
+
+**Fix: the field descriptions for all three flags** now say to send them only when the person says
+so that turn, and to omit them to leave things as they are; `survival` also says plainly what
+sending false costs — an item already filed as survival drops down the priority order and can
+leave the rent unpaid. A schema test asserts all three texts.
+
+**Cell: `returning_changes_rent`, 5 runs, every check at or above 95%.** Four of five end with
+`rent.survival` true; three re-sent `survival: true`, which is the harmless repeat, and none
+contradicted. The fifth ends false — but it re-sent no flag at all: that run created a fresh rent
+item rather than matching the carried one, which is the misfiling shape from §10.9 and not this
+one.
+
+As with the last lever, five runs cannot show this worked: the harmful event was already rare
+enough that its absence proves nothing. It ships because the description is true and the omission
+rule is what the domain already does.
+
+## The owner's call as a scenario · the before table
+
+`owner_call_1` reproduces the live call the owner judged "a bot, not an intelligent agent"
+(`evals/runs/voice-9869101897-20260913T194053Z-20260913-194718.json`). Every scripted line is the
+person's actual words from that recording, fragments and hedging intact — "I think, like, around
+30,000", "I did not understand", "30 minus / 18 is not 57". What is deliberately not scripted is
+everything after the arithmetic challenge, because those turns depend on what the bot says back.
+
+**Run against the CURRENT build, 5 runs, before any redesign.** Run ids kept for the after table:
+
+`owner_call_1-20260914-013312`, `-013402`, `-013403`, `-013404`, `-013406`.
+
+| check | before |
+|---|---|
+| numbers_traceable | **60%** |
+| claimed_values_recorded | **80%** |
+| banned_phrases | **80%** |
+| state_matches_facts | 100% |
+| every other rule | 100% |
+
+The facts land — `state_matches_facts` is clean, so the balance, the salary, the rent and the
+5,000 all reach the state correctly. What fails is everything the owner actually complained about,
+and it fails on the turns where the person pushes back:
+
+- *"You're right: thirty thousand minus eighteen thousand is twelve thousand rupees; the
+  fifty-seven thousand figure included your opening balance…"* — the bot concedes the challenge by
+  doing the subtraction itself. Neither 12,000 nor 57,000 came from any tool result.
+- *"Your recorded income is thirty thousand rupees, and your recorded spending is twenty-three
+  thousand rupees, with the lowest balance…"* — 53,667 spoken as a recorded figure that was never
+  recorded, which is check sixteen firing on a run that was not built for it.
+- One run offered credit.
+
+So the deterministic checks already describe the failure the owner named, without a judge: when
+challenged on its own numbers, the bot computes an answer rather than reading one back. Two of the
+three failing checks are the never-compute rule, which is the oldest rule in the product.
+
+Not fixed, not touched: prompt and tools are unchanged pending the redesign brief.
+
+# Handover · to the fresh Session B taking the redesign
+
+Written at 27% context by the session that did the cut, the eval phase, the observability phase
+and the before table. The brief is `docs/process/agent-redesign-brief.md` and it is authoritative;
+this is what the brief does not say and what you would otherwise have to rediscover.
+
+## Read first, in this order
+
+1. `docs/process/agent-redesign-brief.md` — the work.
+2. This file from "## The owner's call as a scenario" down — the before table and its run ids.
+3. `docs/process/prompt-provenance.md` — every rule with the case it was added for; the last
+   section lists what v2 cuts and where each case lives if it comes back.
+4. `evals/REPORT.md` §10.2, §10.3, §10.7, §10.9 — the four hard-won lessons, below.
+5. `docs/process/requests.md` "## B" — open items and the shapes A owes you.
+6. The constraint census the orchestrator names in its message.
+
+## Done already
+
+`prompts/v2.md` exists: 270 tokens against a 400 ceiling (v1 was 599 against 620). The ceiling
+test is per version now — `MAX_BASE_TOKENS = {"v1": 620, "v2": 400}` — so v1 keeps its budget
+while v2 is held to the smaller one. Two tests pin v2's substance: the identity and the goal's
+category list, and the five money rules. **Nothing else of the redesign is started.** The tool
+set, coercion, results, turn block, checks split and judge criteria are all yours.
+
+## Four things that will cost you a day each if you rediscover them
+
+**The result-carried lever is the strongest tool in this codebase and it cuts both ways.** Nine
+instructions ride on result strings today (`prompt-provenance.md` has the table). Every one moved a
+check from 0-80% to 96-100% where the same rule in the prompt alone had failed. The brief deletes
+most of them, which is the right call for the ones that are orders about language — but keep the
+three the brief keeps, and know what you are giving up. §10.2 is the counter-example: a card's
+`min_due` is read back beside its amount and the model still sent the balance as the minimum in 4
+of 13 runs. **The lever works on what to do next, not on what a value means.** A misunderstanding
+of a field is fixed in the field description, not in the result.
+
+**A correct instruction, obeyed, will fail any rule that was not told about it.** Three times
+(§10.7): the implausible-amount question, the balance total, the carried read-back. Each time the
+instruction was right and the check was incomplete, and each looked exactly like a defect until
+the transcript was opened. The rule for you: whoever adds an instruction that makes a new figure
+sayable adds its provenance source in the same change. You are about to add derivation figures to
+`numbers_traceable` — that is the fourth case, and it is in the brief because we now expect it.
+
+**Five runs cannot tell 80% from 90%.** Two levers this phase shipped on numbers that could not
+distinguish themselves from noise, and both are written up saying so. When the after table comes
+in, say what it can and cannot support. The before table is five runs; a two-point move in it
+means nothing.
+
+**`state_matches_facts` is the check that found what eleven transcript checks could not**, because
+it reads what was written down rather than what was said. When you change the tool set, its
+`_FACT_GROUPS` and the `min_due` comparison need to follow, or it will silently stop covering the
+new shapes.
+
+## The before table, for the after comparison
+
+`owner_call_1`, 5 runs, current build. Run ids: `owner_call_1-20260914-013312`, `-013402`,
+`-013403`, `-013404`, `-013406`.
+
+| check | before |
+|---|---|
+| numbers_traceable | 60% |
+| claimed_values_recorded | 80% |
+| banned_phrases | 80% |
+| state_matches_facts | 100% |
+| every other rule | 100% |
+
+Every line of that scenario is the owner's actual words from
+`voice-9869101897-20260913T194053Z-20260913-194718.json`, fragments and hedging intact. Do not
+tidy them. Everything after the arithmetic challenge is unscripted on purpose: those turns depend
+on what the bot says back, and scripting them would decide the outcome being measured.
+
+The failures are all on the push-back turns, and `state_matches_facts` is clean — the gathering
+half works, and what breaks is the explaining half. Two of the three failing checks are the
+never-compute rule.
+
+## Notes on the tool table
+
+- **Fuzzy name matching**: the domain already matches possessives (`state.possessive_of`,
+  `items._same_item`: bare names merge, two different owners do not). `evals/provenance.py`
+  mirrors that rule and a comment there says why. Whatever you do for `note`, those three have to
+  agree or the checks drift from the domain — that pairing has broken twice.
+- **Plain date parsing**: `coercion._day` takes a day number today. "end of month", "first week of
+  October", "the 7th" all need to land on `day_of_month`, and `spoken_day` in
+  `agent/tools/phrases.py` is the reverse direction and already exists.
+- **`show_month` replacing `finalize_plan` as a gate**: the no-actions line (`phrases.NO_ACTIONS`)
+  exists because a plan with nothing to do gave the model nothing to explain and it invented two
+  actions and a remainder. Whatever `show_month` returns, a month that needs nothing must still
+  say so in words.
+
+## Open items, unchased
+
+- `carried_confirmed_before_plan` 80% on two five-run cells, clean on one ten-run cell.
+- `actions_match_plan` 90% on one cell, a proposal naming an item the plan did not contain.
+- `register_fit` has passed 13 of 13 including an adversarial run; the owner declined the
+  falsification run, and §10.8 says to read it as unfalsified rather than as a pass.
+- The full judge sweep is unspent and not worth it until a criterion can fail.
+- `evals/REPORT.md` §10 is current through §10.9 and wants the after table as §10.10.
+
+# Session B (fresh) · the redesign
+
+## Section 5 · checks and judge — done, suite green
+
+`uv run pytest` 1176 passed, 27 skipped. `ruff check`, `ruff format --check`, `lint-imports`
+(7 contracts) clean. No model was called: this whole section is offline and cost nothing.
+
+**The split.** `ledgerline/judge/checks/checks.py` now has nine gates (money and state) and nine
+advisory rules (how the coach talks), both run on every call, both printed in the matrix table,
+only the gates in the exit code (`evals/run_suite.GATE_NAMES`; `gate_failures` is the exit code and
+`below_threshold` stays the report). `no_repeated_sentence` went advisory on the same test as the
+rest — the brief lists it on neither side, and doubled speech is something the coach said twice,
+not a figure that is wrong. Say if you want it back on the gate side.
+
+**Two new gates.** `no_silent_turn` (a tool call, no spoken word, the person waiting) and
+`no_spoken_decimals` (a figure with paise, in digits or in words). Both were among `owner_call_1`'s
+four judge questions and both turned out decidable in code. Replayed over all 382 saved runs, split
+at the cut as `evals/runs/README.md` requires:
+
+| rule | pre-cut (221) | post-cut (161) | the live call |
+|---|---|---|---|
+| no_silent_turn | 59 turns in 50 runs | 11 turns in 9 runs | 3 turns |
+| no_spoken_decimals | 17 figures in 9 runs | 5 figures in 4 runs | 2 figures |
+
+All 22 decimal flags were read individually; every one is an engine `Decimal` spoken aloud. The 70
+silences were checked structurally — tool call, no text, a user utterance before it — and **none is
+followed by the coach speaking**, which is what licenses the narrow "after a user utterance" rule.
+Thirty-nine of the seventy call `end_call`: a hang-up with no goodbye.
+
+**The before table gains a row.** `owner_call_1-20260914-013403` spoke "56,833.27 rupees", so
+`no_spoken_decimals` is 80% before; no baseline run has a silent turn, so `no_silent_turn` is 100%
+before. Nothing else in the table moves.
+
+**The judge.** Six criteria became four, as the brief asks: `full_month_before_planning`,
+`low_point_explained`, `challenge_answered_without_computing`, `led_like_a_coach`. `applies_when`
+stays in code — the two planning criteria need a final plan, `low_point_explained` needs a result
+that actually named a low point (`_low_point` matches `describe`'s own "lowest …" line, and a test
+pins the pairing against `_summary_lines` so it cannot silently stop applying), and the fourth
+applies to every call. `judge.run` reports gates and advisory both, so nothing disappears from the
+review screen; the matrix is the only place the split decides anything.
+
+Written up as `evals/REPORT.md` §10.10. Contract note for the orchestrator and D in
+`docs/process/requests.md` B-redesign-1: two sample fixtures still carry retired criterion ids.
+
+Next, in order: the tool set (brief §2), results (§3), the turn block (§4), then `owner_call_1`
+five runs on v2 with the new tools.
+
+## Section 5, second pass · the three outcome checks and the advisory flag
+
+Suite 1187 passed, 27 skipped; ruff and `lint-imports` clean (the new domain import — `coverage`,
+`FinancialState`, `Coverage`, `ItemKind` — is inside the existing judge-to-domain contract). Still
+zero spend.
+
+**Eleven gates now.** `no_premature_plan` (a plan reached with a category never mentioned and never
+ruled out, read off `state.coverage`, end-of-call state, unreadable states report nothing) and
+`explains_on_request` (doubt about a figure the coach just spoke, answered without a figure from any
+result; a question in reply is no defence). Replay over the 383 saved runs: `no_premature_plan` 47
+pre-cut runs and **72 of 162 post-cut**; `explains_on_request` 3 turns in 2 runs, all post-cut. Both
+fire on the live call — the plan with debts never discussed, and the two deflections at turns 18 and
+33. Ten trigger turns in the whole corpus for `explains_on_request`, because only `owner_call_1` and
+the live call contain a person who pushes back; it cannot fire where nobody doubts anything.
+
+**The before table is now eleven rows** and the four things the redesign is aimed at are all
+measurable before it starts: `no_premature_plan` **0%**, `numbers_traceable` 60%,
+`claimed_values_recorded` / `banned_phrases` / `no_spoken_decimals` / `explains_on_request` 80%,
+everything else 100%. (The baseline files on disk are `owner_call_1-20260914-013312`, `-013312-2`,
+`-013312-3`, `-013402`, `-013403` — the handover's `-013404`/`-013406` are the `-2`/`-3` suffixes
+under another name. Five runs either way.)
+
+**`coverage_before_plan`** is the judge criterion, renamed from `full_month_before_planning` to the
+orchestrator's name; same question, same `applies_when`.
+
+**Contract, as agreed:** `RuleResult.advisory: bool = False`, true for the nine advisory rules, set
+in `judge.py` from `checks.ADVISORY`. Additive; the key-set test in `tests/judge/test_models.py` is
+updated. Ready for `verdict.ts` and a regenerated `verdict.sample.json`.
+
+Written up as `evals/REPORT.md` §10.11 (the two checks and the full before table) and §10.12 (the
+correction to this report's own 96-to-100 headline: four-way confound, the two strongest cells are
+removed conflicts rather than placement, OpenAI's hierarchy ranks tool text lowest, n=5 per cell).
+
+## The tools, the results, the turn block, and the after table
+
+Suite **1291 passed**, 27 skipped; ruff, format and `lint-imports` (7 contracts) clean. Spend on
+the phase so far: eight `owner_call_1` runs (three smoke, five the cell), roughly $0.12 of the
+$0.30 cap.
+
+**Two new files, v1 untouched.** `ledgerline/agent/tools/plain.py` is the six plain verbs —
+`note`, `forget`, `nothing_more`, `show_month`, `what_if`, `done` — and
+`ledgerline/agent/tools/facts.py` is the result string as facts. `build_tools(ctx, version="v1")`
+returns the old seven and `version="v2"` the new six, so the A/B is one setting
+(`prompt.turn_block` and `system_instruction` take the same argument). `handlers.py` and
+`describe.py` are unchanged and go when the owner has read the after table.
+
+**Where a wrong translation would move money, the tool asks instead of guessing.** `note` works out
+that rent is a bill and a car loan is a secured EMI, but "the gym" comes back as a question naming
+the four words to answer with, because filing a bill as spending drops it down the priority order.
+A date it cannot pin down ("first week of October") is reported as an open date — and the amount is
+still recorded. That last part is a fix from the first smoke run, where refusing the whole call over
+a fuzzy date lost the owner's rent for ten turns.
+
+**The four imperatives the brief keeps are the only ones left**: the balance in parts, an amount too
+small to be real, a month that needs nothing, the goodbye. No read-back order, no "confirm which is
+right", no "ask once, then finalize". The coverage fact replaced `READY_TO_PLAN`, and that is the
+change with a mechanism behind the number below.
+
+**The after table, five runs, every column replayed under today's rules:**
+
+| check | before | after |
+|---|---|---|
+| no_premature_plan | **0%** | **100%** |
+| numbers_traceable | **60%** | **100%** |
+| claimed_values_recorded | 80% | 100% |
+| no_spoken_decimals | 80% | 100% |
+| explains_on_request | 80% | 100% |
+| every other gate | 100% | 100% |
+| one_question_per_turn (advisory) | 100% | 80% |
+| one_goodbye_with_the_end_call (advisory) | 100% | 80% |
+
+Five runs cannot tell 80% from 100%; what this supports is that nothing regressed on money or state
+and that the two failures the owner named did not happen once. **Two of the five after runs never
+reached a plan** — they spent the call establishing loans and cards and ran out the scenario's
+26-turn budget — so `no_premature_plan` at 100% is three real passes and two abstentions, against
+five of five planning prematurely before. That cost is named in the report, not buried. Written up with the caveats, the two
+rule changes that moved numbers, and the run ids in `evals/REPORT.md` §10.13.
+
+**Three things the smoke runs found and fixed**, each with its run id in the report: markdown bullet
+lists (the rule came back to v2 with a named case, `prompt-provenance.md`), the lost rent above, and
+`in minus out` — two runs did that subtraction out loud when challenged, because no result contained
+the figure. Adding it to the month view is why the third challenge produced "the fifty-seven
+thousand figure is not the result" instead.
+
+**Two rules changed, both named in the report**: `credited` is no longer read as an offer of credit
+(a salary is credited to an account), and a bare small number the person says in an arithmetic
+sentence now authorises its thousand-scaled form for the coach to say — replayed over 391 runs it
+changes exactly the three it was written for.
+
+Open, for whoever picks this up: the full matrix has not been run on v2, only `owner_call_1`; the
+four judge questions are for the owner to read from the transcripts; and `docs/process/requests.md`
+B-redesign-2 (C: one setting switches prompt, tools and block; the v2 greeting shrinks) and
+B-redesign-3 (A: a `Summary` field for in-minus-out) are open.
+
+## The matrix, the follow-ups, and C-obs-4
+
+Suite **1328 passed**, 27 skipped; ruff, format, `lint-imports` clean. Spend for the whole phase:
+61 runs — 8 owner_call_1 before the matrix, the 40-run matrix, two five-run cells and three
+`fragmented_balance` runs — roughly $0.90 at this report's own per-run figure.
+
+**The matrix found one defect wearing eight scenarios' clothes.** `state_matches_facts` 30%, and 22
+of the 28 failures read "essential groceries never recorded". Groceries WERE recorded — as everyday
+spending, because `_kind_of` took the model's `kind` word over the item's name. Food filed as
+discretionary is food the engine may propose cutting, which is exactly what code owning the filing
+was for. The item's name wins now; `must_pay=True` also lifts spending to a bill. Re-run on
+`fragmented_balance`, the groceries failure is gone in all three runs and what remains is a
+different, real gap: the coach did not ask for the card's minimum. Full table and the rest of the
+matrix in `evals/REPORT.md` §10.14.
+
+**The three follow-ups from the owner's report are in** (§10.15): the derivation now reads as a line
+per step with `show_month`'s description pointing at it; complete coverage says so as a fact; the
+turn budget went to 36 and is ruled out as a cause. The honest result: the coverage fact did not
+stop the looping, because the person in `owner_call_1` never answers the loans question at all, so
+"not mentioned yet: loans or cards" comes back every turn — a standing fact the conversation cannot
+satisfy is the fourth form of the ratchet this report keeps finding. The fix went in the prompt,
+where knowing when enough is enough belongs, and two of five then reached a plan.
+
+**Two figures were added to the month view because runs said them out loud**: `in minus out` (now
+`Summary.net_flow`, from A) and `opening plus in is X to work with`. After both, five of five were
+clean on `numbers_traceable`.
+
+**C-obs-4 is in.** `prompt.managed_name(version, name)` derives the Langfuse name, and both
+`ensure_prompt` and `managed_prompt` call it themselves rather than trusting the caller, so a
+publish and a fetch cannot disagree. A name that already carries the version is left alone, so
+C's own `managed_prompt_name` keeps working today and can be deleted whenever C likes. The recorded
+version is now `v2@7` — ours and Langfuse's — because a bare `7` reads as a prompt version of our
+own. Four tests.
+
+**Ponytail pass done** on the three new files: a dead `_signed` helper and a dead `upsert(...,
+min_due=None)` call (None means "leave it alone", so it did nothing) are gone; `item_line` lost an
+argument it no longer used. 1,228 lines across `plain.py`, `facts.py` and the plain-word half of
+`coercion.py`, against 1,034 in the v1 pair they replace — the extra is the translation from plain
+words, which is the point of the redesign.
+
+Still open and unowned: the unasked card minimum (`state_matches_facts` on `fragmented_balance`),
+`one_goodbye_with_the_end_call` at 75% and `one_question_per_turn` at 78% across the matrix, both
+advisory; `silent_before_acting` 40% on the returning-caller path; and the product judgement the
+owner has to make — a coach that establishes loans and cards before planning will sometimes not
+reach a plan on a call where the person wants the numbers now.
+
+## The v1 deletion · census
+
+Delete-only sweep after the owner read the after table. `uv run pytest` 1111 passed, 17 deselected;
+ruff, format and `lint-imports` (7 contracts) clean. `tests/store` was excluded from that run and
+only from that run: `ledgerline/store/__init__.py` was mid-edit in another session and its own
+import was failing, nothing to do with this sweep — re-run it once that lands.
+
+**What it cost, first.** With v1 gone the **before column of `evals/REPORT.md` §10.13 can never be
+re-run**: the prompt, the tools and the result strings that produced 60% `numbers_traceable` and
+0% `no_premature_plan` are deleted. The five recordings
+(`owner_call_1-20260914-013312`, `-013312-2`, `-013312-3`, `-013402`, `-013403`) and the report are
+the record, and replaying today's checks over those files still works because a transcript is just
+JSON. What cannot be done again is producing a new v1 run to compare against.
+
+### Files
+
+| deleted | lines | evidence it had no caller |
+|---|---|---|
+| `ledgerline/agent/tools/handlers.py` | 339 | the seven v1 tools. Imported by `tools/__init__.py` (rewritten), `tests/agent/test_tools.py` (deleted) and nothing else; `voice/pipeline.py` imports `tools.build_tools`, which moved to `plain.py` under the same name and the same re-export |
+| `ledgerline/agent/tools/describe.py` | 373 | the v1 result string. Imported by `handlers.py`, `tools/__init__.py`, `tests/agent/test_describe.py` (deleted), and two pairing tests in `tests/judge` now pointed at `facts.py` |
+| `ledgerline/agent/prompts/v1.md` | 46 | read only through `base_prompt("v1")`; `DEFAULT_VERSION` is "v2" and no caller passes "v1" |
+| `tests/agent/test_describe.py` | 896 | tested `describe.py` only |
+| `tests/agent/test_tools.py` | 927 | tested the seven v1 handlers. Five tests covering surviving behaviour were moved into `test_plain.py` first, named below |
+| `evals/provenance.py`, `evals/spoken_numbers.py` | 12 each | module aliases from the checks move; `grep -rn "evals.provenance\|evals.spoken_numbers"` over `*.py` returns nothing outside the shims themselves |
+
+`evals/checks.py` is the one shim still standing, and deliberately: `tests/voice/test_recorder.py`
+(Session C's) imports `from evals import checks`. One line, C's file, in `requests.md` B-sweep-1.
+
+### Symbols
+
+| deleted | evidence |
+|---|---|
+| `build_tools(ctx, version)` -> `build_tools(ctx)` | one tool set; the only caller passing a version was `voice/pipeline.py:265`, which C changed in the same sweep. Two intermediate steps kept the tree green: the parameter was accepted-and-ignored while C landed their edit |
+| `prompt.turn_block(..., version=)` and its v1 body, `_plural`, `RECORDED_LINE`, `STILL_MISSING`, `PHASE`, `MAX_MISSING` | the v1 block's counts, missing list and phase word. `state_ops` left `prompt.py` entirely with them |
+| `ToolContext.take_carried`, the `carried=` constructor argument, `ToolContext.forget_balance_parts` | `grep` for each over `*.py`: one hit apiece, the definition. `take_carried` was read only by `describe`'s carried line; `forget_balance_parts` was called only by v1's `remove_item` on a balance, and `forget` has no balance route — restating a part by name corrects it, which is documented on `balance_total` |
+| `coercion`: `_kind`, `_debt_kind`, `_day`, `_field`, `_income_fields`, `_one_of`, `FIELD_ID`, `BARE_FIELDS`, `ATTRIBUTES`, `CERTAINTIES`, `DEBT_KINDS` | the v1 argument grammar: enums, day integers and the `kind:name.attribute` field id. Every one had exactly one occurrence outside its own module — none. `Certainty` left the imports with `_income_fields` |
+| `phrases`: `UNDERSTOOD`, `READ_BACK`, `BALANCE_TOTAL`, `READY_TO_PLAN`, `NO_ACTIONS`, `NEW_WHILE_CARRIED`, `CARRIED`, `CARRIED_SETTLE`, `RECORDED`, `ALREADY`, `PARKED`, `MISSING`, `PROVISIONAL`, `NOT_APPLICABLE`, `REMOVED`, `EXPLAIN_AGAIN`, `NO_PLAN_YET`, `MORE_UNPAID`, `MAX_UNPAID_SPOKEN`, `MAX_MISSING_SPOKEN`, `MAX_ACTIONS_SPOKEN`, `CONFIRM_CHANGE`, `REFUSAL_FIELD`, `REFUSAL_DEBT_KIND` | `grep -o "phrases\.[A-Z_]*"` across `ledgerline`, `evals` and `tests` lists exactly what is still read: `GOODBYE`, `CONFIRM_AMOUNT`, `BALANCE_PARTS`, `NOTE`, `UNCHANGED`, `NOTHING_RECORDED`, `NOT_KNOWN`, `BLOCKED`, `PLAN_FINAL`, `PLAN_SHAPE`, `PROVISIONAL_UNNAMED`, `REFUSAL_PLAIN`, `REFUSAL_AS_GIVEN`, `spoken_day`. 83 lines where there were 172 |
+| `evals`: `OPENING` (v1 wording), `OPENING_V2` (renamed to `OPENING`), `run_suite --prompt-version` | the flag had one possible value once `prompts/v1.md` was gone |
+| `tests/agent/conftest.py`: the `StateSnapshot` fake and the `snapshot` monkeypatch | asked for by Session A, who is deleting `domain.state.StateSnapshot` and `snapshot()`. Mine were the last two references in the repo outside A's own tests; the v2 block reads `facts.coverage_lines(state)` instead, and `prompt.py` no longer imports `domain.state` at all |
+
+**`phrases.NO_ACTIONS`, asked about by name: it is NOT reachable and it is deleted.** `facts.py`
+carries the same fact under its own constant, `NOTHING_TO_DO = "nothing to do: every payment is
+covered in full"` — the sentence without the order half ("explain the lowest point and propose
+nothing"). The case it was written for, B-13, is covered: `test_a_month_that_needs_nothing_says_so_
+in_words` in `tests/agent/test_plain.py` asserts a month with nothing to do says so.
+
+### Tests
+
+`test_tools.py` and `test_describe.py` went whole; five tests in them covered behaviour that
+survives, and those were moved into `test_plain.py` before the files went, not rewritten:
+`test_pipecat_derives_a_schema_from_every_tool` (now asserting the six plain schemas and the
+`what_if` array), the two `_refused` routing tests, and the two replay-guard tests (a different
+call runs, the same call runs again on a later turn).
+
+`test_integration_domain.py` was rewritten rather than deleted: twelve tests against the plain
+tools and the real domain, each keeping the case its v1 twin was written for — a changed figure
+carrying both numbers, "I don't know" as an answer, no income as a fact, the card minimum above its
+total refused with the state unchanged, a domain refusal reaching the model as a sentence, the
+balance dead end, every line of a real result being a fact, and the identity `opening + net_flow ==
+closing`. Twelve where there were twenty-six: the other fourteen tested v1 tools or duplicate what
+`test_plain.py` already covers against the same real domain.
+
+`test_prompt.py` lost the v1 prompt and v1 block sections and kept one path: 20 tests where there
+were 45.
+
+**Two pairings nearly rotted silently, and both are now tested.** `tests/judge/test_criteria.py`
+reached into `describe._summary_lines` to prove `criteria._low_point` matches the product's own
+line; it now reads `facts._low_point_lines`. And `changed_value_acknowledged` parses the result's
+change line — v1 wrote `rent: 11,000 -> 12,000`, v2 writes `rent 11,000 before, now 12,000`, so the
+check would have passed every v2 run without looking at one. `CHANGE` now matches both shapes, the
+old one because the saved runs hold both eras.
+
+### Numbers
+
+2,058 insertions against 3,483 deletions across the sweep. `agent/tools` is 1,317 lines in five
+files where it was 2,029 in seven; `prompt.py` 164 where it was 205; `phrases.py` 83 where it was
+172. Everything the model actually reads — six tools, one prompt, one result builder, one block —
+now exists once.
+
+## The three-check fold
+
+`uv run pytest` 1060 passed, 27 skipped, 18 deselected; ruff, format and `lint-imports` clean. One
+test is deselected in that count and it is C's: `tests/voice/test_recorder.py::test_checks_accept_a
+_recorded_voice_turn_order` calls `checks.silent_before_acting`, one of the nine deleted rules.
+Everything else is green; the fix is in the report to the orchestrator.
+
+`money_traceable`, `state_matches_call`, `speakable`, over the same ten sub-rules as private
+helpers. Replayed over all 448 saved runs: folded output equals sub-rule output exactly, zero
+mismatches, and that replay is a test. Violation counts by sub-rule over the corpus, for the
+record: no_premature_plan 121, no_silent_turn 71, actions_match_plan 46, state_matches_facts 44,
+numbers_traceable 30, no_spoken_decimals 22, no_iso_dates 7, claimed_values_recorded 3,
+no_markdown 2, banned_phrases 1.
+
+Deleted with them: the nine advisory rules, `explains_on_request`, `ADVISORY`, `run_advisory`,
+`run_suite.GATE_NAMES` (every check decides the matrix now), `RuleResult.advisory`, nineteen private
+helpers and fourteen orphaned constants. `checks.py` is 710 lines where it was 1,204; its test file
+1,537 where it was 2,004, with 58 tests for deleted rules removed and two `no_silent_turn` cases
+restored that the sweep took because a docstring named a deleted rule.
+
+`evals/checks.py` is gone: C repointed `tests/voice/test_recorder.py` to
+`ledgerline.judge.checks`, so the last shim from the checks move has no importer.
+
+**`event_order` is gone from the harness too.** `silent_before_acting` was the only reader, so with
+it deleted the harness was writing a field nothing looks at and the recorder was writing the same
+field plus a `spoke_before_acting` mark. `evals/harness.py` no longer builds or writes it (the
+`order` list, its accumulation and the third return value of `_agent_turn`), and the orphaned
+`turn_with_order` fixture went from the check tests; C is taking the recorder's half in the same
+pass, so the two recording formats stay the same shape. Evidence it had no reader:
+`grep -rn "event_order" --include="*.py" ledgerline evals tests` returns only `voice/recorder.py`
+and its own tests, both C's and both being removed.
+
+**The deselected tests were swept too, because the green suite proves nothing about them.**
+`tests/agent/test_harness_smoke.py` (marked `llm`, so never run offline) still looped over
+`checks.run_advisory` and asserted `transcript["state"]["understanding"]` — a key that has not
+existed since the cut renamed it `understood`, so the first paid run would have died on a
+KeyError nobody was looking at. The advisory loop is gone, the assertion reads `understood` and
+checks it is a bool with the reason why it is not asserted True (whether the person agreed is the
+person's, and that scenario's `ends_when` is the action repeated back, not agreement), and the
+`finalize_plan` wording in the comment above it is v2's. Proven by `--collect-only -m llm` plus a
+static read, not by spending.
+
+Then every `llm`, `voice` and `e2e`-marked file was grepped for every name deleted today. The only
+hits are `mark_unknown`, `upsert` and `confirm_carried` in `tests/store/test_profile_write.py`, and
+all three are the DOMAIN functions, which are untouched — it was the tools of those names that went.
+`spike/` is clean. All 17 marked tests collect.
+
+Written up as `evals/REPORT.md` §10.16, including the thing worth keeping: the fold's own argument
+is `changed_value_acknowledged`, which parsed v1's change line, stopped matching when v2 changed it,
+and went on reporting 100% on runs it was not looking at — and it is one of the nine deleted. A rule
+per surface is a rule per way to rot silently.
+
+## Kiro review kiro-20260914T050806Z · four findings
+
+Suite in my areas green (`tests/agent`, `tests/judge`); ruff, format and `lint-imports` clean. The
+full run is red in `tests/domain` and `tests/api` while Session A's second pass is mid-edit — the
+failures move between runs and pass in isolation, and nothing of mine imports either file.
+
+**KIRO-003 · `must_pay` no longer decides what kind of thing it is.** `_kind_of` lifted an optional
+to an essential when `must_pay` was true, so a gym the person insists on sat at tier 0 — above the
+rent — and, because `upsert` keys by (kind, name), the same gym ended up recorded twice, once under
+each kind and counted twice in the outflow. `note`'s own contract already said what the domain
+means by it: an inflexible optional. The lift is gone and the `must_pay` parameter with it; `note`
+sends `flexible=False` as it always did for that branch. Two tests: the first insertion, and the
+update of an item already recorded as optional, both asserting one item and no essential. The
+§10.14 groceries fix does not lean on the lift and is pinned separately — the item's name wins over
+the model's word, and `_kind_of("groceries", "everyday spending")` is still a bill.
+
+**KIRO-004 · how a debt was filed is said back.** The unsecured-EMI default for a bare "loan" stays
+— refusing would put a question in front of the common case — but the guess is visible now: "as a
+card", "as a secured EMI", "as an EMI", "as money owed", in the `note` echo and in every debt line
+of the month view. The filing is the tier and the tier is what gets paid when the money runs out, so
+a wrong guess needed to be one correction away rather than invisible. Four tests, one per kind.
+
+**KIRO-011 · `what_if` pays in full through a name the person would use.** `_find_kind` accepted
+"my hdfc card" but the mutation compared normalised names exactly, so the alias matched no debt,
+nothing changed on the copy, and the result still announced the change. It resolves the debt
+through the domain's own `_find` now — the same identity `upsert` and `remove` use — and refuses
+when nothing matches. Tested with the possessive alias against a month where the engine actually
+proposes the minimum, so the delta has something to show, plus the refusal.
+
+**One more dead thing the sweep had missed.** `tests/agent/conftest.py` still monkeypatched every
+domain function with a recording fake, and `tests/agent/factories.py` built the `Plan` and `Summary`
+doubles it returned — both served `test_tools.py` and `test_describe.py`, which went with the v1
+tools. One test still took the `rec` fixture and did not need it (it only derives tool schemas).
+`factories.py` is deleted, the `Recorder` class and the `rec` fixture with it; what is left is a
+real state, the cards a handler pushed, and the params double. `grep -rn "factories\|make_plan\|
+make_summary" tests/` returns nothing. Session A's warning about hand-built `Summary` fixtures
+defaulting `to_work_with` to zero therefore cannot bite this layer: nothing here builds one.
+
+**KIRO-002 · the last arithmetic leaves the agent layer.** A landed `Summary.to_work_with`, so
+`_cashflow_lines` reads it and the `ponytail:` note about working out the addition is gone; `grep
+-c "ponytail:" facts.py` is 0. The surplus/shortfall pair is unchanged: two presentations of one
+published figure, always shown together.
+
+## Kiro review kiro-20260914T053721Z · three findings
+
+Whole tree **1112 passed, 31 skipped, 17 deselected**; ruff, format and `lint-imports` clean. The
+fold's 448-run replay still shows zero mismatches after these result-string changes.
+
+**F1 · an estimate is counted, and the line says so.** `item_line` gave every non-confirmed
+certainty the same words — "not counted as money until it arrives" — but `_income_events` counts an
+ESTIMATED income in full and leaves out only an UNCERTAIN one. So `show_month` could tell the model
+an estimated salary was excluded while the cashflow and the low point three lines below it included
+the money: a coach contradicting its own figures in the same breath. One wording per certainty now,
+each matching what the engine does: "an estimate, counted in full", "may not arrive, left out until
+it lands". Both tested against `plan.summary.total_in` from the real engine — 30,000 counted for the
+estimate, 0 for the uncertain one — so the line cannot drift from the arithmetic without failing.
+
+**F2 · the head word decides, not any word in the phrase.** `_kind_of` scanned the item before the
+model's kind and returned on the first substring, so "rent from my tenant" sent as money coming in
+was filed as an outflow and "salary advance loan" sent as a loan was filed as income — cashflow
+direction reversed, on exactly the phrases where the model's reading is the better one. The rule is
+now: the LAST word of what they called it decides when it is one of the listed words ("groceries",
+"my salary", "credit card", "bike loan"); otherwise the model's `kind` decides; otherwise any listed
+word in the phrase decides, as before. §10.14's measured case is untouched — "groceries" sent as
+everyday spending is still a bill — and "salary advance loan" now lands as a debt by its head word
+and by the model's kind agreeing, rather than by one beating the other. Tested at the coercion level
+for all four phrases and through the tool for the tenant case, which must increase `total_in`.
+
+**F4 · a date that goes away is said out loud.** `_change_lines` dropped every transition with an
+empty new value, so making a dated essential spread (`due_date` cleared) or narrowing an income
+range (`latest_date` cleared) reported the new state and never the removal — though the removal is
+exactly what changed about when the money moves. Cleared fields now read "rent due date 5 Oct, now
+none" beside the new state. Two tests: the essential going spread, which asserts both halves, and
+the income range narrowing to one day.
+
+## Kiro review kiro-20260914T082328Z · F1 done, F3 waiting on A
+
+`tests/agent`, `tests/judge`, `tests/domain` and `tests/store` green; ruff and format clean on my
+files. `tests/api` is red and mid-edit in Session C's hands (their F4 and F5), not mine.
+
+**F1 · when the words disagree, the tool asks.** The head-word rule from Kiro 15 stays, and the
+gap it left is closed: if the head word settles nothing and the phrase and the model's `kind` point
+at different kinds, neither wins — `_kind_of` raises with both readings named, which is the route
+the tool already had. "rent payment" sent as everyday spending would have put rent where the engine
+may propose cutting it; it now asks "could be a bill or everyday spending". "rent payment" sent as a
+bill files as an essential, because nothing conflicts.
+
+Two consequences worth naming rather than burying:
+
+- **"rent from my tenant" now asks instead of filing as income.** Kiro 15 F2 made the model's kind
+  decide it; this makes it a question. That is a deliberate reversal and the right one: rent is the
+  strongest essential word there is and a tenant pays it TO them, so either filing is a cashflow
+  direction guessed from a substring. One question is the cheaper error. The test says so.
+- **"credit card payment" sent as a bill asks rather than filing as a card.** The orchestrator
+  offered either. Asking keeps the rule one sentence long — conflicts ask — where the alternative
+  needs a table of which word is stronger, which is the judgement machinery the cut removed. The
+  cost is one question on a phrase the model could have got right; the benefit is that no future
+  word pair needs a ruling.
+
+**F3 · done, on A's view.** `_cashflow_lines` rounds each figure with `rupees()`
+independently, so opening 60,000.40 plus income 30,000.40 can read "60,000 plus 30,000 is 90,001".
+`ledgerline/domain/rupees.in_rupees(summary)` landed while this was held, and `_cashflow_lines`
+reads it: all eight figures are ints whose three identities hold exactly, because the three the
+month is made of are rounded and the totals are derived from them. The low-point steps use the
+same module's `reconciled(parts, total)` on each side of the arithmetic, so the steps reach the
+figure they end on rather than each rounding where it likes.
+
+`facts.rupees()` survives for figures that stand alone — an item's amount, a card's minimum, an
+unpaid row, a what-if delta — and its docstring now says why: anything that has to ADD UP against
+something else comes from `domain.rupees`. There is one rounding rule in the product again, which
+is what the finding was really about; a second one in this layer would have been the same bug
+wearing a different hat. Two tests with paise on both sides of the half-rupee boundary: the
+cashflow line reconciles against `in_rupees`, and the low-point steps sum from the opening balance
+to the low point exactly.
+
+## Kiro review kiro-20260914T083217Z · F1 and F2
+
+Whole tree **1148 passed, 31 skipped, 17 deselected**; ruff, format and `lint-imports` clean.
+
+**F1 · a date somebody named has to exist, and be in the window.** `resolve_day` clamps, which is
+right for "the end of September" and wrong for a day the person named: "the 31st of September" was
+stored as the 30th. And the parser stripped a four-digit year before reading the day and never
+checked it, so "5 October 2027" was stored as 5 October 2026. Either way money moved on a date
+nobody gave. `_check_named_date` now builds the actual calendar date — the named year if they gave
+one, otherwise the first occurrence of that month on or after today — refuses a day the month does
+not have ("September has 30 days, so 'the 31st of September' is not a date. Ask them which day it
+is.") and refuses anything outside the thirty-day window. Clamping survives only where the phrase
+asks for it: "end of September" still sends day 31 and `resolve_day` still lands it on the 30th,
+which is asserted rather than assumed.
+
+**F2 · one ledger, both ends of the month.** `_low_point_lines` rounded the closing balance itself
+while `_cashflow_lines` spoke the reconciled one, so with paise the same result could say "closing
+0" and "closing 1". It reads A's `in_rupees_low_point(plan)` now — opening, low point, closing and
+every movement as ints, its ends being the same objects the cashflow line speaks — and `whole()` is
+gone from `facts.py` except inside `rupees()`, the one formatter for figures that stand alone. The
+test builds a month with paise on both sides of the half-rupee boundary, asserts every "closing" in
+the rendered month is the same integer, and asserts the cards' low-point closing is that integer
+too, so the screen and the voice cannot drift apart either.
+
+One test moved with it: `tests/judge/test_criteria.py`'s pairing test built a fake plan by hand and
+now runs the real engine, because the line it pins is built from the ledger rather than assembled
+figure by figure. It still pins what it always did — `criteria._low_point` matches the word
+"lowest", which the product's own line still says.
+
+# Handover · the agent, judge and eval layers as frozen, 14 September
+
+Written at 23 percent context by the session that did the redesign, the v1 deletion, the check
+fold and four Kiro rounds. The commit series is the orchestrator's alone; nothing below needs
+doing, it is what a successor would otherwise pay a day to rediscover.
+
+## The state of the layer
+
+Six plain tools — `note`, `forget`, `nothing_more`, `show_month`, `what_if`, `done` — in
+`agent/tools/plain.py`, bound by `build_tools(ctx)`. One prompt, `prompts/v2.md`, 331 tokens
+against a 400 ceiling. One result builder, `agent/tools/facts.py`: facts and options, whole
+rupees from `domain.rupees`, four surviving imperatives (a balance in parts, an amount too small
+to be real, a month that needs nothing, the goodbye). One turn block: today, the window, the
+coverage lines, nothing else. Three deterministic checks over ten sub-rules in
+`judge/checks/checks.py`, and four judge criteria in `judge/criteria.py`. `agent/tools/coercion.py`
+is the translation from what people say into what the domain takes, and it is the only place that
+refuses.
+
+## Open for the owner, not for a successor to quietly close
+
+- **The unasked card minimum.** Two of three `fragmented_balance` runs never asked what the card's
+  minimum was, so `state_matches_facts` fails against a fact the person would have given. Not a
+  recording bug: the coach did not ask.
+- **Loans and cards versus a person who wants the numbers now.** The coverage fact made the coach
+  establish categories before planning, and in `owner_call_1` the person never answers the loans
+  question — so two of five runs reached no plan at all. Which of those two the product should
+  serve is a judgement, and it is the owner's.
+- **Two rates that no longer have an instrument.** `one_question_per_turn` at 78% and
+  `one_goodbye_with_the_end_call` at 75% on the last full matrix. Both rules were deleted in the
+  fold; `led_like_a_coach` is what would catch them now, and a judge criterion is not a rate.
+
+## The rules worth a day each
+
+- **The result-carried lever works on what to do NEXT, not on what a value MEANS.** Nine
+  instructions rode results and each moved a check from 0–80% to 96–100%. The counter-example is
+  §10.2: a card's minimum was read back beside its amount and the model still sent the balance as
+  the minimum in 4 of 13 runs. A misunderstanding of a field is fixed in the field description.
+- **A correct instruction, obeyed, fails any rule that was not told about it.** Four times now.
+  Whoever makes a figure sayable adds its provenance source in the same change — `carried_numbers`,
+  `_offered_readings` and `_in_thousands` are all that rule applied after the fact.
+- **Five runs cannot tell 80% from 100%.** Every table in `evals/REPORT.md` says what it can and
+  cannot support; keep doing that. A two-point move in a five-run cell is noise.
+- **`state_matches_facts` follows any change to the tool set**, because it reads what was written
+  down rather than what was said — which is how it found a defect eleven transcript rules passed.
+  `_FACT_GROUPS` reads the state, so it survived the tool rename; `provenance.RECORDING_TOOLS` and
+  the arg names did not and had to be taught both sets.
+- **Fuzzy name matching lives in three places and they must agree**: `state.possessive_of`,
+  `items._same_item` and `checks/provenance._same_item`. That pairing has broken twice. `what_if`
+  and `forget` resolve through the domain's own `_find` for the same reason.
+- **A rule per surface is a rule per way to rot silently.** `changed_value_acknowledged` parsed
+  v1's change line, v2 changed the wording, and it went on reporting 100% on runs it was no longer
+  looking at. Two pairing tests exist because of it: `criteria._low_point` against
+  `facts._low_point_lines`, and the check against `facts._change_lines`.
+
+## `_kind_of`, in full, because four rounds shaped it
+
+The item's **head word** decides when it is one of the listed words: "groceries", "my salary",
+"credit card", "bike loan". Otherwise the model's `kind` decides. Otherwise any listed word in the
+phrase decides. And when the head word settles nothing **and the phrase and the kind disagree, the
+tool asks** — "'rent payment' could be a bill or everyday spending" — rather than picking a side,
+because picking needs a table of which word is stronger and that table is the judgement machinery
+the cut removed. `must_pay` does not decide the kind: it means an inflexible optional, and lifting
+it to an essential put a gym above the rent and recorded it twice.
+
+`_debt_kind_for` keeps its unsecured-EMI default for a bare "loan" — **the owner's choice**,
+because refusing would put a question in front of the common case. What makes it safe is that the
+filing is spoken back ("as an EMI", "as a card", "as a secured EMI", "as money owed"), so a wrong
+guess is one correction away. Kiro has raised the default twice; it is a decision, not an oversight.
+
+## Where the evidence is
+
+`evals/REPORT.md` §10.13 (the redesign measured on the owner's own call, before and after), §10.14
+(the full matrix and the groceries defect), §10.15 (the three follow-ups and what they cost), §10.16
+(the fold). The recordings under `evals/runs` are committed and replayable — 448 of them, and the
+fold's acceptance test replays over every one. The before column of §10.13 cannot be re-run: v1 is
+deleted.

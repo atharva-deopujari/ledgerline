@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "review_id": "kiro-20260914T053721Z-d01ac099",
+  "created_at": "2026-09-14T05:37:27Z",
+  "scope": "changed files since git:3fe76696a387ba42c21b76abacb45efd65eff423",
+  "base_ref": "git:3fe76696a387ba42c21b76abacb45efd65eff423",
+  "status": "findings",
+  "summary": "Five findings remain: two high-severity paths can reverse or misdescribe income in the spoken plan, two lifecycle issues can merge call records or leak Daily rooms during retries and setup failures, and one result-string path hides a state transition that changes payment timing.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "file": "ledgerline/agent/tools/facts.py",
+      "line": 141,
+      "title": "Estimated income is falsely described as excluded from the plan",
+      "evidence": "`item_line` applies the same wording to every non-confirmed certainty: `if getattr(item, \"certainty\", None) and item.certainty != \"confirmed\": parts.append(f\"{item.certainty}, not counted as money until it arrives\")`. This includes `Certainty.ESTIMATED`, but `_income_events` counts estimated income in full and only excludes `Certainty.UNCERTAIN`. Consequently, `show_month` can say that an estimated salary is not counted while its cashflow and low point include it.",
+      "recommendation": "Distinguish estimated from uncertain wording so the result states that an estimate is counted and only uncertain income is described as excluded. Add a `tests/agent/test_plain.py` case that builds a month with estimated income and verifies the item line agrees with `plan.summary.total_in`; retain a companion uncertain-income assertion that it is explicitly left out."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "file": "ledgerline/agent/tools/coercion.py",
+      "line": 187,
+      "title": "Substring-first filing can turn incoming money into an expense",
+      "evidence": "`_kind_of` evaluates the item before the model-supplied kind and returns on `if any(word in text for word in words)`. Thus an item such as `rent from my tenant` matches the essential word `rent` and returns `ESSENTIAL` before considering `kind=\"money coming in\"`; similarly, `salary advance loan` matches income before debt. This reverses cashflow direction and bypasses the model's language judgment even though the item phrase is not unambiguous.",
+      "recommendation": "Restrict item-name overrides to genuinely unambiguous matches and allow the explicit kind to settle contextual or conflicting phrases, without adding semantic judgment machinery to the domain. Add coercion tests for `_kind_of(\"rent from my tenant\", \"money coming in\")` and `_kind_of(\"salary advance loan\", \"loan or card\")`, then verify through the plain tool that the former increases income rather than outflow."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "file": "ledgerline/api/routes.py",
+      "line": 56,
+      "title": "Second-resolution session IDs merge rapid sequential calls",
+      "evidence": "The identifier is only `stamp = dt.datetime.now(dt.UTC).strftime(\"%Y%m%dT%H%M%SZ\")` followed by `sessions.reserve(f\"{body.phone}-{stamp}\")`. The single-slot registry prevents overlap but not a delete/retry within the same second. The database insert uses `ON CONFLICT (id) DO NOTHING`, so the second call reuses the first row and later updates its verdict, trace, and recording path under the same ID; the in-process verdict map is also keyed by that ID.",
+      "recommendation": "Make every call ID unique while retaining the phone and sortable timestamp, for example with sub-second entropy or a suffix. Update `tests/api/test_routes.py` to freeze the clock, start/delete/start two calls in one second, assert distinct IDs, and add a store-level test proving both session-history rows remain addressable."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "file": "ledgerline/agent/tools/facts.py",
+      "line": 214,
+      "title": "Clearing a dated field is omitted from the tool result",
+      "evidence": "`_change_lines` discards every transition whose new representation is empty via `if not new: continue`. Dating an income back from a range clears `latest_date`, and changing a dated essential to spread clears `due_date`; the domain reports changes such as `(\"5 Oct\", \"\")`, but the model never receives that removal even though it changes when money moves. This contradicts the HLD contract that moved values return old beside new.",
+      "recommendation": "Represent cleared fields explicitly in the result rather than skipping them. Add a `tests/agent/test_plain.py` tool test that first dates an essential, then marks it spread, and asserts the result communicates both the new spread state and removal of the old due date; add the equivalent range-to-single-date case for income."
+    },
+    {
+      "id": "F5",
+      "severity": "low",
+      "file": "ledgerline/api/routes.py",
+      "line": 67,
+      "title": "A token-creation failure leaves the newly created Daily room behind",
+      "evidence": "Setup performs `room_url, room_name = await create_room(settings)` and then creates two tokens inside one `try`, while the `except Exception` path only executes `sessions.release(session_id)` before re-raising. If either token request fails, no session task exists to run `run_session` teardown, so the private room remains until expiry despite the lifecycle requirement to delete rooms after calls or failed setup.",
+      "recommendation": "Best-effort delete a room that was successfully created when subsequent setup fails, while still releasing the reservation and preserving the original error. Add an API test where `create_room` succeeds and the first or second `create_token` raises, asserting the slot is freed and `delete_room` is called exactly once with the created room."
+    }
+  ]
+}
