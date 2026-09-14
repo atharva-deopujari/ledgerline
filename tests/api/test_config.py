@@ -6,6 +6,20 @@ import pytest
 
 from ledgerline.config import Settings
 
+
+@pytest.fixture(autouse=True)
+def _no_ambient_settings(monkeypatch):
+    """Every test here asserts what the defaults are, so the machine must not have an opinion.
+
+    CI exports DATABASE_URL for the db-marked tests and a developer shell may export LANGFUSE_*
+    or PROMPT_VERSION; `_env_file=None` stops pydantic reading a .env file but not the process
+    environment. Derived from the model's own fields rather than a list, so a new setting cannot
+    reintroduce the dependency by being forgotten here.
+    """
+    for name in Settings.model_fields:
+        monkeypatch.delenv(name.upper(), raising=False)
+
+
 FULL = {
     "_env_file": None,  # never read a developer's real .env in tests
     "openai_api_key": "sk-test",
