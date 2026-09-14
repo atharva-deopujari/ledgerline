@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from ledgerline.domain.policy import DEFAULT_POLICY, Policy
+import pytest
+
+from ledgerline.domain.models import DebtKind, ItemKind
+from ledgerline.domain.policy import DEFAULT_POLICY, Policy, carries
 from tests.domain.conftest import borrowing_language
 
 # Words the engine may never put in front of a user (research 09 section 4). Item names come
@@ -58,10 +61,9 @@ def test_policy_is_swappable_data():
     assert DEFAULT_POLICY.tiers[5].rank == 5
 
 
-def test_pay_on_date_is_retired():
-    """Only a lender can move a due date, so the engine asks rather than reschedules. The Literal
-    stays in models.py so no other layer's type checking breaks."""
-    assert "PAY_ON_DATE" not in DEFAULT_POLICY.allowed_actions
+def test_the_allowed_actions_are_the_whole_vocabulary():
+    """Only a lender can move a due date, so the engine asks rather than rescheduling; there is no
+    "pay it late" action and no enum member for one."""
     assert set(DEFAULT_POLICY.allowed_actions) == {
         "DEFER_OPTIONAL",
         "CUT_OPTIONAL",
@@ -86,3 +88,34 @@ def test_the_survival_tier_offers_something_a_person_can_actually_do():
     survival = next(t for t in DEFAULT_POLICY.tiers if t.key == "survival")
     assert borrowing_language(survival.ask) == []
     assert survival.ask.startswith("You could ask")
+
+
+# ---------------------------------------- phase 3: which facts may be carried into the next call
+
+
+@pytest.mark.parametrize(
+    ("kind", "field", "debt_kind", "expected"),
+    [
+        # Everything recurring carries: the rent, the salary, the EMI, the subscription.
+        (ItemKind.ESSENTIAL, "amount", None, True),
+        (ItemKind.ESSENTIAL, "due_date", None, True),
+        (ItemKind.ESSENTIAL, "spread", None, True),
+        (ItemKind.INCOME, "amount", None, True),
+        (ItemKind.INCOME, "date", None, True),
+        (ItemKind.INCOME, "certainty", None, True),
+        (ItemKind.OPTIONAL, "amount", None, True),
+        (ItemKind.OPTIONAL, "flexible", None, True),
+        (ItemKind.DEBT, "due_date", DebtKind.CREDIT_CARD, True),
+        (ItemKind.DEBT, "min_due", DebtKind.CREDIT_CARD, True),
+        (ItemKind.DEBT, "kind", DebtKind.CREDIT_CARD, True),
+        # An EMI is the same figure every month, so it carries.
+        (ItemKind.DEBT, "amount", DebtKind.SECURED_EMI, True),
+        (ItemKind.DEBT, "amount", DebtKind.UNSECURED_EMI, True),
+        # A card balance is not: it changes every month, and carrying a wrong one loses money.
+        (ItemKind.DEBT, "amount", DebtKind.CREDIT_CARD, False),
+        # The money in the account changes daily and is always asked fresh.
+        (ItemKind.BALANCE, "amount", None, False),
+    ],
+)
+def test_which_fields_carry(kind, field, debt_kind, expected):
+    assert carries(kind, field, debt_kind=debt_kind) is expected

@@ -9,8 +9,16 @@ from pathlib import Path
 
 import pytest
 import yaml
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
-from ledgerline.domain.cards import MAX_BYTES, CardsMessage, build_cards, fmt_inr
+from ledgerline.domain.cards import (
+    CARRIED_NOTE,
+    MAX_BYTES,
+    CardsMessage,
+    build_cards,
+    fmt_inr,
+)
 from ledgerline.domain.engine import build_plan
 from ledgerline.domain.models import (
     DebtKind,
@@ -344,14 +352,37 @@ def test_the_mock_snapshots_are_real_cards_messages():
     """scripts/dump_mock_snapshots.py builds these from the domain layer so the demo
     mock cannot show a plan the engine could not produce. If this fails, re-run the script."""
     raw = json.loads(SNAPSHOTS.read_text())
-    assert list(raw) == ["gathering", "ready", "plan", "done"]
+    assert list(raw) == ["returning", "gathering", "ready", "plan", "done"]
+
+    # The frame name is the moment in the call; the phase is the state machine's word for it. They
+    # differ where the name says more: a returning caller is still gathering.
+    phase_of = {"returning": "gathering"}
 
     for name, payload in raw.items():
         msg = CardsMessage.model_validate(payload)
-        assert msg.phase == ("plan" if name == "plan" else name)
+        assert msg.phase == phase_of.get(name, name)
         assert len(json.dumps(payload).encode()) <= MAX_BYTES
         assert msg.cards
+
         assert all(c.rows or c.kv or c.note for c in msg.cards)
+
+    # The returning frame exists to be the fixture for carried rendering, so it has to keep
+    # showing carried items: last call's figures, no opening balance, and a plan blocked on it.
+    returning = CardsMessage.model_validate(raw["returning"])
+    carried = [c for c in returning.cards if c.status == "carried"]
+    assert [c.id for c in carried] == ["income", "essentials"]
+    assert all(c.note == CARRIED_NOTE for c in carried)
+    assert next(c for c in returning.cards if c.id == "summary").status == "blocked"
+    assert returning.low_point is None  # nothing to explain until the balance is known
+
+    # The other two shapes D builds against, folded into the frames that already existed.
+    gathering = CardsMessage.model_validate(raw["gathering"])
+    assert next(c for c in gathering.cards if c.id == "debts").rows == [["None", "", ""]]
+    for name in ("plan", "done"):
+        low = CardsMessage.model_validate(raw[name]).low_point
+        assert low is not None
+        assert low.opening + sum(line.amt for line in low.before) == low.b
+        assert low.b + sum(line.amt for line in low.after) == low.closing
 
 
 def test_the_finalised_mock_snapshot_shows_one_ask_and_one_uncovered_item():
@@ -568,3 +599,218 @@ def test_the_pay_minimum_card_row_shows_what_is_still_due():
     row = next(r for r in card(msg, "actions").rows if r[0] == "Pay min")
     assert row[1] == "HDFC card 1,200"
     assert row[2] == "1,800 still due"
+
+
+# --------------------------------------------- phase 3: facts carried from the person's last call
+
+
+def test_a_card_of_carried_items_says_so():
+    """The person has to be able to see which figures are last month's before they agree to a
+    plan built on them. The status word is how the screen says it; the result line says it aloud."""
+    from ledgerline.domain.cards import CARRIED_NOTE
+
+    state = sample_state()
+    for item in state.essentials:
+        item.carried = True
+    msg = build_cards(state, build_plan(state), version=1, focus="essentials")
+
+    essentials = card(msg, "essentials")
+    assert essentials.status == "carried"
+    assert essentials.note == CARRIED_NOTE
+    assert card(msg, "income").status == "ok"
+
+
+def test_confirming_the_carried_items_takes_the_word_off_the_card():
+    from ledgerline.domain.state import confirm_carried
+
+    state = sample_state()
+    for item in state.essentials:
+        item.carried = True
+    confirm_carried(state)
+    msg = build_cards(state, build_plan(state), version=1, focus="essentials")
+
+    assert card(msg, "essentials").status == "ok"
+
+
+def test_a_kind_the_person_says_they_have_none_of_says_so_on_screen():
+    """Otherwise "no loans" looks exactly like "nobody has asked about loans", and the person
+    cannot tell from the screen whether the plan knows."""
+    from ledgerline.domain.models import ItemKind
+    from ledgerline.domain.state import none_of
+
+    state = FinancialState(today=TODAY)
+    upsert(state, ItemKind.BALANCE, "balance", amount=D(30000))
+    upsert(state, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+    none_of(state, ItemKind.DEBT)
+    msg = build_cards(state, build_plan(state), version=1, focus="debts")
+
+    debts = card(msg, "debts")
+    assert debts.status == "ok"
+    assert debts.rows == [["None", "", ""]]
+
+
+def test_a_kind_nobody_has_asked_about_has_no_card_at_all():
+    """ "No loans" and "nobody asked about loans" are different, and only one of them is a fact."""
+    state = FinancialState(today=TODAY)
+    upsert(state, ItemKind.BALANCE, "balance", amount=D(30000))
+    upsert(state, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+    msg = build_cards(state, build_plan(state), version=1, focus="summary")
+
+    assert not any(c.id == "debts" for c in msg.cards)
+
+
+def test_the_message_carries_the_low_point_derivation(sample):
+    """The screen and the voice explain the same number. Whole rupees on the wire, like the
+    timeline, and the same two identities the domain guarantees."""
+    state, msg = sample
+    plan = build_plan(state)
+    low = msg.low_point
+
+    assert low is not None
+    assert low.d == plan.summary.lowest_balance_date.isoformat()
+    assert low.b == int(plan.summary.lowest_balance)
+    assert low.opening + sum(line.amt for line in low.before) == low.b
+    assert low.b + sum(line.amt for line in low.after) == low.closing
+
+
+def test_a_blocked_message_has_no_low_point():
+    state = FinancialState(today=TODAY)
+    upsert(state, ItemKind.INCOME, "salary", amount=D(42000), day_of_month=1)
+    msg = build_cards(state, build_plan(state), version=1, focus="summary")
+    assert msg.low_point is None
+
+
+def test_a_crowded_low_point_keeps_its_arithmetic_when_it_is_trimmed():
+    """Forty items would be forty lines nobody reads. The biggest survive and the rest become one
+    exact total, so the derivation still adds up after the message is cut to fit."""
+    state = crowded_state()
+    msg = build_cards(state, build_plan(state), version=42, focus="summary")
+
+    assert len(msg.model_dump_json().encode()) <= MAX_BYTES
+    low = msg.low_point
+    assert low is not None
+    assert low.opening + sum(line.amt for line in low.before) == low.b
+    assert low.b + sum(line.amt for line in low.after) == low.closing
+    # The low day here is day two, so it is what comes after that runs to forty lines.
+    assert any("smaller items" in line.label for line in (*low.before, *low.after))
+
+
+def test_the_sample_message_is_what_the_generator_writes():
+    """`sample.json` is the shape the frontend parses against, and it had no generator, so it
+    drifted from `build_cards` for days without anything failing. Byte for byte, or re-run
+    `uv run python scripts/dump_sample.py`."""
+    from scripts.dump_sample import sample_json
+
+    assert SAMPLE_JSON.read_text() == sample_json()
+
+
+def test_a_timing_plan_that_needs_no_lender_does_not_invent_one():
+    """KIRO-012. The note said "ask the lender to move it" on every TIMING plan, including one
+    whose only action is deferring a subscription. The card was describing an action the plan does
+    not contain, to a creditor the month does not have."""
+    state = FinancialState.model_validate(
+        {
+            "today": TODAY,
+            "opening_balance": 2000,
+            "incomes": [{"name": "salary", "amount": 30000, "date": "2026-09-20"}],
+            "optionals": [{"name": "streaming", "amount": 3000, "date": "2026-09-15"}],
+        }
+    )
+    plan = build_plan(state)
+    msg = build_cards(state, plan, version=1, focus="summary")
+
+    assert plan.status == "TIMING"
+    assert not any(a.type == "ASK_LENDER" for a in plan.actions)
+    note = card(msg, "summary").note
+    assert "lender" not in note
+    assert "date" in note or "arrive" in note
+
+
+def test_a_timing_plan_that_does_need_a_lender_still_says_so():
+    state = FinancialState.model_validate(
+        {
+            "today": TODAY,
+            "opening_balance": 2000,
+            "incomes": [{"name": "salary", "amount": 45000, "date": "2026-10-01"}],
+            "debts": [
+                {
+                    "name": "bike emi",
+                    "kind": "secured_emi",
+                    "amount_due": 7000,
+                    "due_date": "2026-09-20",
+                }
+            ],
+        }
+    )
+    plan = build_plan(state)
+    msg = build_cards(state, plan, version=1, focus="summary")
+
+    assert plan.status == "TIMING"
+    assert card(msg, "summary").note is not None
+    assert "lender" in card(msg, "summary").note
+
+
+@pytest.mark.parametrize(
+    "opening",
+    ["0.40", "0.49", "0.50", "1.99", "12345.67", "0.01"],
+)
+def test_the_wire_low_point_reconciles_whatever_the_paise_do(opening):
+    """KIRO-007. Rounding each figure on its own breaks the two identities the page checks: 0.40
+    opening plus a 0.40 income rounds to 0 + 0 = 0 with a closing of 1, and the browser prints
+    "these do not add up" on a plan that adds up perfectly. Round once, as one ledger."""
+    state = FinancialState.model_validate(
+        {
+            "today": TODAY,
+            "opening_balance": opening,
+            "incomes": [{"name": "salary", "amount": "0.40", "date": "2026-09-20"}],
+            "essentials": [{"name": "rent", "amount": "0.30", "due_date": "2026-09-15"}],
+        }
+    )
+    msg = build_cards(state, build_plan(state), version=1, focus="summary")
+    low = msg.low_point
+
+    assert low is not None
+    assert low.opening + sum(line.amt for line in low.before) == low.b
+    assert low.b + sum(line.amt for line in low.after) == low.closing
+
+
+@given(
+    opening=st.integers(min_value=0, max_value=500000).map(lambda n: Decimal(n) / 100),
+    rent=st.integers(min_value=1, max_value=200000).map(lambda n: Decimal(n) / 100),
+    salary=st.integers(min_value=1, max_value=500000).map(lambda n: Decimal(n) / 100),
+)
+@settings(max_examples=150, deadline=None)
+def test_the_wire_low_point_always_adds_up(opening, rent, salary):
+    """The property behind the case above: whatever the paise, the two sums hold on the wire."""
+    state = FinancialState.model_validate(
+        {
+            "today": TODAY,
+            "opening_balance": opening,
+            "incomes": [{"name": "salary", "amount": salary, "date": "2026-09-20"}],
+            "essentials": [{"name": "rent", "amount": rent, "due_date": "2026-09-15"}],
+        }
+    )
+    low = build_cards(state, build_plan(state), version=1, focus="summary").low_point
+    assert low is not None
+    assert low.opening + sum(line.amt for line in low.before) == low.b
+    assert low.b + sum(line.amt for line in low.after) == low.closing
+
+
+def test_the_card_low_point_ends_where_the_spoken_cashflow_ends():
+    """KIRO-17 F2, the screen half: the card's closing balance is the summary's own figure, not a
+    second rounding of the same Decimal that can land a rupee away from it."""
+    from ledgerline.domain.rupees import in_rupees
+
+    state = FinancialState.model_validate(
+        {
+            "today": TODAY,
+            "opening_balance": "0.49",
+            "incomes": [{"name": "salary", "amount": "0.49", "date": "2026-09-20"}],
+            "essentials": [{"name": "rent", "amount": "0.01", "due_date": "2026-09-15"}],
+        }
+    )
+    plan = build_plan(state)
+    msg = build_cards(state, plan, version=1, focus="summary")
+
+    assert msg.low_point.closing == in_rupees(plan.summary).closing_balance
+    assert msg.low_point.opening == in_rupees(plan.summary).opening_balance

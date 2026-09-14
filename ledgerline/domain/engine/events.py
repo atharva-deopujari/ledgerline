@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import datetime as dt
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 
 from ledgerline.domain.models import (
-    PAISE,
     Certainty,
     DebtKind,
     FinancialState,
@@ -23,6 +22,7 @@ from ledgerline.domain.policy import Policy, TierKey
 from ledgerline.domain.state import NO_INCOME, field_of, group_inr
 
 ZERO = Decimal("0.00")
+RUPEE = Decimal("1")
 
 
 _OBLIGATION_KINDS = (RowKind.DEBT, RowKind.ESSENTIAL)
@@ -32,7 +32,6 @@ _KIND_ORDER: dict[RowKind, int] = {
     RowKind.INCOME: 0,
     RowKind.ESSENTIAL: 1,
     RowKind.DEBT: 2,
-    RowKind.FEE: 2,
     RowKind.OPTIONAL: 3,
 }
 
@@ -55,14 +54,12 @@ class _Event:
     source: str  # the item name, so actions and unpaid rows can name it
     survival: bool = False
     flexible: bool = False
-    late_fee: Decimal | None = None
     part: str = ""  # "min" / "rest" on a split credit card
     flags: list[str] = field(default_factory=list)
-    within_day: int = 0  # a fee sits immediately after the payment it follows
 
     @property
     def sort_key(self) -> tuple:
-        return (_KIND_ORDER[self.kind], self.tier, self.within_day, -self.amount, self.label)
+        return (_KIND_ORDER[self.kind], self.tier, -self.amount, self.label)
 
 
 def _amount_answer(state: FinancialState, kind: ItemKind, name: str) -> UnknownReason | None:
@@ -80,9 +77,14 @@ def _window(state: FinancialState) -> list[dt.date]:
 
 
 def _spread(amount: Decimal, days: list[dt.date]) -> list[tuple[dt.date, Decimal]]:
-    """Split an amount evenly across the window, quantised, remainder on the last day so the
-    slices add back up to the original exactly."""
-    per_day = (amount / len(days)).quantize(PAISE)
+    """Split an amount evenly across the window, remainder on the last day so the slices add back
+    up to the original exactly.
+
+    Whole rupees per day, not paise: a balance of 57,166.67 is a balance nobody can say out loud
+    and nobody can check against their own arithmetic. The remainder -- including any paise the
+    person's own figure carried -- lands on the last day, so the total is still exactly theirs.
+    """
+    per_day = (amount / len(days)).quantize(RUPEE, rounding=ROUND_DOWN)
     slices = [(d, per_day) for d in days[:-1]]
     slices.append((days[-1], amount - per_day * (len(days) - 1)))
     return slices
@@ -243,7 +245,6 @@ def _debt_events(
                     amount=minimum,
                     tier=rank[TierKey.CARD_MIN],
                     source=debt.name,
-                    late_fee=debt.late_fee,
                     part="min",
                 )
             )
@@ -269,7 +270,6 @@ def _debt_events(
                     amount=debt.amount_due,
                     tier=rank[_TIER_FOR_DEBT[debt.kind]],
                     source=debt.name,
-                    late_fee=debt.late_fee,
                 )
             )
 

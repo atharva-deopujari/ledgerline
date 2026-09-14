@@ -184,7 +184,7 @@ def _proposal(
         proposed["kind"] = debt_kind
     if kind is ItemKind.INCOME:
         proposed["certainty"] = certainty
-        latest = resolve_day(state.today, latest_day_of_month, state.horizon_days)
+        latest = resolve_day(state.today, latest_day_of_month)
         if latest is not None:
             # "the 5th or the 1st" and "the 1st or the 5th" are the same range. Store it earliest
             # first so date <= latest_date always holds and the engine's pessimistic
@@ -205,7 +205,19 @@ def _proposal(
         proposed["survival"] = survival
     if kind is ItemKind.OPTIONAL:
         proposed["flexible"] = flexible
-    return {k: v for k, v in proposed.items() if v is not None or k == "latest_date"}
+    settled = {k: v for k, v in proposed.items() if v is not None or k == "latest_date"}
+    if kind is ItemKind.ESSENTIAL and existing is not None:
+        # A date and "spread across the month" contradict each other, and whichever the person has
+        # just said wins: dating an item that was spread stops the proration, and calling an item
+        # spread drops the date it no longer lands on. Only on an item that already exists --
+        # there is nothing to contradict on a first mention, and a new dated essential is simply
+        # not spread. Added after the filter, so only these deliberate values survive it;
+        # everything else absent still means "not mentioned".
+        if resolved is not None and spread is None:
+            settled["spread"] = False
+        elif spread and day_of_month is None:
+            settled[date_field] = None
+    return settled
 
 
 def upsert(
@@ -235,9 +247,12 @@ def upsert(
 
     attribute, model, money_field, date_field = _SPEC[kind]
     key = normalise_name(name)
-    resolved = resolve_day(state.today, day_of_month, state.horizon_days)
+    resolved = resolve_day(state.today, day_of_month)
     existing = _find(state, kind, key)
     if existing is not None:
+        # Saying it is confirming it, even when the figure has not moved: what made it provisional
+        # was that nobody had mentioned it this call.
+        existing.carried = False
         # Field ids name the item as it is stored, so "my rent" reaches essential:rent.amount and
         # the unknowns, the cards and the model all go on talking about the same field.
         key = normalise_name(existing.name)
@@ -304,6 +319,47 @@ def upsert(
         name=key,
         field=field_of(kind, key),
         changes=changes,
+    )
+
+
+def carried_items(state: FinancialState) -> list[_Item]:
+    """Everything loaded from a previous call that the person has not spoken about yet."""
+    return [item for _, item in _items(state) if item.carried]
+
+
+def confirm_carried(state: FinancialState, names: list[str] | None = None) -> Outcome:
+    """ "It is all the same as last time", or "the rent is the same" -- one answer, not six.
+
+    Names resolve like any other item name, aliases included. A name nobody carried is refused
+    rather than ignored: the blocker exists so a plan is never built on unconfirmed figures, and
+    a mistyped name must not be able to clear it.
+    """
+    carried = carried_items(state)
+    if names is None:
+        confirmed = carried
+    else:
+        confirmed = []
+        for name in names:
+            key = normalise_name(name)
+            match = next((i for i in carried if _same_item(key, normalise_name(i.name))), None)
+            if match is None:
+                raise ValueError(
+                    f"{key} is not carried from the last call; "
+                    f"carried: {', '.join(i.name for i in carried) or 'nothing'}"
+                )
+            confirmed.append(match)
+
+    for item in confirmed:
+        item.carried = False
+        # "May or may not come" was about last month. Confirming it is the person saying it comes.
+        if isinstance(item, Income):
+            item.certainty = Certainty.CONFIRMED
+    if not confirmed:
+        return Outcome(status=OutcomeStatus.NOOP, detail="nothing was carried")
+    _unsettle(state)
+    return Outcome(
+        status=OutcomeStatus.UPDATED,
+        detail=f"confirmed: {', '.join(i.name for i in confirmed)}",
     )
 
 

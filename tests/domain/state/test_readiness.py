@@ -6,8 +6,8 @@ from datetime import date
 
 import pytest
 
-from ledgerline.domain.models import DebtKind, ItemKind, Phase, UnknownReason
-from ledgerline.domain.state import mark_unknown, readiness, snapshot, upsert
+from ledgerline.domain.models import DebtKind, ItemKind, Phase, PlanStatus, UnknownReason
+from ledgerline.domain.state import mark_unknown, readiness, upsert
 from tests.domain.state.conftest import D  # noqa: E402
 
 TODAY = date(2026, 9, 11)
@@ -39,28 +39,6 @@ def test_readiness_phases_through_the_whole_call(st):
 
     st.understood = True
     assert readiness(st).phase is Phase.DONE
-
-
-def test_snapshot_counts(st):
-    upsert(st, ItemKind.BALANCE, "balance", amount=D(3000))
-    upsert(st, ItemKind.INCOME, "salary", amount=D(42000), day_of_month=1)
-    upsert(
-        st,
-        ItemKind.DEBT,
-        "bike emi",
-        amount=D(4200),
-        day_of_month=5,
-        debt_kind=DebtKind.SECURED_EMI,
-    )
-    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
-    upsert(st, ItemKind.OPTIONAL, "streaming", amount=D(1200), day_of_month=3)
-    upsert(st, ItemKind.ESSENTIAL, "electricity")
-    mark_unknown(st, "essential:electricity.amount")
-
-    snap = snapshot(st)
-    assert (snap.incomes, snap.debts, snap.essentials, snap.optionals) == (1, 1, 2, 1)
-    assert snap.unknowns == 1
-    assert snap.missing == []  # a field the person does not know is never asked for again
 
 
 def test_readiness_and_the_plan_reconcile_once_a_field_is_filled(st):
@@ -220,3 +198,155 @@ def test_an_income_nobody_knows_yet_plans_provisionally_rather_than_blocking(st)
     assert plan.status is not PlanStatus.BLOCKED
     assert plan.provisional is True
     assert "income" in plan.excluded_items
+
+
+# ------------------------------------------- phase 3: a plan is never built on last month's figures
+
+
+def carried_state(st):
+    """A returning caller: last call's rent and salary, hydrated and not yet spoken about."""
+    upsert(st, ItemKind.BALANCE, "balance", amount=D(30000))
+    upsert(st, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+    for item in (*st.incomes, *st.essentials):
+        item.carried = True
+    return st
+
+
+def test_the_engine_still_plans_while_facts_are_carried(st):
+    """A survival plan with the rent missing is a wrong plan, so carried money counts. What the
+    plan says about itself is that it is provisional -- and finalize_plan refuses meanwhile."""
+    from ledgerline.domain.engine import build_plan
+
+    state = carried_state(st)
+    plan = build_plan(state)
+
+    assert plan.status is not PlanStatus.BLOCKED
+    assert plan.blockers == []  # the engine's own gate is unchanged
+    assert plan.provisional is True
+    assert plan.summary.total_out_required == D(12000)
+
+
+def test_confirming_the_carried_facts_makes_the_plan_certain(st):
+    from ledgerline.domain.engine import build_plan
+    from ledgerline.domain.state import confirm_carried
+
+    state = carried_state(st)
+    confirm_carried(state)
+
+    assert build_plan(state).provisional is False
+
+
+def test_a_carried_item_the_person_restates_is_theirs_again(st):
+    """Confirming is not the only way: stating the new rent is better evidence than confirming the
+    old one, and the plan stops calling itself provisional once nothing is left unspoken."""
+    from ledgerline.domain.engine import build_plan
+
+    state = carried_state(st)
+    upsert(state, ItemKind.ESSENTIAL, "rent", amount=D(13000))
+    assert build_plan(state).provisional is True  # the salary is still carried
+
+    upsert(state, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+    assert build_plan(state).provisional is False
+
+
+def test_the_blockers_identity_holds_with_a_carried_item(st):
+    """`Readiness.blockers` is the engine's blockers plus the gaps, and a carried fact is neither
+    -- what to do about last month's rent is the model's judgement, not a gate."""
+    from ledgerline.domain.engine import build_plan
+
+    state = carried_state(st)
+    upsert(state, ItemKind.ESSENTIAL, "electricity")  # a gap as well
+    r = readiness(state)
+
+    assert build_plan(state).blockers == []
+    assert r.blockers == ["essential:electricity.amount"]
+    assert r.missing_fields == ["essential:electricity.amount"]
+
+
+# --------------------------------------- redesign: what the person has and has not been asked about
+
+
+def test_coverage_starts_at_nothing_said():
+    from ledgerline.domain.models import Coverage, FinancialState
+    from ledgerline.domain.state import coverage
+
+    assert coverage(FinancialState(today=TODAY)) == {
+        "opening_balance": Coverage.UNASKED,
+        "income": Coverage.UNASKED,
+        "essential": Coverage.UNASKED,
+        "debt": Coverage.UNASKED,
+        "optional": Coverage.UNASKED,
+    }
+
+
+def test_an_item_of_a_kind_is_that_kind_covered(st):
+    from ledgerline.domain.models import Coverage
+    from ledgerline.domain.state import coverage
+
+    upsert(st, ItemKind.BALANCE, "balance", amount=D(30000))
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+
+    covered = coverage(st)
+    assert covered["opening_balance"] is Coverage.STATED
+    assert covered["essential"] is Coverage.STATED
+    assert covered["debt"] is Coverage.UNASKED
+
+
+def test_saying_there_are_none_of_a_kind_settles_it(st):
+    """ "I have no loans" is an answer, and the whole point is that it is never asked twice. It is
+    a confirmed absence: nothing is excluded and the plan is not provisional for it."""
+    from ledgerline.domain.engine import build_plan
+    from ledgerline.domain.models import Coverage, OutcomeStatus
+    from ledgerline.domain.state import coverage, none_of
+
+    upsert(st, ItemKind.BALANCE, "balance", amount=D(30000))
+    upsert(st, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+
+    out = none_of(st, ItemKind.DEBT)
+    assert out.status is OutcomeStatus.CREATED
+
+    assert coverage(st)["debt"] is Coverage.NONE
+    plan = build_plan(st)
+    assert plan.provisional is False
+    assert plan.excluded_items == []
+
+
+def test_an_item_of_a_kind_later_stated_outranks_the_blanket_none(st):
+    """They said no optional spend, then remembered the gym. What exists beats what was said."""
+    from ledgerline.domain.models import Coverage
+    from ledgerline.domain.state import coverage, none_of
+
+    none_of(st, ItemKind.OPTIONAL)
+    upsert(st, ItemKind.OPTIONAL, "gym", amount=D(1500))
+
+    assert coverage(st)["optional"] is Coverage.STATED
+
+
+def test_no_income_at_all_is_the_same_answer_as_it_always_was(st):
+    """`none_of(INCOME)` is the blanket income field the engine already honours, not a second
+    mechanism beside it."""
+    from ledgerline.domain.models import Coverage
+    from ledgerline.domain.state import NO_INCOME, coverage, none_of
+
+    upsert(st, ItemKind.BALANCE, "balance", amount=D(30000))
+    none_of(st, ItemKind.INCOME)
+
+    assert [u.field for u in st.unknowns] == [NO_INCOME]
+    assert coverage(st)["income"] is Coverage.NONE
+    assert readiness(st).blockers == []
+
+
+def test_carried_facts_no_longer_block_the_plan(st):
+    """The model is told what was carried and decides whether to ask. Code keeps the flag -- for
+    the cards, and so record_call knows what nobody refreshed -- and keeps the plan provisional,
+    but it no longer holds finalize_plan shut."""
+    from ledgerline.domain.engine import build_plan
+
+    state = carried_state(st)
+    r = readiness(state)
+
+    assert r.blockers == []
+    assert r.phase is Phase.READY
+    assert build_plan(state).provisional is True
+    assert [i.name for i in state.incomes if i.carried] == ["salary"]

@@ -15,6 +15,7 @@ from ledgerline.domain.models import (
     UnknownReason,
 )
 from ledgerline.domain.state import (
+    confirm_carried,
     mark_unknown,
     missing_fields,
     readiness,
@@ -141,7 +142,12 @@ def test_a_flag_only_edit_is_reported_and_unsettles_the_plan(agreed):
 
     assert agreed.essentials[0].spread is True
     assert out.status is OutcomeStatus.UPDATED
-    assert out.changes == {"essential:rent.spread": ("dated", "spread")}
+    # Spreading it drops the date it no longer lands on, and both halves are reported (KIRO-005).
+    assert out.changes == {
+        "essential:rent.spread": ("dated", "spread"),
+        "essential:rent.due_date": ("5 Oct", ""),
+    }
+    assert agreed.essentials[0].due_date is None
     assert agreed.understood is False
 
 
@@ -566,3 +572,141 @@ def test_a_removal_that_finds_nothing_still_reports_the_name_as_asked(st):
     out = remove(st, ItemKind.ESSENTIAL, "my rent")
     assert out.status is OutcomeStatus.NOOP
     assert out.name == "my rent"
+
+
+# ------------------------------------------------ phase 3: facts carried from the previous call
+
+
+def test_a_carried_item_stops_being_carried_the_moment_it_is_touched(st):
+    """The flag means "last month's figure, nobody has confirmed it". Any upsert of that item is
+    the person speaking about it now, so it is theirs again -- even when they restate the same
+    number, because saying it is confirming it."""
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+    st.essentials[0].carried = True
+
+    out = upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+
+    assert st.essentials[0].carried is False
+    assert out.status is OutcomeStatus.UNCHANGED  # nothing moved; the flag is not a change
+
+
+def test_touching_one_carried_item_leaves_the_others_carried(st):
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+    upsert(st, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+    st.essentials[0].carried = True
+    st.incomes[0].carried = True
+
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(13000))
+
+    assert st.essentials[0].carried is False
+    assert st.incomes[0].carried is True
+
+
+def test_confirming_carried_items_by_name(st):
+    """ "The rent is the same" confirms one item without touching the rest."""
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+    upsert(st, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+    for item in (*st.essentials, *st.incomes):
+        item.carried = True
+
+    out = confirm_carried(st, ["my rent"])  # the alias resolves like any other name
+
+    assert out.status is OutcomeStatus.UPDATED
+    assert st.essentials[0].carried is False
+    assert st.incomes[0].carried is True
+
+
+def test_confirming_everything_in_one_breath(st):
+    """ "It is all the same as last time" is one answer, not six questions."""
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+    upsert(st, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+    for item in (*st.essentials, *st.incomes):
+        item.carried = True
+
+    out = confirm_carried(st)
+
+    assert out.status is OutcomeStatus.UPDATED
+    assert not any(i.carried for i in (*st.essentials, *st.incomes))
+
+
+def test_confirming_an_income_that_might_not_have_come_makes_it_confirmed(st):
+    """ "May or may not come" was about last month. Confirming it is the person saying it comes."""
+    upsert(
+        st,
+        ItemKind.INCOME,
+        "freelance",
+        amount=D(15000),
+        day_of_month=20,
+        certainty=Certainty.UNCERTAIN,
+    )
+    st.incomes[0].carried = True
+
+    confirm_carried(st, ["freelance"])
+
+    assert st.incomes[0].certainty is Certainty.CONFIRMED
+
+
+def test_confirming_nothing_carried_is_a_noop(st):
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+    assert confirm_carried(st).status is OutcomeStatus.NOOP
+
+
+def test_confirming_a_name_nobody_carried_says_so(st):
+    """The model must not be able to clear a blocker by naming something that is not there."""
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+    st.essentials[0].carried = True
+
+    with pytest.raises(ValueError, match="not carried"):
+        confirm_carried(st, ["electricity"])
+    assert st.essentials[0].carried is True
+
+
+# --------------------------------------------- KIRO-005: a date and "spread" cannot both be true
+
+
+def test_dating_a_spread_essential_stops_it_being_spread(st):
+    """Groceries spread through the month, then "actually the rent is due on the 5th" -- the flag
+    stayed True because it was not mentioned, so the engine went on prorating an expense the
+    person had just put on one day."""
+    from ledgerline.domain.engine import build_plan
+
+    upsert(st, ItemKind.BALANCE, "balance", amount=D(50000))
+    upsert(st, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000), spread=True)
+
+    out = upsert(st, ItemKind.ESSENTIAL, "rent", day_of_month=5)
+
+    assert st.essentials[0].spread is False
+    assert st.essentials[0].due_date == date(2026, 10, 5)
+    assert out.changes["essential:rent.spread"] == ("spread", "dated")
+    rows = [row for row in build_plan(st).timeline if row.label == "rent"]
+    assert len(rows) == 1
+    assert rows[0].amount == D(-12000)
+
+
+def test_saying_it_is_spread_clears_the_date_it_contradicts(st):
+    """The other direction, so the two can never both be true: an item spread across the month
+    has no one day it lands on."""
+    upsert(st, ItemKind.ESSENTIAL, "electricity", amount=D(1800), day_of_month=8)
+
+    out = upsert(st, ItemKind.ESSENTIAL, "electricity", spread=True)
+
+    assert st.essentials[0].spread is True
+    assert st.essentials[0].due_date is None
+    assert out.changes["essential:electricity.due_date"] == ("8 Oct", "")
+
+
+def test_dating_an_essential_that_was_never_spread_says_nothing_about_the_flag(st):
+    upsert(st, ItemKind.ESSENTIAL, "rent", amount=D(12000))
+    out = upsert(st, ItemKind.ESSENTIAL, "rent", day_of_month=5)
+
+    assert "essential:rent.spread" not in out.changes
+    assert st.essentials[0].spread is False
+
+
+def test_a_spread_essential_restated_as_spread_keeps_its_shape(st):
+    upsert(st, ItemKind.ESSENTIAL, "groceries", amount=D(6000), spread=True)
+    out = upsert(st, ItemKind.ESSENTIAL, "groceries", amount=D(6500), spread=True)
+
+    assert st.essentials[0].spread is True
+    assert "essential:groceries.spread" not in out.changes

@@ -13,8 +13,9 @@ from ledgerline.domain.models import (
 from ledgerline.domain.state.items import _SPEC, Outcome, _find, _unsettle
 from ledgerline.domain.state.names import NO_INCOME, field_of
 
-# The two field ids that name no item. Everything else is kind:name.attribute.
-_BARE_FIELDS = frozenset({"opening_balance", NO_INCOME})
+# The field ids that name no one item: the balance, and each item kind as a whole ("there are no
+# debts"). NO_INCOME is `ItemKind.INCOME` under its old name, which is the same answer.
+_BARE_FIELDS = frozenset({"opening_balance", *(k.value for k in ItemKind)})
 
 _SHAPE = (
     "{field} is not a field id; name it as kind:name.attribute, like essential:rent.amount, "
@@ -33,6 +34,16 @@ def _attributes(kind: ItemKind) -> set[str]:
     added to an item is askable the same day."""
     _, model, money_field, _ = _SPEC[kind]
     return (set(model.model_fields) - {"name", "notes", money_field}) | {"amount"}
+
+
+def none_of(state: FinancialState, kind: ItemKind) -> Outcome:
+    """ "I have no loans." A whole category answered at once, and never asked about again.
+
+    The same mechanism the blanket income answer has always used -- an `Unknown` on the bare kind
+    name with reason NOT_APPLICABLE -- so there is one way to record a confirmed absence rather
+    than two. Confirmed absence, so nothing is excluded and the plan is not provisional for it.
+    """
+    return mark_unknown(state, kind.value, UnknownReason.NOT_APPLICABLE)
 
 
 def _check_field(field: str) -> None:
@@ -133,8 +144,12 @@ def income_is_answered(state: FinancialState) -> bool:
 
 
 def missing_fields(state: FinancialState) -> list[str]:
-    """The structural gaps still worth asking about, most blocking first, as field ids. Anything
-    the person has already answered is gone from here: the promise is never to ask twice."""
+    """The structural gaps still worth asking about, as field ids. Anything the person has already
+    answered is gone from here: the promise is never to ask twice.
+
+    A list of facts, not an agenda. What to ask next, and in what order, is the model's judgement
+    about the conversation it is having; code only says what is still unknown.
+    """
     gaps: list[str] = []
     if state.opening_balance is None:
         gaps.append("opening_balance")

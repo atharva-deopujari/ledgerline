@@ -26,6 +26,8 @@ from ledgerline.domain.engine.simulate import _Sim, _simulate
 from ledgerline.domain.models import (
     Action,
     FinancialState,
+    LowPoint,
+    LowPointRow,
     PlanResult,
     PlanStatus,
     RowKind,
@@ -33,7 +35,7 @@ from ledgerline.domain.models import (
     Unpaid,
 )
 from ledgerline.domain.policy import DEFAULT_POLICY, Policy
-from ledgerline.domain.state import blockers, quantise
+from ledgerline.domain.state import blockers, carried_items, quantise
 
 
 def _blocked(state: FinancialState, policy: Policy) -> PlanResult | None:
@@ -105,6 +107,42 @@ def _final_status(lowest: Decimal, net: Decimal, unpaid: list[Unpaid]) -> PlanSt
     return PlanStatus.UNSOLVABLE if unpaid else PlanStatus.STRUCTURAL
 
 
+def _low_point(events: list[_Event], opening: Decimal, final: _Sim) -> LowPoint:
+    """Group the month's events either side of its lowest day, one line per item.
+
+    A spread item is one running total rather than thirty lines, because thirty lines is not an
+    explanation. Everything is taken from the events the simulation booked, so the two identities
+    in `LowPoint` hold by construction rather than by a second calculation agreeing with the first.
+    """
+    before: dict[str, list[_Event]] = defaultdict(list)
+    after: dict[str, list[_Event]] = defaultdict(list)
+    for event in events:
+        (before if event.date <= final.lowest_date else after)[event.label].append(event)
+
+    return LowPoint(
+        date=final.lowest_date,
+        balance=final.lowest,
+        opening_balance=opening,
+        before=_low_point_rows(before),
+        after=_low_point_rows(after),
+        closing_balance=final.closing,
+    )
+
+
+def _low_point_rows(grouped: dict[str, list[_Event]]) -> list[LowPointRow]:
+    rows = [
+        LowPointRow(
+            date=max(e.date for e in same),
+            label=label,
+            kind=same[0].kind,
+            amount=sum((e.amount if e.kind is RowKind.INCOME else -e.amount for e in same), ZERO),
+            spread=len(same) > 1,
+        )
+        for label, same in grouped.items()
+    ]
+    return sorted(rows, key=lambda r: (r.date, r.label))
+
+
 def _summarise(
     opening: Decimal,
     total_in: Decimal,
@@ -122,6 +160,8 @@ def _summarise(
         total_in=total_in,
         total_out_required=total_out_required,
         total_out_planned=total_out_planned,
+        net_flow=total_in - total_out_planned,
+        to_work_with=opening + total_in,
         shortfall_before_actions=opening + total_in - total_out_required,
         shortfall_after_actions=opening + total_in - total_out_planned,
         lowest_balance=final.lowest,
@@ -173,12 +213,16 @@ def build_plan(state: FinancialState, policy: Policy = DEFAULT_POLICY) -> PlanRe
 
     return PlanResult(
         status=_final_status(base.lowest, net, unpaid),
-        provisional=bool(excluded) or assumed_latest,
+        # Carried facts are counted but unconfirmed, which is the same kind of doubt an UNKNOWN
+        # puts on a plan: the arithmetic is right about what it was told, and what it was told is
+        # last month's.
+        provisional=bool(excluded) or assumed_latest or bool(carried_items(state)),
         timeline=final.rows,
         summary=_summarise(opening, total_in, total_out_required, events, unpaid, final),
         actions=actions,
         unpaid=unpaid,
         warnings=warnings,
         excluded_items=excluded,
+        low_point=_low_point(events, opening, final),
         policy_version=policy.version,
     )

@@ -18,14 +18,18 @@ from pydantic import BaseModel, Field
 from ledgerline.domain.models import (
     ActionType,
     Certainty,
+    Coverage,
     FinancialState,
     ItemKind,
+    LowPointRow,
     Phase,
     PlanResult,
     PlanStatus,
     UnknownReason,
 )
+from ledgerline.domain.rupees import in_rupees_low_point
 from ledgerline.domain.state import (
+    coverage,
     field_of,
     group_inr,
     label_for,
@@ -54,6 +58,7 @@ class CardStatus(StrEnum):
     PROVISIONAL = "provisional"
     FINAL = "final"
     BLOCKED = "blocked"
+    CARRIED = "carried"  # figures from the person's last call, not yet confirmed this one
 
 
 class Card(BaseModel):
@@ -73,6 +78,30 @@ class TimelinePoint(BaseModel):
     e: str | None = None  # short event label, only on event days
 
 
+class LowPointLine(BaseModel):
+    """One line of the arithmetic, in whole rupees, signed the way the balance moves."""
+
+    d: str  # "2026-09-20"; for a spread item, the last day counted in this total
+    label: str
+    amt: int  # negative out, positive in
+    spread: bool = False  # a running total to `d`, not one payment on it
+
+
+class LowPointView(BaseModel):
+    """Why the lowest balance is that number, so the screen and the voice explain it the same way.
+
+    `opening + sum(before) == b` and `b + sum(after) == closing`, the same identities the domain
+    guarantees; the wire carries whole rupees, like the timeline.
+    """
+
+    d: str
+    b: int
+    opening: int
+    closing: int
+    before: list[LowPointLine] = Field(default_factory=list)
+    after: list[LowPointLine] = Field(default_factory=list)
+
+
 class CardsMessage(BaseModel):
     type: Literal["cards"] = "cards"
     v: int  # monotonic per call
@@ -81,6 +110,7 @@ class CardsMessage(BaseModel):
     focus: CardId | None  # card the last tool call touched
     cards: list[Card]
     timeline: list[TimelinePoint] = Field(default_factory=list)
+    low_point: LowPointView | None = None  # absent while the plan is blocked
 
 
 VERB: dict[ActionType, str] = {
@@ -92,9 +122,14 @@ VERB: dict[ActionType, str] = {
 
 NOTE_FOR_STATUS: dict[PlanStatus, str] = {
     PlanStatus.OK: "the next thirty days are covered",
-    PlanStatus.TIMING: "the money arrives after the due date; ask the lender to move it",
     PlanStatus.STRUCTURAL: "more goes out than comes in over the next thirty days",
 }
+
+# A timing month is one where the money exists and the dates do not line up. Whether anybody has
+# to be asked for anything depends on what the plan actually proposes: a deferred subscription
+# needs no lender, and naming one describes an action the plan does not contain.
+TIMING_WITH_LENDER = "the money arrives after the due date; ask the lender to move it"
+TIMING_ON_OUR_OWN = "the money arrives after it is needed; moving what can move covers it"
 
 
 def _status_note(plan: PlanResult) -> str | None:
@@ -102,6 +137,9 @@ def _status_note(plan: PlanResult) -> str | None:
         names = ", ".join(u.name for u in plan.unpaid) or "something"
         verb = "stays" if len(plan.unpaid) == 1 else "stay"
         return f"even after every change, {names} {verb} unpaid"
+    if plan.status is PlanStatus.TIMING:
+        asks = any(a.type is ActionType.ASK_LENDER for a in plan.actions) or bool(plan.unpaid)
+        return TIMING_WITH_LENDER if asks else TIMING_ON_OUR_OWN
     return NOTE_FOR_STATUS.get(plan.status)
 
 
@@ -133,10 +171,16 @@ def _label(name: str) -> str:
     return " ".join(words)
 
 
-def _value(amount: Decimal | None, provisional: bool, estimated: bool = False) -> str:
+def _value(amount: Decimal | None, estimated: bool) -> str:
+    """An amount as the card shows it. "amount?" is the whole of "we do not have this one": the
+    old " ?" suffix could never appear, since the only thing that set it was the amount being
+    None, and then this returns before reaching it."""
     if amount is None:
         return "amount?"
-    return ("~" if estimated else "") + fmt_inr(amount) + (" ?" if provisional else "")
+    return ("~" if estimated else "") + fmt_inr(amount)
+
+
+NONE_ROW = ["None", "", ""]
 
 
 def _item_card(
@@ -144,9 +188,15 @@ def _item_card(
     title: str,
     kind: ItemKind,
     items: list,
-    absent: frozenset[str] = frozenset(),
+    absent: frozenset[str],
+    *,
+    none_of_these: bool = False,
 ) -> Card | None:
     if not items:
+        # "I have no loans" and "nobody has asked about loans" look the same on an empty screen,
+        # and only one of them is something the plan knows. The card appears to say which.
+        if none_of_these:
+            return Card(id=card_id, title=title, status=CardStatus.OK, rows=[list(NONE_ROW)])
         return None
     rows: list[list[str]] = []
     estimated_any = False
@@ -160,26 +210,31 @@ def _item_card(
         when = getattr(item, "date", None) if hasattr(item, "date") else None
         if when is None:
             when = getattr(item, "due_date", None)
-        provisional = amount is None
         estimated = getattr(item, "certainty", None) is Certainty.ESTIMATED
         estimated_any = estimated_any or estimated
         rows.append(
             [
                 _label(item.name),
-                _value(amount, provisional, estimated),
+                _value(amount, estimated),
                 _when(when, getattr(item, "spread", False)),
             ]
         )
+    # A card holding last month's figures says so, because the person has to be able to see what
+    # they are about to agree to a plan on. Nothing about it is wrong, only unconfirmed, so it
+    # outranks nothing: the note explains the word.
+    carried_any = any(item.carried for item in items)
     return Card(
         id=card_id,
         title=title,
-        status=CardStatus.OK,
+        status=CardStatus.CARRIED if carried_any else CardStatus.OK,
         rows=rows,
-        note=ESTIMATE_NOTE if estimated_any else None,
+        note=CARRIED_NOTE if carried_any else (ESTIMATE_NOTE if estimated_any else None),
     )
 
 
 NOT_KNOWN_NOTE = "The ones marked so are ones you said you do not know."
+
+CARRIED_NOTE = "From your last call. Confirm or change each."
 
 ESTIMATE_NOTE = "~ marks an amount you said is approximate."
 
@@ -247,6 +302,33 @@ def _action_rows(plan: PlanResult) -> list[list[str]]:
     return rows
 
 
+def _low_point(plan: PlanResult) -> LowPointView | None:
+    """The domain's one whole-rupee projection of the month, shaped for the wire.
+
+    Nothing is rounded here: `rupees.in_rupees_low_point` does it, against the same endpoints the
+    spoken cashflow uses, so the screen and the voice cannot name two different closing balances.
+    """
+    ledger = in_rupees_low_point(plan)
+    if ledger is None or plan.low_point is None:
+        return None
+    low = plan.low_point
+    return LowPointView(
+        d=low.date.isoformat(),
+        b=ledger.b,
+        opening=ledger.opening,
+        closing=ledger.closing,
+        before=_lines(low.before, ledger.before),
+        after=_lines(low.after, ledger.after),
+    )
+
+
+def _lines(rows: list[LowPointRow], amounts: list[int]) -> list[LowPointLine]:
+    return [
+        LowPointLine(d=row.date.isoformat(), label=_label(row.label), amt=amount, spread=row.spread)
+        for row, amount in zip(rows, amounts, strict=True)
+    ]
+
+
 def _timeline(plan: PlanResult, state: FinancialState) -> list[TimelinePoint]:
     """First day, every event day, last day. A spread item is proration, not an event, so it is
     recognised by turning up on more than two days and left unlabelled."""
@@ -294,9 +376,16 @@ def _size(msg: CardsMessage) -> int:
 
 def _fit(msg: CardsMessage) -> CardsMessage:
     """Daily refuses an app-message over 4 KB, so give up detail in the order it hurts least:
-    timeline points, then row labels, then rows."""
+    low-point lines, then timeline points, then row labels, then rows."""
     if _size(msg) <= MAX_BYTES:
         return msg
+
+    if msg.low_point is not None:
+        # Forty items make forty lines nobody would read out anyway. Keep the largest, which are
+        # the ones that explain the number, and carry the rest as one exact total so
+        # `opening + before == b` and `b + after == closing` still hold.
+        msg.low_point.before = _biggest(msg.low_point.before)
+        msg.low_point.after = _biggest(msg.low_point.after)
 
     if len(msg.timeline) > 3:
         # first, last, and the day the money is lowest -- the three a reader needs
@@ -326,6 +415,23 @@ def _fit(msg: CardsMessage) -> CardsMessage:
     return msg
 
 
+def _biggest(lines: list[LowPointLine], keep: int = 4) -> list[LowPointLine]:
+    """The `keep` largest movements, then everything else as one line with the exact remainder."""
+    if len(lines) <= keep + 1:
+        return lines
+    ranked = sorted(lines, key=lambda line: (-abs(line.amt), line.d))
+    kept = sorted(ranked[:keep], key=lambda line: (line.d, line.label))
+    rest = ranked[keep:]
+    return [
+        *kept,
+        LowPointLine(
+            d=max(line.d for line in rest),
+            label=f"{len(rest)} smaller items",
+            amt=sum(line.amt for line in rest),
+        ),
+    ]
+
+
 def build_cards(
     state: FinancialState,
     plan: PlanResult,
@@ -337,6 +443,7 @@ def build_cards(
     when it would not, drop timeline points (keep first, last, lowest) then truncate row
     labels, and set a warning note on the summary card."""
     cards: list[Card] = []
+    covered = coverage(state)
     absent = frozenset(u.field for u in state.unknowns if u.reason is UnknownReason.NOT_APPLICABLE)
     for card_id, title, kind, items in (
         (CardId.INCOME, "Income", ItemKind.INCOME, state.incomes),
@@ -344,7 +451,9 @@ def build_cards(
         (CardId.ESSENTIALS, "Essentials", ItemKind.ESSENTIAL, state.essentials),
         (CardId.OPTIONALS, "Optional", ItemKind.OPTIONAL, state.optionals),
     ):
-        card = _item_card(card_id, title, kind, items, absent)
+        card = _item_card(
+            card_id, title, kind, items, absent, none_of_these=covered[kind.value] is Coverage.NONE
+        )
         if card is not None:
             cards.append(card)
 
@@ -392,5 +501,6 @@ def build_cards(
             focus=focus,
             cards=cards,
             timeline=_timeline(plan, state),
+            low_point=_low_point(plan),
         )
     )

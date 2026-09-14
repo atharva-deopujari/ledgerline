@@ -93,10 +93,14 @@ def label_for(field: str) -> str:
     return f"{name} {_ATTRIBUTE_LABELS.get(attribute, attribute.replace('_', ' '))}".strip()
 
 
-def resolve_day(today: dt.date, day_of_month: int | None, horizon_days: int = 30) -> dt.date | None:
+def resolve_day(today: dt.date, day_of_month: int | None) -> dt.date | None:
     """Map a day-of-month to the first matching date on or after today, clamped to the length of
-    the month. With a 30 day horizon every day-of-month lands inside the window, so the horizon is
-    not used to reject a date; the engine drops out-of-window events instead."""
+    the month.
+
+    The window is not consulted: with a thirty day horizon every day-of-month lands inside it, and
+    the engine drops out-of-window events itself. This took a `horizon_days` argument that the
+    body never read, and both callers were passing `state.horizon_days` into nothing.
+    """
     if day_of_month is None:
         return None
     if not 1 <= day_of_month <= 31:

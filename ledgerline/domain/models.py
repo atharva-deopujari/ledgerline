@@ -43,6 +43,19 @@ class UnknownReason(StrEnum):
     NOT_APPLICABLE = "not_applicable"
 
 
+class Coverage(StrEnum):
+    """Whether a whole category has been settled, for the four item kinds and the balance.
+
+    Item fields say what is missing about something the person has already named; this says
+    whether the category was ever reached. A plan built without asking about debts is not wrong
+    arithmetic, it is arithmetic about the wrong month.
+    """
+
+    STATED = "stated"  # they have named at least one, or given the balance
+    NONE = "none"  # they say there are none of these; settled, never asked again
+    UNASKED = "unasked"  # nothing usable said yet
+
+
 class OutcomeStatus(StrEnum):
     """What a state operation actually did."""
 
@@ -68,6 +81,11 @@ class _Item(BaseModel):
 
     name: str
     notes: str = ""
+    # Loaded from a previous call and not yet confirmed by the person this call. Set only by the
+    # profile loader; cleared by any upsert of the item (saying it is confirming it) and by
+    # confirm_carried. The plan counts carried items -- a survival plan missing the rent is a
+    # wrong plan -- but stays provisional, and finalize_plan refuses, while any remain.
+    carried: bool = False
 
 
 class Income(_Item):
@@ -82,8 +100,6 @@ class Debt(_Item):
     amount_due: Money | None = None  # EMI amount, or card total due
     min_due: Money | None = None  # cards only
     due_date: dt.date | None = None
-    late_fee: Money | None = None  # only if the user stated it; never defaulted
-    autodebit: bool = False
     lender: str | None = None
 
 
@@ -143,7 +159,6 @@ class ActionType(StrEnum):
     DEFER_OPTIONAL = "DEFER_OPTIONAL"
     CUT_OPTIONAL = "CUT_OPTIONAL"
     PAY_MIN_DUE = "PAY_MIN_DUE"
-    PAY_ON_DATE = "PAY_ON_DATE"  # retired; kept so no other layer's typing breaks
     ASK_LENDER = "ASK_LENDER"
 
 
@@ -152,7 +167,6 @@ class RowKind(StrEnum):
     ESSENTIAL = "essential"
     DEBT = "debt"
     OPTIONAL = "optional"
-    FEE = "fee"
 
 
 class TimelineRow(BaseModel):
@@ -171,6 +185,19 @@ class Summary(BaseModel):
     total_out_planned: Money
     shortfall_before_actions: Money  # negative = short
     shortfall_after_actions: Money
+    # total_in - total_out_planned: the month's own flow, saying nothing about what was already in
+    # the account. "My salary is thirty, rent and spending are eighteen, so where is fifty-seven
+    # from?" is the question every person asks about their own month, and a result that does not
+    # answer it gets answered anyway -- by the model, out loud, which is the one rule this product
+    # has. Exactly the subtraction of the two figures above, so the three always reconcile.
+    # Additive with a default, so a Summary built by hand in another layer's fixture still
+    # validates; the engine always computes it.
+    net_flow: Money = Decimal("0.00")
+    # opening_balance + total_in: what there is to work with over the month. The other figure the
+    # agent layer was computing for itself, for the same reason -- "ninety thousand to work with"
+    # is a sentence people say back, and a number the model worked out is a number it can get
+    # wrong. Same default, same reason.
+    to_work_with: Money = Decimal("0.00")
     lowest_balance: Money
     lowest_balance_date: dt.date
     negative_days: list[dt.date] = Field(default_factory=list)
@@ -200,7 +227,36 @@ class Unpaid(BaseModel):
     due_date: dt.date
     tier: int
     consequence: str  # from policy, speakable
-    ask: str  # "you could ask the lender to move the date"
+
+
+class LowPointRow(BaseModel):
+    """One line of the arithmetic behind the lowest balance, signed the way the balance moves."""
+
+    date: dt.date  # for a spread item, the last day counted in this total
+    label: str
+    kind: RowKind
+    amount: Money  # positive in, negative out
+    spread: bool = False  # a running total to `date`, not one payment on it
+
+
+class LowPoint(BaseModel):
+    """Why the lowest balance is the number it is, as arithmetic the person can follow.
+
+    A live caller asked why the low point was 57,166 when thirty thousand minus eighteen was
+    twelve, and the answer was not anywhere in the result -- so the model either invented a step
+    or changed the subject. Two identities hold, and they are what make this checkable rather
+    than decorative:
+
+        opening_balance + sum(before) == balance
+        balance + sum(after) == closing_balance
+    """
+
+    date: dt.date
+    balance: Money
+    opening_balance: Money
+    before: list[LowPointRow] = Field(default_factory=list)  # lands on or before `date`
+    after: list[LowPointRow] = Field(default_factory=list)  # arrives afterwards, with its date
+    closing_balance: Money
 
 
 class PlanResult(BaseModel):
@@ -216,6 +272,8 @@ class PlanResult(BaseModel):
     # unknown record on an income field). See Readiness.blockers.
     blockers: list[str] = Field(default_factory=list)
     excluded_items: list[str] = Field(default_factory=list)
+    # The arithmetic behind summary.lowest_balance, for the model to narrate. None when BLOCKED.
+    low_point: LowPoint | None = None
     policy_version: str = "v1"
 
 

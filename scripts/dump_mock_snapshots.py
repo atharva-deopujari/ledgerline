@@ -1,13 +1,14 @@
-"""Write four real CardsMessage snapshots to frontend/src/mock/snapshots.json.
+"""Write five real CardsMessage snapshots to frontend/src/mock/snapshots.json.
 
 The reviewer-facing mock journey used hand-written cards, which drifted: a lowest balance its own
 timeline contradicted, an unpaid row dated outside the window, an action verb the backend has no
-enum for. These four come out of the real domain layer, so the mock cannot show anything the
+enum for. These five come out of the real domain layer, so the mock cannot show anything the
 engine could not produce.
 
     uv run python scripts/dump_mock_snapshots.py
 
-Re-run it whenever the cards contract or the engine changes.
+Re-run it whenever the cards contract or the engine changes. `dump_sample.py` beside this one does
+the same for `frontend/src/protocol/sample.json`, the single message the frontend parses against.
 """
 
 from __future__ import annotations
@@ -23,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ledgerline.domain.cards import CardsMessage, build_cards
 from ledgerline.domain.engine import build_plan
 from ledgerline.domain.models import DebtKind, FinancialState, ItemKind
-from ledgerline.domain.state import upsert
+from ledgerline.domain.state import none_of, upsert
 
 TODAY = dt.date(2026, 9, 11)
 OUT = Path(__file__).resolve().parents[1] / "frontend" / "src" / "mock" / "snapshots.json"
@@ -31,6 +32,21 @@ OUT = Path(__file__).resolve().parents[1] / "frontend" / "src" / "mock" / "snaps
 
 def D(x: int | str) -> Decimal:
     return Decimal(str(x)).quantize(Decimal("0.01"))
+
+
+def returning() -> FinancialState:
+    """The first screen of a second call: last month's rent and salary, carried and unconfirmed.
+
+    This is the state the profile loader hands over before the greeting. The opening balance is
+    absent because it never carries -- it changes daily and is always asked fresh -- so the plan is
+    blocked on it, which is exactly what a returning caller's first screen looks like.
+    """
+    state = FinancialState(today=TODAY)
+    upsert(state, ItemKind.INCOME, "salary", amount=D(45000), day_of_month=1)
+    upsert(state, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
+    for item in (*state.incomes, *state.essentials):
+        item.carried = True
+    return state
 
 
 def gathering() -> FinancialState:
@@ -43,6 +59,9 @@ def gathering() -> FinancialState:
     upsert(state, ItemKind.ESSENTIAL, "groceries", amount=D(9000), spread=True, survival=True)
     upsert(state, ItemKind.ESSENTIAL, "rent", amount=D(12000), day_of_month=5)
     upsert(state, ItemKind.ESSENTIAL, "electricity")
+    # "I have no loans" is an answer, and the card says so: an empty screen cannot tell a fact
+    # from a question nobody has asked.
+    none_of(state, ItemKind.DEBT)
     state.turn = 3
     # 42,000 -> 45,000: the overwrite lands and the Outcome tells the model what moved.
     upsert(state, ItemKind.INCOME, "salary", amount=D(45000))
@@ -85,25 +104,26 @@ def done() -> FinancialState:
     return state
 
 
+# name -> (state builder, the card the browser should focus). One table, because two keyed by the
+# same names is one table plus a way to forget half of it.
 SNAPSHOTS = {
-    "gathering": gathering,
-    "ready": ready,
-    "plan": finalized,
-    "done": done,
+    "returning": (returning, "essentials"),
+    "gathering": (gathering, "essentials"),
+    "ready": (ready, "summary"),
+    "plan": (finalized, "plan"),
+    "done": (done, "plan"),
 }
-
-FOCUS = {"gathering": "essentials", "ready": "summary", "plan": "plan", "done": "plan"}
 
 
 def main() -> None:
     out: dict[str, object] = {}
-    for version, (name, build) in enumerate(SNAPSHOTS.items(), start=1):
+    for version, (name, (build, focus)) in enumerate(SNAPSHOTS.items(), start=1):
         state = build()
         message = build_cards(
             state,
             build_plan(state),
             version=version,
-            focus=FOCUS[name],  # type: ignore[arg-type]
+            focus=focus,  # type: ignore[arg-type]
         )
         payload = message.model_dump_json()
         assert CardsMessage.model_validate_json(payload) == message

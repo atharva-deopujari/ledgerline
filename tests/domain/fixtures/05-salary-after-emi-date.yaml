@@ -3,11 +3,11 @@ source: "research 09 section 7, scenario 5"
 note: >
   The research quotes the BEFORE-actions figures, min -7,000 with negative days 09-14 and 09-15.
   The final plan never goes negative, so the summary is lowest 0 on 09-15 with no negative days.
-  Research 09 calls this TIMING and expects a PAY_ON_DATE to 09-16 with the stated 500 late fee.
-  The engine no longer does that: only the lender can agree to move a due date, so the 7,000 EMI
+  Research 09 calls this TIMING and expects the payment moved to 09-16 with a stated 500 late fee.
+  The engine no longer does either: only the lender can agree to move a due date, so the 7,000 EMI
   is reported unpaid on 09-14 with one ASK_LENDER naming the 12,200 shortfall and 09-16 as the
-  first day the money is there. No payment is made late, so the 500 fee never enters the plan and
-  closing is 28,000 rather than 20,500.
+  first day the money is there, and no late fee is modelled at all -- the engine never books a
+  payment late, so there was never a fee to charge. Closing is 28,000 rather than 20,500.
 facts:
   opening_balance: 1000
   incomes:
@@ -17,7 +17,6 @@ facts:
       kind: secured_emi
       amount_due: 7000
       due_date: 2026-09-14
-      late_fee: 500
   essentials:
     - {name: groceries, amount: 6000, spread: true, survival: true}
     - {name: rent, amount: 12000, due_date: 2026-10-01}

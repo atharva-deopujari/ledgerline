@@ -25,6 +25,7 @@ from ledgerline.domain.models import (
     Income,
     ItemKind,
     OptionalExpense,
+    PlanStatus,
     Unknown,
     UnknownReason,
 )
@@ -66,7 +67,6 @@ def engine_authored_text(plan) -> str:
     parts += [a.rationale for a in plan.actions]
     parts += [a.warning or "" for a in plan.actions]
     parts += [u.consequence for u in plan.unpaid]
-    parts += [u.ask for u in plan.unpaid]
     return " ".join(parts).lower()
 
 
@@ -116,7 +116,7 @@ def test_scenario(scenario):
         assert got.amount == D(expected["amount"])
         assert got.due_date == expected["due_date"]
         assert got.tier == expected["tier"]
-        assert got.consequence and got.ask
+        assert got.consequence
 
     if "warning_contains" in want:
         assert any(want["warning_contains"] in w.lower() for w in plan.warnings)
@@ -289,15 +289,18 @@ def test_an_unpaid_debt_keeps_its_own_due_date_and_leaves_the_balance_alone():
         D(4000),
         dt.date(2026, 9, 20),
     )
-    assert unpaid.consequence and unpaid.ask
+    assert unpaid.consequence
     # nothing left the account for it, and no row claims it did
     assert not any(row.label == "personal emi" for row in plan.timeline)
 
 
-def test_nothing_is_ever_told_to_pay_late(scenario):
-    """PAY_ON_DATE is retired; every action must be one the policy still allows."""
+def test_every_action_is_one_the_policy_allows(scenario):
+    """Only a lender can move a due date, so the engine asks rather than rescheduling. The allowed
+    list is the whole vocabulary, which is a stronger check than naming the one action that was
+    retired -- there is no longer an enum member for it to name."""
     plan = build_plan(state_from(scenario["facts"]))
-    assert all(a.type != "PAY_ON_DATE" for a in plan.actions), scenario["name"]
+    allowed = set(DEFAULT_POLICY.allowed_actions)
+    assert all(a.type in allowed for a in plan.actions), scenario["name"]
     assert all(a.type in DEFAULT_POLICY.allowed_actions for a in plan.actions), scenario["name"]
 
 
@@ -370,8 +373,10 @@ def test_rent_nobody_can_afford_is_named_not_paid_from_thin_air():
     assert "rent" in uncovered
     assert uncovered["rent"].amount == D(15000)
     assert uncovered["rent"].due_date == dt.date(2026, 10, 5)
-    assert "landlord" in uncovered["rent"].ask
     assert uncovered["rent"].consequence
+    # What to ask, and who to ask, reaches the person through the action rather than the row.
+    rent_ask = next(a for a in plan.actions if a.type == "ASK_LENDER" and a.target == "rent")
+    assert "landlord" in rent_ask.rationale
     assert plan.summary.lowest_balance >= D(0)  # nothing is paid from money that is not there
     assert plan.summary.negative_days == []
 
@@ -844,7 +849,6 @@ def test_no_uncovered_item_is_ever_told_to_go_and_borrow(tier):
         assert borrowing_language(action.rationale) == [], f"{tier}: {action.rationale}"
         assert borrowing_language(action.warning or "") == [], f"{tier}: {action.warning}"
     for unpaid in plan.unpaid:
-        assert borrowing_language(unpaid.ask) == [], f"{tier}: {unpaid.ask}"
         assert borrowing_language(unpaid.consequence) == [], f"{tier}: {unpaid.consequence}"
 
 
@@ -856,7 +860,6 @@ def test_no_scenario_recommends_borrowing(scenario):
             *(a.rationale for a in plan.actions),
             *(a.warning or "" for a in plan.actions),
             *(u.consequence for u in plan.unpaid),
-            *(u.ask for u in plan.unpaid),
         ]
     )
     assert borrowing_language(spoken) == [], scenario["name"]
@@ -1019,3 +1022,150 @@ def test_a_minimum_that_is_the_whole_balance_leaves_nothing_to_state():
         )
     )
     assert not any(a.type == ActionType.PAY_MIN_DUE for a in plan.actions)
+
+
+# ------------------------------------------ redesign: whole rupees, and why the low point is low
+
+
+def test_a_spread_amount_is_allocated_in_whole_rupees():
+    """A daily balance nobody can say out loud is a daily balance nobody can check. Prorating
+    6,500 over thirty days puts 216 on each of the first twenty-nine and the remainder on the
+    last, so no balance in the month carries paise."""
+    plan = build_plan(
+        state_from(
+            {
+                "opening_balance": 30000,
+                "incomes": [{"name": "salary", "amount": 45000, "date": "2026-10-01"}],
+                "essentials": [{"name": "groceries", "amount": 6500, "spread": True}],
+            }
+        )
+    )
+    slices = [row.amount for row in plan.timeline if row.label == "groceries"]
+
+    assert sum(slices) == D(-6500)  # the rupees still add up to what the person said
+    assert slices[:-1] == [D(-216)] * 29
+    assert slices[-1] == D(-6500) + D(216) * 29
+    assert all(row.balance == row.balance.quantize(Decimal("1")) for row in plan.timeline)
+    assert plan.summary.lowest_balance == plan.summary.lowest_balance.quantize(Decimal("1"))
+
+
+def test_the_low_point_explains_itself():
+    """The live call asked "why is the low point 57,166 when 30,000 minus 18,000 is 12,000", and
+    the answer was not in the result. It is now: the opening balance, everything that lands on or
+    before the low day, what arrives after it, and the closing balance -- enough arithmetic to
+    walk someone through without the model inventing a step."""
+    plan = build_plan(
+        state_from(
+            {
+                "opening_balance": 30000,
+                "incomes": [{"name": "salary", "amount": 45000, "date": "2026-10-01"}],
+                "essentials": [
+                    {"name": "rent", "amount": 18000, "due_date": "2026-09-20"},
+                    {"name": "groceries", "amount": 6000, "spread": True},
+                ],
+            }
+        )
+    )
+    low = plan.low_point
+    assert low is not None
+
+    assert low.date == plan.summary.lowest_balance_date
+    assert low.balance == plan.summary.lowest_balance
+    assert low.opening_balance == D(30000)
+    assert low.closing_balance == plan.summary.closing_balance
+
+    # The two identities that make it checkable rather than decorative.
+    assert low.opening_balance + sum(r.amount for r in low.before) == low.balance
+    assert low.balance + sum(r.amount for r in low.after) == low.closing_balance
+
+    named = {r.label: r for r in low.before}
+    assert named["rent"].amount == D(-18000)
+    assert named["rent"].date == dt.date(2026, 9, 20)
+    # A spread item is one running total to the low day, not thirty lines nobody can follow.
+    assert named["groceries"].spread is True
+    assert named["groceries"].amount == D(-200) * (low.date - TODAY + dt.timedelta(days=1)).days
+
+    arriving = {r.label: r for r in low.after}
+    assert arriving["salary"].amount == D(45000)
+    assert arriving["salary"].date == dt.date(2026, 10, 1)
+
+
+def test_a_month_with_nothing_in_it_still_has_a_low_point():
+    """No events at all: the low point is the opening balance on day one, and the derivation says
+    so rather than being absent."""
+    plan = build_plan(state_from({"opening_balance": 5000, "incomes": []}))
+
+    low = plan.low_point
+    assert low is not None
+    assert low.before == []
+    assert low.after == []
+    assert low.balance == D(5000) == low.closing_balance
+
+
+def test_a_blocked_plan_has_no_low_point_to_explain():
+    plan = build_plan(state_from({"incomes": [{"name": "salary", "amount": 45000}]}))
+    assert plan.status is PlanStatus.BLOCKED
+    assert plan.low_point is None
+
+
+def test_the_summary_carries_in_minus_out():
+    """The question every person asks about their own month -- "my salary is thirty, rent and
+    spending are eighteen, so where is fifty-seven from?" -- and a result that does not answer it
+    gets answered anyway: two runs did the subtraction out loud, which is the one rule this
+    product has. The engine publishes the figure so nobody else has to work it out."""
+    plan = build_plan(
+        state_from(
+            {
+                "opening_balance": 30000,
+                "incomes": [{"name": "salary", "amount": 45000, "date": "2026-10-01"}],
+                "essentials": [
+                    {"name": "rent", "amount": 18000, "due_date": "2026-09-20"},
+                    {"name": "groceries", "amount": 6000, "spread": True},
+                ],
+            }
+        )
+    )
+    s = plan.summary
+
+    assert s.net_flow == D(45000) - D(24000)
+    assert s.net_flow == s.total_in - s.total_out_planned
+    # It is the month's own flow: what was already in the account is the other term.
+    assert s.closing_balance == s.opening_balance + s.net_flow
+
+
+def test_the_summary_carries_what_there_is_to_work_with():
+    """KIRO-002. "Ninety thousand to work with" is the other figure the agent layer was computing
+    itself: what is in the account plus what arrives. The engine publishes it, so nobody speaks a
+    number they worked out."""
+    plan = build_plan(
+        state_from(
+            {
+                "opening_balance": 30000,
+                "incomes": [{"name": "salary", "amount": 45000, "date": "2026-10-01"}],
+                "essentials": [{"name": "rent", "amount": 18000, "due_date": "2026-09-20"}],
+            }
+        )
+    )
+    assert plan.summary.to_work_with == D(75000)
+
+
+def test_both_published_sums_reconcile_over_every_fixture(scenario):
+    """The two figures the model may speak are the two the engine computed, and they add up
+    against the ones beside them -- over all eleven scenarios, not one worked example."""
+    plan = build_plan(state_from(scenario["facts"]))
+    if plan.summary is None:
+        return
+    s = plan.summary
+    assert s.to_work_with == s.opening_balance + s.total_in
+    assert s.closing_balance == s.to_work_with - s.total_out_planned
+
+
+def test_in_minus_out_is_negative_when_more_goes_out_than_comes_in(scenario):
+    """Over every fixture: the figure reconciles with the two it is made of, and its sign says
+    which way the month runs."""
+    plan = build_plan(state_from(scenario["facts"]))
+    if plan.summary is None:
+        return
+    s = plan.summary
+    assert s.net_flow == s.total_in - s.total_out_planned
+    assert (s.net_flow < 0) == (s.total_out_planned > s.total_in)

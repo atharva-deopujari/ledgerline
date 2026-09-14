@@ -13,7 +13,6 @@ from ledgerline.domain.state import (
     missing_fields,
     readiness,
     remove,
-    snapshot,
     upsert,
 )
 from tests.domain.state.conftest import D  # noqa: E402
@@ -143,12 +142,6 @@ def test_a_field_that_does_not_apply_is_in_neither_list(st):
     mark_unknown(st, "essential:electricity.amount", UnknownReason.NOT_APPLICABLE)
     assert "essential:electricity.amount" not in missing_fields(st)
     assert not_known(st) == []
-
-
-def test_snapshot_missing_only_lists_what_is_still_worth_asking(st):
-    upsert(st, ItemKind.ESSENTIAL, "electricity")
-    mark_unknown(st, "essential:electricity.amount", UnknownReason.UNKNOWN)
-    assert "essential:electricity.amount" not in snapshot(st).missing
 
 
 def test_an_essential_the_user_does_not_know_stops_blocking_the_plan(st):

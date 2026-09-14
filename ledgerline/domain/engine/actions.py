@@ -212,7 +212,6 @@ def _ask_actions(
                 due_date=item.due_date,
                 tier=item.tier,
                 consequence=tier.consequence,
-                ask=tier.ask,
             )
         )
     return unpaid

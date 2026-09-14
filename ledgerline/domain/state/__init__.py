@@ -8,7 +8,13 @@ about language -- correction or contradiction, plausible or mis-heard, what to a
 word it -- belongs to the model, so none of it lives here.
 """
 
-from ledgerline.domain.state.items import Outcome, remove, upsert
+from ledgerline.domain.state.items import (
+    Outcome,
+    carried_items,
+    confirm_carried,
+    remove,
+    upsert,
+)
 from ledgerline.domain.state.names import (
     NO_INCOME,
     field_of,
@@ -20,38 +26,34 @@ from ledgerline.domain.state.names import (
     resolve_day,
     spoken,
 )
-from ledgerline.domain.state.readiness import (
-    StateSnapshot,
-    blockers,
-    readiness,
-    snapshot,
-)
+from ledgerline.domain.state.readiness import blockers, coverage, readiness
 from ledgerline.domain.state.unknowns import (
     answered,
-    income_is_answered,
     mark_unknown,
     missing_fields,
+    none_of,
 )
 
 __all__ = [
     "NO_INCOME",
     "Outcome",
-    "StateSnapshot",
     "answered",
+    "carried_items",
+    "confirm_carried",
     "blockers",
     "field_of",
     "group_inr",
-    "income_is_answered",
     "label_for",
     "mark_unknown",
+    "coverage",
     "missing_fields",
+    "none_of",
     "normalise_name",
     "possessive_of",
     "quantise",
     "readiness",
     "remove",
     "resolve_day",
-    "snapshot",
     "spoken",
     "upsert",
 ]

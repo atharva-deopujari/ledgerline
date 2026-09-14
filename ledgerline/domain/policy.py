@@ -9,7 +9,33 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from ledgerline.domain.models import ActionType
+from ledgerline.domain.models import ActionType, DebtKind, ItemKind
+
+# Which facts may be carried into the next call, beside the tiers because it is the same kind of
+# thing: policy, readable as data, changed without touching code that reads it.
+#
+# Everything recurring carries -- the rent is the rent, the EMI is the EMI, and asking again for a
+# figure the person already gave is the rudeness this whole feature exists to remove. Two do not:
+# the money in the account changes daily, and a credit card's balance changes every month, so both
+# are asked fresh. A carried fact is provisional until the person confirms it either way.
+CARRIED_FIELDS: dict[ItemKind, frozenset[str]] = {
+    ItemKind.INCOME: frozenset({"amount", "date", "latest_date", "certainty"}),
+    ItemKind.DEBT: frozenset({"amount", "due_date", "min_due", "kind"}),
+    ItemKind.ESSENTIAL: frozenset({"amount", "due_date", "spread", "survival"}),
+    ItemKind.OPTIONAL: frozenset({"amount", "date", "flexible"}),
+    ItemKind.BALANCE: frozenset(),
+}
+
+
+def carries(kind: ItemKind, field: str, *, debt_kind: DebtKind | None = None) -> bool:
+    """Whether a stored fact about this field may start the next call as a carried item.
+
+    An EMI's amount is the same figure every month and carries; a card's is a statement balance
+    that changed the day it was printed, and carrying it would put a wrong number in a plan.
+    """
+    if kind is ItemKind.DEBT and field == "amount" and debt_kind is DebtKind.CREDIT_CARD:
+        return False
+    return field in CARRIED_FIELDS[kind]
 
 
 class TierKey(StrEnum):
@@ -42,8 +68,6 @@ class Policy(BaseModel):
             ActionType.DEFER_OPTIONAL,
             ActionType.CUT_OPTIONAL,
             ActionType.PAY_MIN_DUE,
-            # PAY_ON_DATE is retired: only a lender can move a due date, so the engine asks
-            # rather than reschedules. The enum member stays so nothing breaks.
             ActionType.ASK_LENDER,
         ]
     )
@@ -146,9 +170,6 @@ DEFAULT_POLICY: Policy = Policy(
         ),
     ]
 )
-
-
-TIERS_BY_KEY: dict[TierKey, Tier] = {t.key: t for t in DEFAULT_POLICY.tiers}
 
 
 def tier_for(policy: Policy, key: TierKey) -> Tier:
