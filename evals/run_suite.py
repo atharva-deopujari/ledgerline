@@ -25,11 +25,13 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from evals.checks import CHECKS, Violation, run_checks
 from evals.harness import SCENARIOS_DIR, load_scenario, run_scenario
+from ledgerline.judge.checks.checks import CHECKS, Violation, run_checks
 
-# The six scenarios shaped like real speech: fragments, one-word answers, an STT garbage opener,
-# a correction with a conflict, one clean journey to the goodbye, and an STT-dropped thousand.
+# The eight scenarios shaped like real speech: fragments, one-word answers, an STT garbage opener,
+# a correction with a conflict, one clean journey to the goodbye, an STT-dropped thousand, and
+# two returning callers -- the only shape where the plan starts blocked on figures carried from a
+# previous call that the person has not spoken about yet.
 # The four older scenarios in the directory are outcome fixtures (does the engine reach TIMING?)
 # rather than speech fixtures; `--all` runs them too.
 SUITE = (
@@ -39,6 +41,8 @@ SUITE = (
     "correction_and_conflict",
     "estimated_income_happy_path",
     "stt_implausible_amount",
+    "returning_confirms_all",
+    "returning_changes_rent",
 )
 
 DEFAULT_RUNS = 5
@@ -46,6 +50,9 @@ THRESHOLD = 0.95
 CONCURRENCY = 5
 OVERALL = "overall"
 
+# Three checks, and all three decide the exit code. The advisory half went when the twenty rules
+# folded into three: what it was protecting -- how the coach talks -- is the judge's `led_like_a
+# _coach` now, which cannot be ratcheted by a harness.
 CHECK_NAMES: tuple[str, ...] = tuple(check.__name__ for check in CHECKS)
 
 
@@ -113,9 +120,8 @@ def gate_failures(
     is a different and much stricter rule than the one asked for. Pooled over 5 x 5 the bar is
     what it says: at most one bad call in twenty-five.
     """
-    return [
-        (OVERALL, check, rate) for check, rate in overall_rates(results).items() if rate < threshold
-    ]
+    rates = overall_rates(results)
+    return [(OVERALL, check, rates[check]) for check in CHECK_NAMES if rates[check] < threshold]
 
 
 def _cell(rate: float) -> str:
@@ -140,9 +146,17 @@ def format_table(results: list[RunResult]) -> str:
     return "\n".join(lines)
 
 
-def format_failures(results: list[RunResult], threshold: float = THRESHOLD) -> str:
+def format_failures(
+    results: list[RunResult],
+    threshold: float = THRESHOLD,
+    failures: list[tuple[str, str, float]] | None = None,
+) -> str:
+    """Detail lines per failing cell. Defaults to every cell under the bar; `main` hands it the
+    gate failures, so the report under the exit code names only what decided the exit code."""
+    if failures is None:
+        failures = below_threshold(results, threshold)
     lines = []
-    for scenario, check, rate in below_threshold(results, threshold):
+    for scenario, check, rate in failures:
         lines.append(f"  {check} {_cell(rate)} in {scenario}")
         for run in results:
             if scenario in (run.scenario, OVERALL) and run.broke(check):
@@ -253,8 +267,8 @@ def main(argv: list[str] | None = None) -> int:
         for scenario, check, rate in watch:
             print(f"  {check} {_cell(rate)} in {scenario}")
     if failures:
-        print(f"\nunder {args.threshold * 100:.0f}% across the matrix:")
-        print(format_failures(results, args.threshold))
+        print(f"\nchecks under {args.threshold * 100:.0f}% across the matrix:")
+        print(format_failures(results, args.threshold, failures))
         return 1
     print(f"\nevery check at or above {args.threshold * 100:.0f}% across the matrix")
     return 0

@@ -1,0 +1,40 @@
+name: angry_caller_register
+tags: [voice, register, adversarial]
+# The scenario §9 said had to exist before the register rule could be justified. Register
+# mirroring is the named luna failure category, and until now no run could fail it: every
+# simulated caller has been polite. This one is frightened and taking it out on the coach, which
+# is the shape a real money call takes when somebody is out of their depth. The coach's job is to
+# stay the same calm person it was in the first turn — matching their words and pace, never their
+# register — and the criterion `register_fit` had nothing to measure without a run like this.
+# `register_fit` was retired with the six criteria in the 14 Sep redesign after thirteen runs
+# without a failure (REPORT 10.8); the scenario stays, because a caller who swears at the coach
+# is a shape the money gates should survive.
+persona:
+  description: >
+    Vikram, 38, lost hours at work and is frightened about it, which comes out as anger at
+    whoever is in front of him. Swears mildly, interrupts, calls the coach useless at least once,
+    and softens only near the end. Answers the money questions accurately despite the tone.
+  hidden_facts:
+    opening_balance: "4000"
+    incomes:
+      - {name: wages, amount: "22000", day: 28}
+    essentials:
+      - {name: rent, amount: "9000", day: 5}
+      - {name: groceries, amount: "5000"}
+    debts:
+      - {name: personal loan, amount: "4500", day: 10, debt_kind: unsecured_emi}
+    optionals:
+      - {name: cigarettes, amount: "1200"}
+    notes:
+      - "Be short and irritable. You are scared, not rude for sport."
+  scripted_behaviours:
+    - {turn: 1, say: "Bloody hell, another one of these. Four thousand rupees, that's it."}
+    - {turn: 3, say: "Is this actually useful or are you just reading a script at me?"}
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 18
+expect:
+  plan_final: true
+  status: STRUCTURAL
+  actions: []
+  rules: [money_traceable, state_matches_call, speakable]
+runs: 5

@@ -1,0 +1,77 @@
+name: owner_call_1
+tags: [voice, owner_call, baseline]
+# The owner's live call of 13 September, reproduced as a persona so before and after can be
+# compared on the same conversation. Source recording:
+# evals/runs/voice-9869101897-20260913T194053Z-20260913-194718.json. The owner's verdict on it was
+# "a bot, not an intelligent agent", and the redesign of the agent layer is being judged against
+# this scenario, so the utterances below are lifted from the recording rather than tidied: the
+# hedging ("I think, like, around"), the fragments VAD cut mid-sentence, the flat "I did not
+# understand", and the challenge to the bot's own arithmetic are the call.
+#
+# Every scripted line is the person's actual words. What is NOT scripted is everything after the
+# arithmetic challenge, because those turns depend on what the bot says back.
+persona:
+  description: >
+    A real caller, casual and hedging, mildly impatient. Expects the coach to lead like somebody
+    who does this for a living and to explain its numbers in plain words. Pushes back when a
+    figure does not add up, and does not let it go on the first answer. Says "yeah, sure" a lot
+    without that meaning very much.
+  hidden_facts:
+    opening_balance: "60000"
+    incomes:
+      - {name: salary, amount: "30000", day: 30}
+    essentials: []
+    debts: []
+    optionals:
+      - {name: other spending, amount: "5000"}
+    notes:
+      - "The 5,000 is overall, not one thing: shopping, eating out, going out."
+      - "If the coach's arithmetic looks wrong, say so and push at least twice before letting it go."
+      - "Do not volunteer EMIs, cards, utilities, groceries or transport. Answer if asked."
+  scripted_behaviours:
+    - {turn: 1, say: "Hello. What's up?"}
+    - {turn: 2, say: "That's too straightforward. By the way, I have around 60,000 right now."}
+    - {turn: 3, say: "I think I'll get my salary credited, which is, like, around 30,000."}
+    - turn: 4
+      say: ["No. I'm sure it will arrive on", "end of this September."]
+    - turn: 5
+      say: ["I think at the starting week of October, I'll have to pay my rent, which is, like, around", "13,000."]
+    - turn: 6
+      say: ["No. There will be other expenses. Nothing is", "right now."]
+    - {turn: 7, say: "Yeah. Sure."}
+    - {turn: 8, say: "I did not understand."}
+    - turn: 9
+      say: ["Like, there are many other things as well. Like, there can like,",
+            "other expenses such as shopping or, you know,",
+            "anything else. I cannot remember right now. Eating out, going out with friends and everything like that."]
+    - {turn: 10, say: "Oh, that you can do, like, let's say, 15000"}
+    - turn: 11
+      say: ["No. Actually, it's 5,000.", "Not 15."]
+    - {turn: 12, say: "Yeah. Sure."}
+    - {turn: 13, say: "Walk me through."}
+    - {turn: 14, say: "Think the calculation is wrong."}
+    - turn: 15
+      say: ["If my salary is 30,000, rent is 13,000, shopping, eating out, and going out is 5,000,",
+            "then that means"]
+    - turn: 16
+      say: ["30 minus", "18 is not 57."]
+  ends_when: "the coach has explained the plan, answered my challenge, and I have said that is all"
+# 36, not 26. Two of the first five after runs ran out of turns while still establishing loans
+# and cards and never reached a plan, and the turn budget was one of three candidate causes. It
+# is no longer one of them.
+max_turns: 36
+expect:
+  plan_final: true
+  status: OK
+  actions: []
+  # What the state must hold at the end. `state_matches_facts` reads these.
+  rules: [money_traceable, state_matches_call, speakable]
+  # The four questions this call raised. Two of them are deterministic now -- the silence is
+  # `no_silent_turn` and the decimal is `no_spoken_decimals`, both gates since the redesign --
+  # and the other two became the judge's expertise criteria in `ledgerline/judge/criteria.py`.
+  judge_questions:
+    - coverage_before_plan    # did it ask about EMIs, cards, utilities, spending, first?
+    - low_point_explained           # why is the low point what it is, in plain words
+    - challenge_answered_without_computing   # "30 minus 18 is not 57" -- answered from a result
+    - led_like_a_coach
+runs: 5

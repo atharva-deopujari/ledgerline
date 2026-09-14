@@ -5,16 +5,19 @@ from __future__ import annotations
 import pytest
 import yaml
 
-from evals import checks, harness, sim_user
+from evals import harness, sim_user
 from ledgerline.agent.tools import TOOL_NAMES, build_tools
+from ledgerline.judge.checks import checks
 
 SCENARIOS = sorted(harness.SCENARIOS_DIR.glob("*.yaml"))
 
 
 def test_the_scenarios_that_ship_with_the_harness():
     """Four outcome fixtures — does the engine reach TIMING, does a correction land — and the
-    six voice-shaped ones the suite gates on, five built from the owner's real call and one from
-    the failure mode the cut created: an implausible figure nobody in code is watching for."""
+    ten voice-shaped ones the suite gates on: five built from the owner's real call, one from
+    the failure mode the cut created, two returning callers, who are the only shape where the plan
+    starts blocked on figures the person has not spoken yet, and two adversarial ones built for
+    the judge: the register and the close had no run that could fail them."""
     assert {p.stem for p in SCENARIOS} == {
         "comfortable_surplus",
         "timing_emi_before_salary",
@@ -26,6 +29,12 @@ def test_the_scenarios_that_ship_with_the_harness():
         "correction_and_conflict",
         "estimated_income_happy_path",
         "stt_implausible_amount",
+        "returning_confirms_all",
+        "returning_changes_rent",
+        "angry_caller_register",
+        "hesitant_close",
+        "fragmented_correction",
+        "owner_call_1",
     }
 
 
@@ -40,7 +49,7 @@ def test_scenario_has_the_fields_the_harness_reads(path):
     expect = scenario["expect"]
     assert expect["plan_final"] is True
     assert expect["status"] in {"OK", "TIMING", "STRUCTURAL", "UNSOLVABLE"}
-    assert "no_iso_dates" in expect["rules"]
+    assert "speakable" in expect["rules"]
     for rule in expect["rules"]:
         assert rule in {check.__name__ for check in checks.CHECKS}, rule
     for behaviour in persona.get("scripted_behaviours", []):
@@ -62,7 +71,7 @@ def test_load_scenario_by_name_and_by_path():
     assert by_name == by_path
 
 
-def test_openai_tool_schemas_come_from_the_real_handlers(ctx, rec):
+def test_openai_tool_schemas_come_from_the_real_tools(ctx):
     tools = harness.to_openai_tools(build_tools(ctx))
     assert [t["name"] for t in tools] == list(TOOL_NAMES)
     for tool in tools:

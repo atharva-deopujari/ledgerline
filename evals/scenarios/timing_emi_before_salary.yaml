@@ -25,9 +25,5 @@ expect:
   # money exists over the window (net +47,800), the dates do not line up.
   actions:
     - {type: PAY_ON_DATE, target: bike loan, to: "1 October"}
-  rules:
-    [numbers_traceable, changed_value_acknowledged,
-     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
-     no_markdown, amounts_repeated,
-     no_iso_dates]
+  rules: [money_traceable, state_matches_call, speakable]
 runs: 1

@@ -34,10 +34,5 @@ expect:
   plan_final: true
   status: OK
   actions: []
-  rules:
-    [numbers_traceable, changed_value_acknowledged, implausible_amount_confirmed,
-     one_question_per_turn, banned_phrases,
-     no_markdown, amounts_repeated,
-     no_iso_dates, silent_before_acting, no_repeated_sentence, no_question_after_unknown,
-     one_goodbye_with_the_end_call]
+  rules: [money_traceable, state_matches_call, speakable]
 runs: 5

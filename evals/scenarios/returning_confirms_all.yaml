@@ -1,0 +1,35 @@
+name: returning_confirms_all
+tags: [voice, memory, carried]
+# A second call from somebody the system already knows. The figures are hydrated as carried, the
+# plan is blocked behind them, and the whole question is whether the coach reads them back before
+# taking "it is all the same" for an answer. Blanket confirmation is allowed and is the kind thing
+# to do -- being asked six questions you already answered last month is its own failure -- but
+# agreeing to a list nobody read out is how a person confirms a loan they have since paid off.
+carried:
+  - {kind: essential, name: rent, amount: "12000", day: 5, spoken: "12,000 on the 5th"}
+  - {kind: income, name: salary, amount: "45000", day: 1, spoken: "45,000 on the 1st"}
+  - {kind: debt, name: bike emi, amount: "3400", day: 12, debt_kind: secured_emi,
+     spoken: "3,400 on the 12th"}
+persona:
+  description: "Ramesh, 41, called last month, busy, answers briefly and trusts the coach."
+  hidden_facts:
+    opening_balance: "18000"
+    incomes:
+      - {name: salary, amount: "45000", day: 1}
+    essentials:
+      - {name: rent, amount: "12000", day: 5}
+    debts:
+      - {name: bike emi, amount: "3400", day: 12, debt_kind: secured_emi}
+    optionals: []
+    notes:
+      - "Nothing has changed since last month; say so plainly if asked."
+  scripted_behaviours:
+    - {turn: 2, say: "Yes, all of that is still the same."}
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 16
+expect:
+  plan_final: true
+  status: OK
+  actions: []
+  rules: [money_traceable, state_matches_call, speakable]
+runs: 5

@@ -1,0 +1,35 @@
+name: returning_changes_rent
+tags: [voice, memory, carried]
+# The other half of carrying: the figure that moved. The rent went up between calls, so reading
+# the old one back is what gives the person the chance to say so -- and a coach that took "yes"
+# for the whole list would plan this month on last month's rent. The changed value then has to be
+# settled like any other change, and the state must end on 14,000 rather than the carried 12,000.
+carried:
+  - {kind: essential, name: rent, amount: "12000", day: 5, spoken: "12,000 on the 5th"}
+  - {kind: income, name: salary, amount: "45000", day: 1, spoken: "45,000 on the 1st"}
+  - {kind: debt, name: bike emi, amount: "3400", day: 12, debt_kind: secured_emi,
+     spoken: "3,400 on the 12th"}
+persona:
+  description: "Ramesh, 41, called last month, busy, answers briefly, and his rent just rose."
+  hidden_facts:
+    opening_balance: "18000"
+    incomes:
+      - {name: salary, amount: "45000", day: 1}
+    essentials:
+      - {name: rent, amount: "14000", day: 5}
+    debts:
+      - {name: bike emi, amount: "3400", day: 12, debt_kind: secured_emi}
+    optionals: []
+    notes:
+      - "The rent went up to fourteen thousand this month; everything else is unchanged."
+  scripted_behaviours:
+    - {turn: 2, say: "The rent went up. It is fourteen thousand now."}
+    - {turn: 3, say: "The rest is the same."}
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 16
+expect:
+  plan_final: true
+  status: OK
+  actions: []
+  rules: [money_traceable, state_matches_call, speakable]
+runs: 5

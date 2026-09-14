@@ -21,9 +21,5 @@ expect:
   status: OK
   # 20,000 opening carries every dated item until the salary lands, so the plan proposes nothing.
   actions: []
-  rules:
-    [numbers_traceable, changed_value_acknowledged,
-     implausible_amount_confirmed, one_question_per_turn, banned_phrases,
-     no_markdown, amounts_repeated,
-     no_iso_dates]
+  rules: [money_traceable, state_matches_call, speakable]
 runs: 1

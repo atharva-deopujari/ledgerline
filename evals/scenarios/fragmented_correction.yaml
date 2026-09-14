@@ -1,0 +1,45 @@
+name: fragmented_correction
+tags: [voice, memory, carried]
+# C's third live call, made reproducible. Deepgram heard "my rent went up to" as "my red went up
+# to" and the amount arrived in the next fragment; the bot replied "I've noted rent as 13,000
+# rupees" and called no tool at all. The state kept the carried figure, the stored profile kept
+# it, and the person rang off believing the correction had landed. Every check passed: the person
+# really did say 13,000, and no hidden fact contradicted the state.
+#
+# So the hidden fact here IS the correction. If the coach claims without recording,
+# `claimed_values_recorded` catches the claim and `state_matches_facts` catches the loss.
+carried:
+  - {kind: essential, name: rent, amount: "12000", day: 5, spoken: "12,000 on the 5th"}
+  - {kind: income, name: salary, amount: "45000", day: 1, spoken: "45,000 on the 1st"}
+  - {kind: debt, name: bike emi, amount: "3400", day: 12, debt_kind: secured_emi,
+     spoken: "3,400 on the 12th"}
+persona:
+  description: "Ramesh, 41, called last month, speaks over the line badly, and his rent just rose."
+  hidden_facts:
+    opening_balance: "18000"
+    incomes:
+      - {name: salary, amount: "45000", day: 1}
+    essentials:
+      - {name: rent, amount: "13000", day: 5}
+    debts:
+      - {name: bike emi, amount: "3400", day: 12, debt_kind: secured_emi}
+    optionals: []
+    notes:
+      - "Never volunteer the rent figure. Say it only if the coach asks which item you meant."
+  scripted_behaviours:
+    # Turn 1 is scripted too, and deliberately says nothing about the rent. Left to improvise the
+    # persona volunteered the correction cleanly here, so the garbled fragments arrived as a
+    # duplicate and the run no longer tested what it was built for. The two fragments below are
+    # now the ONLY statement of the new figure anywhere in the call.
+    - {turn: 1, say: "The salary and the bike are right."}
+    - turn: 2
+      say: ["My red went up to", "thirteen thousand."]
+    - {turn: 3, say: "The rest is the same."}
+  ends_when: "the coach has explained the plan and I have agreed it makes sense"
+max_turns: 16
+expect:
+  plan_final: true
+  status: OK
+  actions: []
+  rules: [money_traceable, state_matches_call, speakable]
+runs: 5

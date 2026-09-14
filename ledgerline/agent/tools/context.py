@@ -39,7 +39,7 @@ class ToolContext:
         """The opening balance after this part is added in.
 
         "I have" / "20,000 in cash and" / "20,000 in bank balance." is one utterance and two
-        `upsert_item` calls. The domain keeps a single opening balance and ignores its name, so
+        `note` calls. The domain keeps a single opening balance and ignores its name, so
         the second call replaced the first and a person with 40,000 was planned for as if they
         had 20,000. The model must not add the two itself — it must not add anything — so the
         tool does it, and the total comes back in the result where the model may read it.
@@ -53,15 +53,17 @@ class ToolContext:
 
         There is deliberately no heuristic for a name that sounds like a total. If somebody
         restates the whole balance under a new word the sum is spoken back to them and they can
-        correct it, which is a better failure than silently planning on half.
+        correct it, which is a better failure than silently planning on half. Restating a part by
+        the name they gave it corrects that part, which is why there is no way to forget a
+        balance: "actually the cash is five thousand" is a `note`, not a deletion.
         """
         self._balance_parts[normalise_name(name)] = amount
         return sum(self._balance_parts.values(), Decimal(0))
 
-    def forget_balance_parts(self) -> None:
-        """Drop every part. The balance was removed, so the next part named starts a new total
-        rather than resurrecting money the person has said they no longer have."""
-        self._balance_parts = {}
+    def take_carried(self) -> list[tuple[str, str]]:
+        """The carried figures, once. Empty for a first-time caller, and empty ever after."""
+        carried, self._carried = self._carried, []
+        return carried
 
     def _key(self, name: str, args: dict) -> tuple[int, str, str]:
         return (self.state.turn, name, json.dumps(args, sort_keys=True, default=str))
