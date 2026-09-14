@@ -32,6 +32,8 @@ from ledgerline.config import Settings
 load_dotenv(override=True)
 
 SAMPLE_RATE = 16000
+# What the browser sends in its client-ready handshake; the processor rejects a mismatched major.
+RTVI_PROTOCOL_VERSION = "2.1.0"
 ALL_UTTERANCES: list[str | list[str]] = [
     "I have eight thousand rupees in my account right now.",
     "My salary is forty-five thousand rupees on the first.",
@@ -54,8 +56,23 @@ HESITANT_UTTERANCES: list[list[str] | str] = [
 
 # How long the person stops mid-sentence. Long enough that VAD certainly sees silence.
 HESITATION_SECS = float(os.getenv("SPIKE_HESITATION_SECS", "1.6"))
+# SPIKE_SAY="one|two~and the rest" says exactly that instead, for a case no fixed script covers —
+# a returning caller correcting a figure, which is the only way to exercise supersession live.
+# "|" separates utterances; "~" splits one utterance into fragments with a real pause between
+# them, the shape that makes a correction hard to hear.
+_SAY: list[str | list[str]] = [
+    line.split("~") if "~" in line else line
+    for line in os.getenv("SPIKE_SAY", "").split("|")
+    if line
+]
+
 # SPIKE_UTTERANCES=1 keeps a Cartesia pass to a single short exchange.
-_SCRIPT = HESITANT_UTTERANCES if os.getenv("SPIKE_SCRIPT") == "hesitant" else ALL_UTTERANCES
+if _SAY:
+    _SCRIPT: list = list(_SAY)
+elif os.getenv("SPIKE_SCRIPT") == "hesitant":
+    _SCRIPT = HESITANT_UTTERANCES
+else:
+    _SCRIPT = ALL_UTTERANCES
 UTTERANCES = _SCRIPT[: int(os.getenv("SPIKE_UTTERANCES", len(_SCRIPT)))]
 GAP_SECS = float(os.getenv("SPIKE_GAP_SECS", "12"))  # time for the bot to answer
 
@@ -128,8 +145,20 @@ async def main() -> None:
     )
     user.client.join(room_url, token, completion=lambda data, error: user.joined.set())
     user.joined.wait(timeout=20)
-    print("fake user joined; waiting for the bot's greeting")
-    await asyncio.sleep(8)
+
+    # The browser's RTVI handshake, which is what makes the bot greet first. Without it
+    # `on_client_ready` never fires and no headless run has ever exercised the greeting —
+    # every transcript from this driver starts with the person speaking.
+    user.client.send_app_message(
+        {
+            "label": "rtvi-ai",
+            "type": "client-ready",
+            "id": "client-ready",
+            "data": {"version": RTVI_PROTOCOL_VERSION, "about": {"library": "spike/drive.py"}},
+        }
+    )
+    print("fake user joined and ready; waiting for the bot's greeting")
+    await asyncio.sleep(10)
 
     for text, pcm in clips:
         print(f"\n[{time.strftime('%H:%M:%S')}] SPEAKING: {text}")

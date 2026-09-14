@@ -41,12 +41,14 @@ class Registry:
 
 
 class FakeWorker(Registry):
-    def __init__(self):
+    def __init__(self, turn_trace_observer=None):
         super().__init__()
         self.rtvi = Registry()
         self.frames = []
         self.cancelled = False
         self.observers = []
+        # None is what PipelineWorker exposes when tracing is off.
+        self.turn_trace_observer = turn_trace_observer
 
     def add_observer(self, observer):
         self.observers.append(observer)
@@ -97,6 +99,9 @@ class NullRecorder:
     def write(self):
         return "<not written>"
 
+    trace_input = "I have twenty thousand"
+    trace_output = "You are short by 2,000 on the 30th."
+
 
 class FakeToolContext:
     """Captures what run_session hands the agent, including the request_end callback."""
@@ -121,8 +126,16 @@ def rig(monkeypatch, settings):
     worker, transport, user_agg, context = FakeWorker(), Registry(), Registry(), FakeContext()
     built = {}
 
-    def fake_build_worker(s, state, ctx, tr):
-        built.update(settings=s, state=state, tool_ctx=ctx, transport=tr)
+    def fake_build_worker(s, state, ctx, tr, *, session_id, instruction=None, user_id=""):
+        built.update(
+            settings=s,
+            state=state,
+            tool_ctx=ctx,
+            transport=tr,
+            session_id=session_id,
+            instruction=instruction,
+            user_id=user_id,
+        )
         return sess.pipeline.Built(worker, context, object(), user_agg)
 
     monkeypatch.setattr(sess.pipeline, "build_worker", fake_build_worker)
@@ -130,13 +143,31 @@ def rig(monkeypatch, settings):
     monkeypatch.setattr(sess.transport, "delete_room", _noop_delete)
     monkeypatch.setattr(sess, "CallRecorder", NullRecorder)
     monkeypatch.setattr(sess, "WorkerRunner", FakeRunner)
+    # The session composes the instruction from the prompt text and this turn's block, so the
+    # two halves are stubbed rather than the old single function. The originals go in the rig
+    # for the one test that needs the real thing.
+    real_prompt = (
+        sess.prompt.managed_prompt,
+        sess.prompt.turn_block,
+        sess.prompt.system_instruction,
+    )
     monkeypatch.setattr(
-        sess.prompt, "system_instruction", lambda state: f"PROMPT turn {state.turn}"
+        sess.prompt, "managed_prompt", lambda client, name=None, version="v1": ("PROMPT", version)
+    )
+    monkeypatch.setattr(
+        sess.prompt,
+        "turn_block",
+        lambda state, carried=None, notes=None: "turn {}{}{}".format(
+            state.turn,
+            "".join(f" | {name} {value}" for name, value in carried or []),
+            "".join(f" | note: {text}" for text in notes or []),
+        ),
     )
     monkeypatch.setattr(sess.tools, "build_tools", lambda ctx: [])
     monkeypatch.setattr(sess.tools, "ToolContext", FakeToolContext)
 
     return {
+        "real_prompt": real_prompt,
         "observer": worker.observers,
         "settings": settings,
         "worker": worker,
@@ -195,7 +226,9 @@ async def test_client_ready_greets_and_runs_the_llm(rig):
 
     (message,) = rig["context"].messages
     assert message["role"] == "developer"
-    assert "thirty days" in message["content"]
+    # What it says is the version's business; that something is said, and that the model is then
+    # run, is this test's.
+    assert message["content"] == sess.GREETING
     assert any(isinstance(f, LLMRunFrame) for f in rig["worker"].frames)
 
 
@@ -219,7 +252,7 @@ async def test_user_turn_pushes_the_refreshed_system_prompt(rig):
 
     deltas = [f for f in rig["worker"].frames if isinstance(f, LLMUpdateSettingsFrame)]
     assert len(deltas) == 1
-    assert deltas[0].delta.system_instruction == "PROMPT turn 1"
+    assert deltas[0].delta.system_instruction == "PROMPT\n\nturn 1"
 
 
 async def test_idle_queues_a_gentle_nudge(rig):
@@ -265,8 +298,12 @@ async def test_the_room_is_deleted_when_the_session_ends(rig, monkeypatch):
 async def test_the_call_is_recorded_and_written(rig, monkeypatch, tmp_path):
     written = {}
 
-    class FakeRecorder:
-        def __init__(self, *, session_id, settings, state):
+    class FakeRecorder(NullRecorder):
+        def __init__(
+            self, *, session_id, settings, state, prompt_version=None, carried=None, spans=None
+        ):
+            written["carried"] = carried
+            written["spans"] = spans
             written["session_id"] = session_id
             written["state"] = state
             self.closed = False
@@ -289,7 +326,7 @@ async def test_the_call_is_recorded_and_written(rig, monkeypatch, tmp_path):
 
 
 async def test_a_failed_write_never_breaks_teardown(rig, monkeypatch):
-    class BrokenRecorder:
+    class BrokenRecorder(NullRecorder):
         def __init__(self, **kwargs):
             pass
 
@@ -482,7 +519,7 @@ async def test_a_cancel_landing_inside_teardown_still_records_and_deletes(rig, m
     parked = asyncio.Event()
     release = asyncio.Event()
 
-    class Recorder:
+    class Recorder(NullRecorder):
         def __init__(self, **kwargs):
             pass
 
@@ -547,3 +584,333 @@ async def test_the_bot_ending_the_call_is_recorded_as_such(ending):
 def rig_recorder(rig_):
     """The NullRecorder the rig installed, found through the observers the session added."""
     return next(o for o in rig_["observer"] if hasattr(o, "ended_by"))
+
+
+# -- tracing --------------------------------------------------------------------
+
+
+async def test_the_session_id_reaches_the_pipeline(rig):
+    await run(rig)
+    assert rig["built"]["session_id"] == "sess-1"
+
+
+async def test_the_tool_tracer_is_added_beside_the_recorder(rig):
+    await run(rig)
+    assert any(type(o).__name__ == "ToolTracer" for o in rig["observer"])
+
+
+async def test_trace_input_and_output_are_recorded_after_the_call(rig, monkeypatch):
+    """Pipecat's conversation span is closed by now, so this is a span of our own."""
+    recorded = []
+
+    class SpyTracer(sess.ToolTracer):
+        def record_call_io(self, **kwargs):
+            recorded.append(kwargs)
+
+    monkeypatch.setattr(sess, "ToolTracer", SpyTracer)
+
+    await run(rig)
+
+    assert recorded == [
+        {
+            "input": "I have twenty thousand",
+            "output": "You are short by 2,000 on the 30th.",
+            # Without these an abandoned call reads in Langfuse like a finished one.
+            "ended_by": None,
+            "plan_final": False,
+        }
+    ]
+
+
+async def test_open_tool_spans_are_closed_before_the_session_ends(rig, monkeypatch):
+    """A tool that never returned still happened; an unended span never reaches Langfuse."""
+    closed = []
+
+    class SpyTracer(sess.ToolTracer):
+        def close(self):
+            closed.append(True)
+
+    monkeypatch.setattr(sess, "ToolTracer", SpyTracer)
+
+    await run(rig)
+
+    assert closed == [True]
+
+
+# -- memory: who is calling, and what they told us last time ---------------------
+
+
+class MemoryStore:
+    """A store that answers with whatever the test hands it."""
+
+    def __init__(self, facts=None, notes=None):
+        self.facts = facts if facts is not None else []
+        self.notes = notes if notes is not None else []
+        self.asked = []
+
+    async def load_active(self, phone, **kwargs):
+        self.asked.append(phone)
+        return self.facts
+
+    async def load_notes(self, phone, **kwargs):
+        return self.notes
+
+
+def a_fact(kind="essential", name="rent", field="amount", value="11000.00"):
+    from ledgerline.store.models import ProfileFact
+
+    now = dt.datetime(2026, 9, 1, tzinfo=dt.UTC)
+    return ProfileFact(
+        id=1,
+        phone="9876543210",
+        kind=kind,
+        name=name,
+        field=field,
+        value=value,
+        certainty="stated",
+        source_session_id="9876543210-20260901T100000Z",
+        recorded_at=now,
+        last_confirmed_at=now,
+    )
+
+
+async def run_with(rig_, **kwargs):
+    await sess.run_session(rig_["settings"], "https://room", "bot-token", "sess-1", **kwargs)
+
+
+async def test_a_returning_caller_starts_from_what_they_said_last_time(rig):
+    store = MemoryStore(facts=[a_fact()])
+
+    await run_with(rig, phone="9876543210", store=store)
+
+    state = rig["built"]["state"]
+    assert store.asked == ["9876543210"]
+    assert [item.name for item in state.essentials] == ["rent"]
+    assert state.essentials[0].carried is True, "carried until they say it still holds"
+
+
+async def test_the_carried_figures_reach_the_prompt(rig):
+    """The turn block is the only route now; nothing reads them off the tool context."""
+    await run_with(rig, phone="9876543210", store=MemoryStore(facts=[a_fact()]))
+
+    assert "rent 11,000" in rig["built"]["instruction"]
+
+
+async def test_a_first_time_caller_gets_the_prompt_exactly_as_before(rig, monkeypatch):
+    """The one thing memory must not do is change the call of someone who has no memory."""
+    managed, turn_block, system_instruction = rig["real_prompt"]
+    monkeypatch.setattr(sess.prompt, "managed_prompt", managed)
+    monkeypatch.setattr(sess.prompt, "turn_block", turn_block)
+
+    await run_with(rig, phone="9876543210", store=MemoryStore(facts=[], notes=[]))
+
+    state = rig["built"]["state"]
+    assert rig["built"]["instruction"] == system_instruction(state, rig["settings"].prompt_version)
+
+
+async def test_a_memory_that_could_not_be_read_is_not_an_empty_memory(rig):
+    """None means the store timed out or failed. Carrying nothing is right; tombstoning is not.
+
+    The call proceeds as a first-time caller, and `loaded` stays None so aftercall knows not to
+    treat this call's state as the person's whole profile.
+    """
+    store = MemoryStore(facts=None)
+    store.facts = None
+    record = sess.CallRecord(session_id="sess-1", phone="9876543210")
+
+    await run_with(rig, phone="9876543210", store=store, record=record)
+
+    assert rig["built"]["state"].essentials == []
+    assert record.loaded is None
+
+
+async def test_the_record_carries_what_aftercall_needs(rig):
+    record = sess.CallRecord(session_id="sess-1", phone="9876543210")
+
+    await run_with(rig, phone="9876543210", store=MemoryStore(facts=[a_fact()]), record=record)
+
+    assert record.state is rig["built"]["state"]
+    assert record.loaded == [a_fact()]
+    assert record.recording_path == "<not written>"
+    assert record.trace_id is None, "no tracing configured in this rig, so nothing to score"
+
+
+async def test_notes_reach_the_prompt_but_never_the_domain(rig):
+    from ledgerline.store.models import ProfileNote
+
+    note = ProfileNote(
+        id=1,
+        phone="9876543210",
+        category="constraint",
+        text="pays rent in cash",
+        recorded_at=dt.datetime(2026, 9, 1, tzinfo=dt.UTC),
+    )
+
+    await run_with(rig, phone="9876543210", store=MemoryStore(notes=[note]))
+
+    assert "pays rent in cash" in rig["built"]["instruction"]
+
+
+async def test_the_prompt_comes_from_langfuse_when_a_client_is_given(rig, monkeypatch):
+    monkeypatch.setattr(
+        sess.prompt, "managed_prompt", lambda client, name=None, version="v1": ("MANAGED", "7")
+    )
+    record = sess.CallRecord(session_id="sess-1", phone="9876543210")
+
+    await run_with(rig, phone="9876543210", store=MemoryStore(), langfuse=object(), record=record)
+
+    assert rig["built"]["instruction"].startswith("MANAGED")  # not the file's text
+    assert rig["built"]["instruction"].startswith("MANAGED")
+
+
+async def test_prompt_source_file_ignores_langfuse_entirely(rig, monkeypatch):
+    """A deployment can keep the prompt on disk while still tracing every call."""
+    seen = []
+    monkeypatch.setattr(
+        sess.prompt,
+        "managed_prompt",
+        lambda client, name=None, version="v1": (seen.append(client), ("FILE", version))[1],
+    )
+    settings = rig["settings"].model_copy(update={"prompt_source": "file"})
+
+    await sess.run_session(settings, "https://room", "t", "sess-1", langfuse=object())
+
+    assert seen == [None], "no client is passed, so the file is used"
+
+
+async def test_the_caller_is_named_on_the_trace(rig):
+    """Without this a person's calls do not group in Langfuse, and cost per person is unknowable."""
+    await run_with(rig, phone="9876543210", store=MemoryStore())
+
+    assert rig["built"]["user_id"] == "9876543210"
+
+
+async def test_the_recording_carries_what_the_greeting_read_back(rig, monkeypatch):
+    """The pairs as at the start of the call: confirming them later clears the flags."""
+    seen = {}
+
+    class Recorder(NullRecorder):
+        def __init__(self, **kwargs):
+            seen.update(kwargs)
+
+    monkeypatch.setattr(sess, "CallRecorder", Recorder)
+
+    await run_with(rig, phone="9876543210", store=MemoryStore(facts=[a_fact()]))
+
+    assert seen["carried"] == [("rent", "11,000")]
+
+
+async def test_the_recorder_gets_the_tracer_so_each_turn_becomes_a_span(rig, monkeypatch):
+    """The recorder already aggregates both halves of a turn; this gives them a span."""
+    seen = {}
+
+    class Recorder(NullRecorder):
+        def __init__(self, **kwargs):
+            seen.update(kwargs)
+
+    monkeypatch.setattr(sess, "CallRecorder", Recorder)
+
+    await run_with(rig, phone="9876543210", store=MemoryStore())
+
+    assert isinstance(seen["spans"], sess.ToolTracer)
+
+
+# -- the redesign's version switch ----------------------------------------------
+
+
+async def test_the_model_opens_the_call_in_its_own_words(rig):
+    """The first line of a form is what the redesign exists to stop being.
+
+    The prompt says what the call is for; all this says is that the call connected.
+    """
+    await run(rig)
+    await rig["worker"].rtvi.fire("on_client_ready", None)
+
+    said = [m["content"] for m in rig["context"].messages]
+    assert said == [sess.GREETING]
+    assert "greet" not in said[0].lower()
+
+
+async def test_the_version_reaches_the_prompt_text(rig, monkeypatch):
+    seen = []
+    monkeypatch.setattr(
+        sess.prompt,
+        "managed_prompt",
+        lambda client, name=None, version="v1": seen.append(version) or ("TEXT", version),
+    )
+    settings = rig["settings"].model_copy(update={"prompt_version": "v2"})
+
+    await sess.run_session(settings, "https://room", "t", "sess-1")
+
+    assert seen == ["v2"]
+
+
+async def test_the_managed_prompt_is_fetched_per_version(rig, monkeypatch):
+    """One Langfuse prompt per prompt version, or v2 silently runs on v1's text.
+
+    Found on the first live v2 call: `ensure_prompt` had published the v1 file under
+    `ledgerline-coach`, `managed_prompt` fetched that name by label, the fetch succeeded, and the
+    call ran v2's tools against v1's prompt with nothing in the log to say so.
+    """
+    seen = {}
+    monkeypatch.setattr(
+        sess.prompt,
+        "managed_prompt",
+        lambda client, name=None, version="v1": (
+            seen.update(name=name, version=version) or ("TEXT", "3")
+        ),
+    )
+    settings = rig["settings"].model_copy(update={"prompt_version": "v2"})
+
+    await sess.run_session(settings, "https://room", "t", "sess-1", langfuse=object())
+
+    assert seen == {"name": "ledgerline-coach-v2", "version": "v2"}
+
+
+# -- KIRO-013: one tracer, not two ----------------------------------------------
+
+
+async def test_the_recorder_writes_its_spans_to_the_registered_observer(rig, monkeypatch):
+    """Two tracers meant exchange spans on an instance nobody closed or read a trace id from.
+
+    The recorder's span sink and the observer the worker sees have to be the same object, or the
+    exchange spans and the tool spans belong to two different bookkeepers and only one of them
+    is closed at teardown.
+    """
+    seen = {}
+
+    class Recorder(NullRecorder):
+        def __init__(self, **kwargs):
+            seen.update(kwargs)
+
+    monkeypatch.setattr(sess, "CallRecorder", Recorder)
+
+    await run_with(rig, phone="9876543210", store=MemoryStore())
+
+    registered = [o for o in rig["observer"] if isinstance(o, sess.ToolTracer)]
+    assert len(registered) == 1, "one tracer is registered, not two"
+    assert seen["spans"] is registered[0]
+
+
+async def test_the_tracer_the_session_closes_is_the_one_it_reads_the_trace_id_from(
+    rig, monkeypatch
+):
+    """Teardown closes a tracer and reads a trace id; both must come from the live one."""
+    record = sess.CallRecord(session_id="sess-1", phone="9876543210")
+    closed = []
+
+    class SpyTracer(sess.ToolTracer):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.trace_id = "0123456789abcdef0123456789abcdef"
+
+        def close(self):
+            closed.append(True)
+            super().close()
+
+    monkeypatch.setattr(sess, "ToolTracer", SpyTracer)
+
+    await run_with(rig, phone="9876543210", store=MemoryStore(), record=record)
+
+    assert record.trace_id == "0123456789abcdef0123456789abcdef"
+    assert closed == [True], "the registered tracer is the one teardown closes"

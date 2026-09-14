@@ -1,8 +1,8 @@
 """Frame-level trace of one call, for answering "what ended that turn?".
 
 Only attached when `log_level` is DEBUG. The turn machinery in Pipecat 1.9 spans the transport,
-the VAD, the turn analyzer, our gate and the aggregator, and the only way to see which of them
-ended a turn is to watch the frames go past with timestamps.
+the VAD, the turn analyzer, the LLM's own completion judgement and the aggregator, and the only
+way to see which of them ended a turn is to watch the frames go past with timestamps.
 """
 
 from __future__ import annotations

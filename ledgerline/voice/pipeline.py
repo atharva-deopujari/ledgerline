@@ -47,6 +47,7 @@ from pipecat.turns.user_turn_strategies import UserTurnStrategies
 from ledgerline.agent import prompt, tools
 from ledgerline.config import LlmApi, Settings, TtsProvider, TurnStrategy
 from ledgerline.domain.models import FinancialState
+from ledgerline.observability.attributes import conversation_attributes
 from ledgerline.voice.filler import ActionFiller
 
 # Spike 2026-09-11: nova-3 accepts "en-IN" and reports the same model id as "en"
@@ -156,7 +157,7 @@ def _build_tts(settings: Settings) -> TTSService:
     )
 
 
-def _build_llm(settings: Settings, state: FinancialState) -> LLMService:
+def _build_llm(settings: Settings, instruction: str) -> LLMService:
     """Responses by default: since GPT-5.4, Chat Completions rejects tools unless
     reasoning_effort is "none", and the Responses service sends effort="none" for gpt-5.x
     itself. Chat is selectable because Responses' previous_response_id is connection-local and
@@ -167,7 +168,7 @@ def _build_llm(settings: Settings, state: FinancialState) -> LLMService:
             function_call_timeout_secs=FUNCTION_CALL_TIMEOUT_SECS,
             settings=OpenAILLMService.Settings(
                 model=settings.openai_model,
-                system_instruction=prompt.system_instruction(state),
+                system_instruction=instruction,
                 max_completion_tokens=MAX_COMPLETION_TOKENS,
                 extra={"reasoning_effort": "none", "verbosity": "low"},
             ),
@@ -177,7 +178,7 @@ def _build_llm(settings: Settings, state: FinancialState) -> LLMService:
         function_call_timeout_secs=FUNCTION_CALL_TIMEOUT_SECS,
         settings=OpenAIResponsesLLMService.Settings(
             model=settings.openai_model,
-            system_instruction=prompt.system_instruction(state),
+            system_instruction=instruction,
             max_completion_tokens=MAX_COMPLETION_TOKENS,
             reasoning=OpenAIResponsesLLMService.ReasoningConfig(effort="none"),
         ),
@@ -185,8 +186,8 @@ def _build_llm(settings: Settings, state: FinancialState) -> LLMService:
 
 
 def _turn_strategies(settings: Settings) -> UserTurnStrategies:
-    """Smart Turn decides *when* to look at the turn; `TurnCompletionGate` decides whether the
-    words are a finished thought.
+    """Smart Turn decides *when* to look at the turn; the LLM decides whether the words are a
+    finished thought.
 
     Measured 2026-09-12: Smart Turn alone calls "I have" and "It is" COMPLETE, so a hesitation
     ends the turn and the next fragment interrupts the answer. `SmartTurnParams.stop_secs` only
@@ -237,11 +238,27 @@ def build_worker(
     state: FinancialState,
     tool_ctx: tools.ToolContext,
     transport: BaseTransport,
+    *,
+    session_id: str,
+    instruction: str | None = None,
+    user_id: str = "",
 ) -> Built:
-    """Wire one call's pipeline."""
+    """Wire one call's pipeline.
+
+    `session_id` is the call's identity everywhere: Pipecat's conversation id, the join key in
+    the trace's metadata, and the recording's filename.
+
+    `user_id` is the person's phone when we have one. It groups their calls in Langfuse under
+    them rather than making every call its own session, and it is what makes cost and quality
+    per person answerable at all.
+
+    `instruction` is the first system instruction. The session composes it, because only the
+    session knows whether the prompt came from Langfuse or the file and what this person is
+    carrying over from their last call; the default keeps the plain first-time-caller text.
+    """
     stt = _build_stt(settings)
     tts = _build_tts(settings)
-    llm = _build_llm(settings, state)
+    llm = _build_llm(settings, instruction or prompt.system_instruction(state))
 
     context = LLMContext(tools=tools.build_tools(tool_ctx))
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
@@ -273,6 +290,14 @@ def build_worker(
         params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
         observers=[LLMLogObserver(), TranscriptionLogObserver()],
         idle_timeout_secs=settings.idle_timeout_secs,
-        enable_tracing=settings.enable_tracing,
+        # Keys present means traced; there is no separate flag to disagree with them.
+        enable_tracing=settings.tracing_configured,
+        # Already the default in 1.9.0, and said out loud because without it there are no turn
+        # spans and every tool span would hang off the conversation instead.
+        enable_turn_tracking=True,
+        conversation_id=session_id,
+        additional_span_attributes=conversation_attributes(
+            settings, session_id=session_id, user_id=user_id or None
+        ),
     )
     return Built(worker, context, llm, user_aggregator)

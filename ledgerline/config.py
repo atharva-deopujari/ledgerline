@@ -55,10 +55,10 @@ class Settings(BaseSettings):
     turn_strategy: TurnStrategy = TurnStrategy.SMART
     smart_turn_stop_secs: float = 1.5
 
-    prompt_version: str = "v1"
+    # Which prompt this deployment runs: it names the Langfuse prompt and lands on every
+    # recording. Nothing branches on it.
+    prompt_version: str = "v2"
     log_level: str = "INFO"
-    host: str = "0.0.0.0"
-    port: int = 7860
     room_expiry_secs: int = 3600
     idle_timeout_secs: int = 300
     # A browser that fails to join would otherwise hold the only session slot until the idle
@@ -66,7 +66,28 @@ class Settings(BaseSettings):
     join_timeout_secs: int = 45
     # How long the bot's goodbye may take before the call is ended anyway.
     end_grace_secs: int = 6
-    enable_tracing: bool = False
+
+    # Observability. All optional: empty keys mean no tracing, an empty dsn means no database,
+    # and the product behaves exactly as it did before either existed.
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_base_url: str = "https://cloud.langfuse.com"
+    langfuse_project_id: str = ""  # only needed for the trace link on screen
+    langfuse_environment: str = "development"  # production | development | simulation
+    database_url: str = ""
+    # Facts older than this are history, never carried into the next call.
+    profile_max_age_days: int = 60
+    # Empty disables the layer it names and nothing else: no judge model, no intent judge; no
+    # notes model, no soft-note extractor; the call itself is unaffected either way.
+    judge_model: str = ""
+    judge_reasoning_effort: str = "low"
+    notes_model: str = ""
+    prompt_source: str = "langfuse"  # or "file": keeps the prompt on disk, byte for byte
+
+    @property
+    def tracing_configured(self) -> bool:
+        """Both keys present. This replaced ENABLE_TRACING: one fact, not a flag beside it."""
+        return bool(self.langfuse_public_key.strip() and self.langfuse_secret_key.strip())
 
     def validate_for_boot(self) -> None:
         """Raise once, naming every missing required variable."""

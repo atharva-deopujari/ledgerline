@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime as dt
+from typing import Any
 
 from loguru import logger
 from pipecat.frames.frames import (
@@ -20,14 +21,20 @@ from pipecat.frames.frames import (
 )
 from pipecat.services.settings import LLMSettings
 from pipecat.workers.runner import WorkerRunner
+from pydantic import BaseModel, ConfigDict
 
 from ledgerline.agent import prompt, tools
 from ledgerline.config import Settings
+from ledgerline.domain import state as state_ops
 from ledgerline.domain.cards import CardsMessage
 from ledgerline.domain.models import FinancialState
+from ledgerline.observability.attributes import conversation_attributes
+from ledgerline.store import profile
+from ledgerline.store.models import ProfileFact
 from ledgerline.voice import pipeline, transport
 from ledgerline.voice.lifecycle import CallEnder, GoodbyeWatcher, JoinWatchdog, Teardown
 from ledgerline.voice.recorder import CallRecorder, EndedBy
+from ledgerline.voice.tool_trace import ToolTracer
 from ledgerline.voice.trace import FrameTrace
 
 # The generic urgent frame, not DailyOutputTransportMessageUrgentFrame: it is a SystemFrame, so
@@ -38,14 +45,37 @@ CardsFrame = OutputTransportMessageUrgentFrame
 # The role Pipecat's context uses for instructions the person never said.
 DEVELOPER = "developer"
 
-GREETING = (
-    "Greet the person briefly, say you will help them plan the next thirty days of their money, "
-    "and ask what money comes in and when."
-)
+# The model leads. The prompt already says what the call is for, and scripting the first sentence
+# here is the first line of the form the redesign exists to stop being. Same wording as the
+# harness's OPENING_V2, so a live call and a simulated one open the same way.
+GREETING = "The call just connected."
 IDLE_NUDGE = (
     "The person has been silent for a while. Gently ask if they are still there, and say there "
     "is no rush."
 )
+
+
+class CallRecord(BaseModel):
+    """What happened, for whoever runs after the call.
+
+    Filled in as the call goes and read by `aftercall` once the slot is free. It is passed in
+    rather than returned because the ordinary way a call ends is the browser leaving, which
+    cancels this task: a return value would be lost exactly when the record matters most.
+
+    `loaded` is the profile as it was read at the start, **None included**: None means the
+    memory could not be read this call, and recording the call as if it were the person's whole
+    profile would tombstone every fact they did not happen to repeat.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    session_id: str
+    phone: str = ""
+    state: FinancialState | None = None
+    loaded: list[ProfileFact] | None = None
+    ended_by: str | None = None
+    trace_id: str | None = None
+    recording_path: str | None = None
 
 
 async def run_session(
@@ -53,10 +83,21 @@ async def run_session(
     room_url: str,
     bot_token: str,
     session_id: str,
+    *,
+    phone: str = "",
+    store: Any | None = None,
+    langfuse: Any | None = None,
+    record: CallRecord | None = None,
 ) -> None:
     """Run one call to completion. Never raises: the caller is a fire-and-forget task."""
     log = logger.bind(session_id=session_id)
-    state = FinancialState(today=dt.date.today())
+    today = dt.date.today()
+
+    # What this person told us last time. None is not the same as nothing: None means the store
+    # could not answer, and this call must not be allowed to overwrite a profile it never read.
+    loaded = await _load_profile(store, phone, log)
+    notes = await _load_notes(store, phone, log)
+    state = profile.hydrate(today, loaded) if loaded else FinancialState(today=today)
     built = None
     ended_once = asyncio.Event()
     goodbye_spoken = asyncio.Event()
@@ -87,15 +128,76 @@ async def run_session(
         log.info("ending the call gracefully: {}", why)
         await built.worker.end(reason=why)
 
+    def carried() -> list[tuple[str, str]]:
+        """Item name and the figure the cards show, recomputed every turn.
+
+        Recomputed rather than captured: `confirm_carried` clears the flag as the person settles
+        each figure, and a captured list would keep telling the model about facts they have
+        already confirmed.
+        """
+        return [
+            (item.name, state_ops.group_inr(item.amount))
+            for item in state_ops.carried_items(state)
+            if item.amount is not None
+        ]
+
+    # The prompt text: Langfuse's version when a client is given, the file otherwise, and the
+    # file byte for byte when PROMPT_SOURCE=file. Composed here rather than through
+    # `system_instruction`, which reads the file itself and so cannot see a managed version.
+    # PROMPT_SOURCE=file keeps the prompt on disk even with Langfuse configured, and passing no
+    # client is how `managed_prompt` is told so.
+    managed = langfuse if settings.prompt_source != "file" else None
+    base_text, prompt_version = prompt.managed_prompt(
+        managed,
+        name=prompt.managed_name(settings.prompt_version),
+        version=settings.prompt_version,
+    )
+
+    def instruction() -> str:
+        return base_text + "\n\n" + prompt.turn_block(state, carried=carried(), notes=notes)
+
     ender = CallEnder(settings.end_grace_secs, goodbye_spoken, end_gracefully)
     tool_ctx = tools.ToolContext(state, push_cards, request_end=ender.request_end)
     daily = transport.make_transport(settings, room_url, bot_token)
-    built = pipeline.build_worker(settings, state, tool_ctx, daily)
+    built = pipeline.build_worker(
+        settings,
+        state,
+        tool_ctx,
+        daily,
+        session_id=session_id,
+        instruction=instruction(),
+        user_id=phone,
+    )
 
-    # The record of the call: one INFO line per turn while it runs, one JSON afterwards that
-    # evals/checks.py can run over exactly like a text-harness transcript.
-    recorder = CallRecorder(session_id=session_id, settings=settings, state=state)
+    # Pipecat traces its own services but not a tool call on the Chat Completions path, and its
+    # turn spans carry no input or output. One tracer owns both gaps: the recorder writes each
+    # turn's exchange into it and the worker sees it as an observer, so what teardown closes and
+    # reads the trace id from is the object the spans were actually written to. All of it is a
+    # no-op when tracing is off: `turn_trace_observer` is None and every method returns early.
+    tool_tracer = ToolTracer(
+        built.worker.turn_trace_observer,
+        attributes=conversation_attributes(settings, session_id=session_id, user_id=phone or None),
+    )
+    # The record of the call: one INFO line per turn while it runs, one JSON afterwards the
+    # judge's checks can run over exactly like a text-harness transcript.
+    recorder = CallRecorder(
+        session_id=session_id,
+        settings=settings,
+        state=state,
+        prompt_version=prompt_version,
+        # Each turn gets a span with what the person said and what the coach answered, which is
+        # what makes the Langfuse session read as the conversation.
+        spans=tool_tracer,
+        # As at the start of the call: the figures the greeting read back, which is what the
+        # provenance check has to authorise. Later confirmations clear the flags, so recomputing
+        # this at the end would record an empty list for a call that carried plenty.
+        carried=carried(),
+    )
+    if record is not None:
+        record.state = state
+        record.loaded = loaded
     built.worker.add_observer(recorder)
+    built.worker.add_observer(tool_tracer)
     built.worker.add_observer(GoodbyeWatcher(goodbye_spoken))
     if settings.log_level.upper() == "DEBUG":
         # Answers "what ended that turn?". Off by default; the isinstance checks are cheap but
@@ -132,11 +234,7 @@ async def run_session(
         """
         state.turn += 1
         await built.worker.queue_frames(
-            [
-                LLMUpdateSettingsFrame(
-                    delta=LLMSettings(system_instruction=prompt.system_instruction(state))
-                )
-            ]
+            [LLMUpdateSettingsFrame(delta=LLMSettings(system_instruction=instruction()))]
         )
 
     @built.user_aggregator.event_handler("on_user_turn_idle")
@@ -173,9 +271,25 @@ async def run_session(
         # through, so nothing of substance is lost by writing before the worker is torn down.
         recorder.close()
         try:
-            log.info("call recorded to {}", recorder.write())
+            path = recorder.write()
+            log.info("call recorded to {}", path)
+            if record is not None:
+                record.recording_path = str(path)
         except Exception:
             log.exception("could not write the call recording")
+
+        # The conversation span closed with the pipeline, so what the call was about is
+        # written from a span of our own in the same trace. Both are no-ops without tracing.
+        tool_tracer.close()
+        if record is not None:
+            record.ended_by = recorder.ended_by
+            record.trace_id = tool_tracer.trace_id
+        tool_tracer.record_call_io(
+            input=recorder.trace_input,
+            output=recorder.trace_output,
+            ended_by=recorder.ended_by,
+            plan_final=state.plan_final,
+        )
 
         teardown = Teardown()
         await teardown.step(built.worker.cancel())
@@ -183,3 +297,33 @@ async def run_session(
         await teardown.step(transport.delete_room(settings, transport.room_name_from_url(room_url)))
         log.info("session finished after {} turns", state.turn)
         teardown.reraise_if_cancelled()
+
+
+async def _load_profile(store: Any | None, phone: str, log) -> list[ProfileFact] | None:
+    """The person's active facts, or None when the memory could not be read.
+
+    A warning and an empty state is the right answer to a store that is down: the call is worth
+    more than the memory. What must not happen is None becoming `[]` anywhere downstream.
+    """
+    if store is None or not phone:
+        return None
+    try:
+        facts = await store.load_active(phone)
+    except Exception as exc:
+        log.warning("could not read the profile for this caller: {}", exc)
+        return None
+    if facts is None:
+        log.warning("the profile could not be read in time; starting with an empty state")
+    return facts
+
+
+async def _load_notes(store: Any | None, phone: str, log) -> list[str]:
+    """The soft notes, as plain strings for the prompt. Never numbers, never state."""
+    if store is None or not phone:
+        return []
+    try:
+        rows = await store.load_notes(phone)
+    except Exception as exc:
+        log.warning("could not read this caller's notes: {}", exc)
+        return []
+    return [row.text for row in rows or []]

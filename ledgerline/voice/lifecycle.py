@@ -66,7 +66,7 @@ class JoinWatchdog:
 class CallEnder:
     """Hangs up after the bot has said its goodbye, and only once.
 
-    The `end_call` tool asks to end; ending at that moment would cut the goodbye off
+    The `done` tool asks to end; ending at that moment would cut the goodbye off
     mid-sentence, so the request waits for the bot to stop speaking, with a grace period in
     case that never happens.
     """
@@ -79,7 +79,7 @@ class CallEnder:
         self._task: asyncio.Task | None = None
 
     async def request_end(self) -> None:
-        """What the `end_call` tool calls. Not the hangup itself."""
+        """What the `done` tool calls. Not the hangup itself."""
         self._goodbye_spoken.clear()
         self._requested.set()
 

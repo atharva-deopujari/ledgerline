@@ -143,3 +143,50 @@ async def test_cancelling_a_started_session_frees_the_slot():
     registry.start(lambda sid: asyncio.sleep(60), session_id)
     await registry.cancel(session_id)
     assert registry.active == 0
+
+
+# -- what runs after the call ----------------------------------------------------
+
+
+async def test_the_after_task_runs_once_the_slot_is_free():
+    """The judge and the extractor take seconds; the slot must not wait for them."""
+    registry = SessionRegistry()
+    free_when_it_ran = []
+
+    async def after():
+        free_when_it_ran.append(registry.active)
+
+    registry.start(lambda sid: asyncio.sleep(0), "sess-1", after=after)
+    await asyncio.sleep(0.05)
+
+    assert free_when_it_ran == [0]
+
+
+async def test_the_after_task_still_runs_when_the_browser_hangs_up():
+    """A cancelled call is the ordinary ending, and the one whose record matters most."""
+    registry = SessionRegistry()
+    ran = []
+
+    async def forever(sid):
+        await asyncio.Event().wait()
+
+    async def after():
+        ran.append(True)
+
+    registry.start(forever, "sess-1", after=after)
+    await registry.cancel("sess-1")
+    await asyncio.sleep(0.05)
+
+    assert ran == [True]
+
+
+async def test_a_failing_after_task_does_not_take_the_process_with_it():
+    registry = SessionRegistry()
+
+    async def after():
+        raise RuntimeError("the judge fell over")
+
+    registry.start(lambda sid: asyncio.sleep(0), "sess-1", after=after)
+    await asyncio.sleep(0.05)
+
+    assert registry.active == 0

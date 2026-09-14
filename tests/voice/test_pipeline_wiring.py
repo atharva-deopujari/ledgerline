@@ -24,6 +24,7 @@ from pipecat.turns.user_stop import (
 
 from ledgerline.config import Settings
 from ledgerline.domain.models import FinancialState
+from ledgerline.observability.attributes import Attr
 from ledgerline.voice import pipeline as pl
 from ledgerline.voice.filler import ActionFiller
 
@@ -84,7 +85,9 @@ def build(settings, today):
         s = Settings(_env_file=None, **{**settings.model_dump(), **overrides})
         transport = FakeTransport()
         state = FinancialState(today=today)
-        worker, context, llm, _agg = pl.build_worker(s, state, FakeToolCtx(state), transport)
+        worker, context, llm, _agg = pl.build_worker(
+            s, state, FakeToolCtx(state), transport, session_id="9876543210-20260913T141502Z"
+        )
         return worker, context, llm, transport
 
     return _build
@@ -253,3 +256,54 @@ def test_chat_completions_is_the_default(build):
     assert llm._settings.extra["reasoning_effort"] == "none"
     assert llm._settings.model == "gpt-5.6-luna"
     assert llm._settings.system_instruction == "SYSTEM PROMPT"
+
+
+# -- tracing --------------------------------------------------------------------
+
+
+def test_tracing_is_off_without_langfuse_keys(build):
+    """Unconfigured means off: no keys, no spans, and the worker never turns tracing on."""
+    worker, _, _, _ = build()
+    assert worker._enable_tracing is False
+    assert worker.turn_trace_observer is None
+
+
+def test_keys_turn_tracing_on_with_turn_spans(build):
+    worker, _, _, _ = build(langfuse_public_key="pk-lf-test", langfuse_secret_key="sk-lf-test")
+
+    assert worker._enable_tracing is True
+    # Without turn tracking there are no turn spans, and tool spans would have no parent.
+    assert worker.turn_tracking_observer is not None
+    assert worker.turn_trace_observer is not None
+
+
+def test_the_conversation_span_carries_the_call_dimensions(build):
+    worker, _, _, _ = build(langfuse_public_key="pk-lf-test", langfuse_secret_key="sk-lf-test")
+
+    attrs = worker._additional_span_attributes
+    assert attrs[Attr.TRACE_NAME] == "coach-call"
+    assert attrs[Attr.METADATA_SESSION_ID] == "9876543210-20260913T141502Z"
+    assert "source:voice" in attrs[Attr.TAGS]
+
+
+def test_the_caller_is_the_langfuse_user_and_session(build, settings):
+    """A person's calls group under the person, not one session per call (HLD section 3)."""
+    worker, _, _, _ = build(langfuse_public_key="pk-lf-test", langfuse_secret_key="sk-lf-test")
+    attrs = worker._additional_span_attributes
+    assert Attr.USER_ID not in attrs, "no phone, no user id: an empty one is worse than none"
+
+    settings_with_keys = settings.model_copy(
+        update={"langfuse_public_key": "pk", "langfuse_secret_key": "sk"}
+    )
+
+    attrs = pl.conversation_attributes(
+        settings_with_keys, session_id="9876543210-20260913T141502Z", user_id="9876543210"
+    )
+    assert attrs[Attr.USER_ID] == "9876543210"
+    assert attrs[Attr.SESSION_ID] == "9876543210"
+
+
+def test_the_conversation_id_is_our_session_id(build):
+    """So a trace, a recording filename and a Postgres row can be matched up by eye."""
+    worker, _, _, _ = build(langfuse_public_key="pk-lf-test", langfuse_secret_key="sk-lf-test")
+    assert worker._conversation_id == "9876543210-20260913T141502Z"

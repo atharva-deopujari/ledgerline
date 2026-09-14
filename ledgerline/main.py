@@ -17,9 +17,13 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
+from ledgerline.agent import prompt
+from ledgerline.api.aftercall import Verdicts
 from ledgerline.api.routes import router
 from ledgerline.api.sessions import SessionRegistry
 from ledgerline.config import Settings
+from ledgerline.observability import tracing
+from ledgerline.store.db import open_store
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
@@ -40,14 +44,39 @@ def create_app(settings: Settings | None = None, frontend_dist: Path | None = No
         logger.remove()
         logger.add(sys.stderr, level=settings.log_level)
         logger.info("ledgerline up: model {}, tts {}", settings.openai_model, settings.tts_provider)
+        # One TracerProvider for the process, registered before any call builds a pipeline.
+        # Without keys this is NullLangfuse and nothing is registered at all.
+        app.state.langfuse = tracing.setup(settings)
+        logger.info("tracing {}", "on" if settings.tracing_configured else "off")
+        # An empty DATABASE_URL gives the null twin, so nothing downstream needs a branch and
+        # a call still runs with no database at all.
+        app.state.store = await open_store(
+            settings.database_url, profile_max_age_days=settings.profile_max_age_days
+        )
+        logger.info("store {}", type(app.state.store).__name__)
+        # The file stays the source of truth; this publishes it to Langfuse when it differs, so
+        # the version a call ran on can be named later. Never raises.
+        if settings.prompt_source != "file":
+            prompt.ensure_prompt(
+                app.state.langfuse if settings.tracing_configured else None,
+                name=prompt.managed_name(settings.prompt_version),
+                version=settings.prompt_version,
+            )
         try:
             yield
         finally:
             await app.state.sessions.cancel_all()
+            await app.state.store.close()
+            # Spans and scores are batched in a background thread. Without this the tail of
+            # the last call leaves with the process.
+            app.state.langfuse.shutdown()
 
     app = FastAPI(title="Ledgerline", lifespan=lifespan)
     app.state.settings = settings
     app.state.sessions = SessionRegistry()
+    # The judge's verdicts, in this process only; the recording file and the Langfuse scores
+    # are the durable copies.
+    app.state.verdicts = Verdicts()
     app.include_router(router)
 
     if (dist / "index.html").is_file():

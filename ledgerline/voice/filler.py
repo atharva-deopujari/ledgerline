@@ -6,8 +6,8 @@ me?What's your next income or expense?") but it removes the speech that used to 
 round trip. This puts a single acknowledgement back, from the pipeline rather than the model,
 so it can never turn into a second question.
 
-`end_call` is excluded: the model says one goodbye and calls `end_call` in the same reply, and
-a filler on top of that would be a second farewell.
+`done` is excluded: the model says one goodbye and calls it in the same reply, and a filler on
+top of that would be a second farewell.
 """
 
 from __future__ import annotations
@@ -25,8 +25,8 @@ from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
 FILLERS = ("Okay.", "Got it.", "Noted.")
 
-# The model owns the goodbye.
-NEVER_FILLED = frozenset({"end_call"})
+# The model owns the goodbye, and `done` is the tool it says it with.
+NEVER_FILLED = frozenset({"done"})
 
 
 class ActionFiller(FrameProcessor):

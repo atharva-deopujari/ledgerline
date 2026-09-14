@@ -46,7 +46,7 @@ class EndedBy(StrEnum):
     """Why the call ended. The first reason wins: a disconnect after the bot says goodbye is a
     symptom of the goodbye, not the cause."""
 
-    BOT = "bot"  # the end_call tool
+    BOT = "bot"  # the `done` tool
     CLIENT = "client"  # the browser left
     IDLE = "idle"  # nobody joined, or the pipeline went quiet
     UNKNOWN = "unknown"
@@ -74,17 +74,6 @@ class LlmWarning(StrEnum):
 DRAIN_LOG_TEXT = "Error draining cancelled response"
 
 
-class Event(StrEnum):
-    """What the model emitted, in the vocabulary `evals/checks.py` already reads.
-
-    These are the OpenAI Responses output item types the text harness records, so the same
-    `silent_before_acting` check runs over a voice transcript and a harness one.
-    """
-
-    MESSAGE = "message"
-    FUNCTION_CALL = "function_call"
-
-
 # Frames that mean the model has started acting on what it heard.
 ASSISTANT_SIDE = (
     LLMFullResponseStartFrame,
@@ -105,22 +94,36 @@ def _now() -> float:
     return dt.datetime.now(dt.UTC).timestamp()
 
 
-def _spoke_before_acting(order: list[str]) -> bool:
-    """True when the model talked before it called a tool, which is what doubled every
-    question in the owner's third call."""
-    if Event.FUNCTION_CALL not in order:
-        return False
-    return Event.MESSAGE in order[: order.index(Event.FUNCTION_CALL)]
-
-
 class CallRecorder(BaseObserver):
     """Accumulates turns, tool calls, card versions and latencies for one call."""
 
-    def __init__(self, *, session_id: str, settings: Settings, state: FinancialState) -> None:
+    def __init__(
+        self,
+        *,
+        session_id: str,
+        settings: Settings,
+        state: FinancialState,
+        prompt_version: str | None = None,
+        carried: list[tuple[str, str]] | None = None,
+        spans: Any | None = None,
+    ) -> None:
         super().__init__()
         self._session_id = session_id
         self._settings = settings
         self._state = state
+        # The version the call actually ran on, which is Langfuse's when the prompt is managed
+        # there and the file's otherwise. Recording the setting instead would name a version the
+        # call may never have used.
+        self._prompt_version = prompt_version or settings.prompt_version
+        # What this person was carrying in when the call started, as the coach was told to read
+        # it back. `numbers_traceable` authorises these figures: they reach the model through
+        # the greeting turn block rather than a tool result, so without them a coach that read
+        # back exactly what the carried line asked for looks like it invented a number.
+        self._carried = list(carried or [])
+        # Gives each turn a span with the two things a reviewer reads: what the person said and
+        # what the coach answered. None when tracing is off, and then this costs two `is None`
+        # checks per turn.
+        self._spans = spans
 
         self._turns: list[dict[str, Any]] = []
         # Deepgram finalises a hesitant sentence in fragments. One thing the person said is one
@@ -132,10 +135,11 @@ class CallRecorder(BaseObserver):
 
         self._pending_text: list[str] = []
         self._pending_tools: list[dict[str, Any]] = []
-        self._pending_order: list[str] = []
-        self._pending_calls: set[str] = set()
+        # A turn where the model called a tool that never returned has no text and no result to
+        # record, and must still be recorded. The order list used to answer this on its way to
+        # the transcript; nothing reads it there any more, so all that is left is the fact.
+        self._acted = False
         self._completions = 0
-        self._spoke_this_completion = False
         self._logged = False
         self._timings: dict[str, Any] = {}
         # The last VAD stop before the next transcript is the turn's anchor. Held separately
@@ -203,19 +207,14 @@ class CallRecorder(BaseObserver):
             self._pending_user.append(frame.text)
         elif isinstance(frame, LLMFullResponseStartFrame):
             self._completions += 1
-            self._spoke_this_completion = False
         elif isinstance(frame, LLMTextFrame):
             self._timings.setdefault("first_token", _now())
-            if not self._spoke_this_completion:
-                self._spoke_this_completion = True
-                self._pending_order.append(Event.MESSAGE)
+            self._acted = True
             self._pending_text.append(frame.text)
         elif isinstance(frame, FunctionCallInProgressFrame):
-            # Ordered here rather than on the result: this is when the model asked, which is
-            # what "did it speak before acting" is about. Broadcast twice, like the result.
-            if frame.tool_call_id not in self._pending_calls:
-                self._pending_calls.add(frame.tool_call_id)
-                self._pending_order.append(Event.FUNCTION_CALL)
+            # The model asked for a tool. Recorded as "something happened this turn" so a call
+            # that never returns is still a turn in the transcript.
+            self._acted = True
         elif isinstance(frame, TTSAudioRawFrame):
             self._timings.setdefault("first_audio", _now())
         elif isinstance(frame, FunctionCallResultFrame):
@@ -254,14 +253,17 @@ class CallRecorder(BaseObserver):
         anchor = self._pending_vad_stop or _now()
         self._timings = {"vad_stop": anchor, "turn_started_at": self._turn_started_at or anchor}
         self._turn_started_at = None
+        user_text = " ".join(self._pending_user).strip()
         self._turns.append(
             {
                 "role": Role.USER,
-                "text": " ".join(self._pending_user).strip(),
+                "text": user_text,
                 "finalisations": list(self._pending_user),
             }
         )
         self._pending_user = []
+        if self._spans is not None:
+            self._spans.begin_exchange(user_text)
 
     def _relative_timings(self) -> dict[str, Any]:
         base = self._timings.get("vad_stop")
@@ -282,7 +284,7 @@ class CallRecorder(BaseObserver):
 
     def _log_turn_once(self) -> None:
         """One INFO line per turn, so a plain `docker compose logs` shows the conversation."""
-        if self._logged or not (self._pending_text or self._pending_tools or self._pending_order):
+        if self._logged or not (self._pending_text or self._pending_tools or self._acted):
             return
         self._logged = True
         user_text = next((t["text"] for t in reversed(self._turns) if t["role"] == Role.USER), "")
@@ -300,30 +302,53 @@ class CallRecorder(BaseObserver):
         A turn with a tool call produces two LLM responses and several stops in the speech;
         all of it folds into the single assistant turn the harness format expects.
         """
-        if not (self._pending_text or self._pending_tools or self._pending_order):
+        if not (self._pending_text or self._pending_tools or self._acted):
             return
         self._log_turn_once()
+        bot_text = "".join(self._pending_text).strip()
         self._turns.append(
             {
                 "role": Role.ASSISTANT,
-                "text": "".join(self._pending_text).strip(),
+                "text": bot_text,
                 "tool_calls": self._pending_tools,
-                "event_order": self._pending_order,
                 "completions": self._completions,
-                "spoke_before_acting": _spoke_before_acting(self._pending_order),
                 "timings": self._relative_timings(),
             }
         )
         self._pending_text = []
         self._pending_tools = []
-        self._pending_order = []
-        self._pending_calls = set()
+        self._acted = False
         self._completions = 0
-        self._spoke_this_completion = False
         self._logged = False
+        if self._spans is not None:
+            self._spans.end_exchange(bot_text)
         self._timings = {}
 
     # -- output ---------------------------------------------------------------
+
+    @property
+    def ended_by(self) -> EndedBy:
+        """Why the call ended, for whoever is writing the record of it down."""
+        return self._ended_by
+
+    @property
+    def trace_input(self) -> str:
+        """What the person opened with. Langfuse shows this as the trace's input."""
+        self._flush_user()
+        return next((t["text"] for t in self._turns if t["role"] == Role.USER), "")
+
+    @property
+    def trace_output(self) -> str:
+        """The last thing the bot said — the plan summary in a call that got that far.
+
+        A call nobody spoke in has nothing to show, so it says why it ended instead of leaving
+        the trace's output blank.
+        """
+        # Same flush `transcript()` does: the turn in progress is part of the call, and both
+        # flushes do nothing once a turn is closed.
+        self._flush_assistant()
+        last = next((t["text"] for t in reversed(self._turns) if t["role"] == Role.ASSISTANT), "")
+        return last or f"no reply; call ended by {self._ended_by}"
 
     def transcript(self) -> dict[str, Any]:
         """The harness shape, plus `source`, `session_id`, per-turn `timings` and
@@ -334,12 +359,14 @@ class CallRecorder(BaseObserver):
             "scenario": f"voice-{self._session_id}",
             "source": SOURCE,
             "session_id": self._session_id,
-            "prompt_version": self._settings.prompt_version,
+            "prompt_version": self._prompt_version,
             "model": self._settings.openai_model,
             "today": self._state.today.isoformat(),
             "turns": self._turns,
             "state": json.loads(self._state.model_dump_json()),
             "plan_final": self._state.plan_final,
+            # Same key and shape the text harness writes, so one check reads both.
+            "carried": [list(pair) for pair in self._carried],
             "cards_versions": self._cards_versions,
             "ended_by": self._ended_by,
             "llm_warnings": dict(self._warnings),

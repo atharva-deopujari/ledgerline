@@ -1,4 +1,4 @@
-"""CallRecorder: one JSON per voice call, in the same shape evals/checks.py already reads."""
+"""CallRecorder: one JSON per voice call, in the shape the judge's checks already read."""
 
 from __future__ import annotations
 
@@ -21,9 +21,9 @@ from pipecat.frames.frames import (
     VADUserStoppedSpeakingFrame,
 )
 
-from evals import checks
 from ledgerline.domain.models import FinancialState
-from ledgerline.voice.recorder import CallRecorder, Role
+from ledgerline.judge.checks import checks
+from ledgerline.voice.recorder import CallRecorder, EndedBy, Role
 
 
 @dataclass
@@ -154,7 +154,7 @@ async def test_transcript_carries_the_harness_header_keys(recorder, settings, to
 
 
 async def test_checks_run_over_a_recorded_voice_transcript(recorder):
-    """The whole point: evals/checks.py must accept what the recorder writes."""
+    """The whole point: the judge's deterministic checks must accept what the recorder writes."""
     await a_full_turn(
         recorder,
         "my rent is eleven thousand",
@@ -361,30 +361,12 @@ async def test_two_real_calls_are_both_recorded(recorder):
     assert len(recorder.transcript()["turns"][1]["tool_calls"]) == 2
 
 
-async def test_event_order_matches_the_harness_vocabulary(recorder):
-    """`evals/checks.py::silent_before_acting` reads event_order and only knows the two words
-    the text harness writes: "message" and "function_call"."""
-    await feed(recorder, transcription("rent is eleven thousand"))
-    await feed(
-        recorder,
-        LLMFullResponseStartFrame(),
-        LLMTextFrame(text="Let me record that."),
-        FunctionCallInProgressFrame(
-            function_name="upsert_item", tool_call_id="call_1", arguments={}
-        ),
-        LLMFullResponseEndFrame(),
-        LLMFullResponseStartFrame(),
-        LLMTextFrame(text="Rent is 11,000 rupees."),
-        LLMFullResponseEndFrame(),
-    )
-    turn = recorder.transcript()["turns"][1]
-    assert turn["event_order"] == ["message", "function_call", "message"]
-    assert turn["completions"] == 2
-    assert turn["spoke_before_acting"] is True
+async def test_a_turn_whose_tool_never_returned_is_still_a_turn(recorder):
+    """No text and no result to record, and it still happened.
 
-
-async def test_a_silent_tool_turn_is_recorded_as_silent(recorder):
-    """What the pipeline should look like after the prompt change: tool first, speech after."""
+    This is what the deleted `event_order` list was quietly doing besides feeding the checks:
+    answering "did anything happen this turn" when the answer was a tool call that timed out.
+    """
     await feed(recorder, transcription("rent is eleven thousand"))
     await feed(
         recorder,
@@ -392,39 +374,32 @@ async def test_a_silent_tool_turn_is_recorded_as_silent(recorder):
         FunctionCallInProgressFrame(
             function_name="upsert_item", tool_call_id="call_1", arguments={}
         ),
-        LLMFullResponseEndFrame(),
-        LLMFullResponseStartFrame(),
-        LLMTextFrame(text="Rent is 11,000 rupees."),
-        LLMFullResponseEndFrame(),
     )
-    turn = recorder.transcript()["turns"][1]
-    assert turn["event_order"] == ["function_call", "message"]
-    assert turn["spoke_before_acting"] is False
+
+    turns = recorder.transcript()["turns"]
+    assert [t["role"] for t in turns] == ["user", "assistant"]
+    assert turns[1]["tool_calls"] == []
 
 
-async def test_one_call_in_progress_broadcast_twice_orders_once(recorder):
-    await feed(recorder, transcription("rent"))
-    for _ in range(2):
-        await feed(
-            recorder,
-            FunctionCallInProgressFrame(
-                function_name="upsert_item", tool_call_id="same", arguments={}
-            ),
-        )
-    assert recorder.transcript()["turns"][1]["event_order"] == ["function_call"]
-
-
-async def test_checks_accept_a_recorded_voice_turn_order(recorder):
-    """The whole point of matching the vocabulary: B's check must run over voice runs."""
+async def test_the_checks_accept_a_recorded_voice_call(recorder):
+    """The whole point of matching the harness's shape: the judge's checks run over voice runs."""
     await feed(recorder, transcription("rent is eleven thousand"))
     await feed(
         recorder,
         LLMFullResponseStartFrame(),
-        LLMTextFrame(text="Let me record that."),
-        FunctionCallInProgressFrame(function_name="upsert_item", tool_call_id="c1", arguments={}),
+        LLMTextFrame(text="Rent is 11,000 rupees. When is it due?"),
+        FunctionCallResultFrame(
+            function_name="note",
+            tool_call_id="c1",
+            arguments={},
+            result="noted rent 11,000",
+        ),
     )
-    violations = checks.silent_before_acting(recorder.transcript())
-    assert [v.rule for v in violations] == ["silent_before_acting"]
+
+    violations = checks.run_checks(recorder.transcript())
+
+    assert isinstance(violations, list)
+    assert all(hasattr(v, "rule") and hasattr(v, "turn") for v in violations)
 
 
 async def test_a_user_turn_is_what_the_model_saw_not_each_finalisation(recorder):
@@ -506,3 +481,125 @@ async def test_latency_is_anchored_to_the_last_fragment_not_the_first(recorder, 
     assert timings["first_audio"] == 1.5
     assert timings["first_token_from_turn_start"] == 4.0  # includes their speaking time
     assert timings["first_audio_from_turn_start"] == 4.5
+
+
+# -- what Langfuse shows as the trace's input and output ------------------------
+
+
+async def test_trace_input_is_the_first_thing_the_person_said(recorder):
+    await a_full_turn(recorder, "I have twenty thousand", "Noted.")
+    await a_full_turn(recorder, "Rent is twelve thousand", "Understood.")
+    recorder.close()
+
+    assert recorder.trace_input == "I have twenty thousand"
+
+
+async def test_trace_output_is_the_last_thing_the_bot_said(recorder):
+    await a_full_turn(recorder, "I have twenty thousand", "Noted.")
+    await a_full_turn(recorder, "That is all", "You are short by 2,000 on the 30th.")
+    recorder.close()
+
+    assert recorder.trace_output == "You are short by 2,000 on the 30th."
+
+
+async def test_a_silent_call_says_why_it_ended_instead_of_nothing(recorder):
+    recorder.mark_ended_by(EndedBy.IDLE)
+    recorder.close()
+
+    assert recorder.trace_input == ""
+    assert recorder.trace_output == "no reply; call ended by idle"
+
+
+async def test_the_recording_names_the_prompt_version_the_call_actually_ran_on(settings, today):
+    """With the prompt managed in Langfuse, the file's version is not the one that was used."""
+    recorder = CallRecorder(
+        session_id="abc123",
+        settings=settings,
+        state=FinancialState(today=today),
+        prompt_version="7",
+    )
+
+    assert recorder.transcript()["prompt_version"] == "7"
+
+
+async def test_the_file_version_is_the_default(recorder, settings):
+    assert recorder.transcript()["prompt_version"] == settings.prompt_version
+
+
+# -- what a returning caller was carrying ---------------------------------------
+
+
+def test_the_carried_pairs_are_on_the_transcript(settings, today):
+    """`numbers_traceable` authorises figures the carried line told the coach to read back.
+
+    The pairs reach the model through the greeting turn block, not through a tool result, so
+    without this key the check sees a number with no provenance and fails a coach that did
+    exactly what the carried design asked. The text harness has written this key since it grew
+    a `carried` block; the voice recorder did not, and the fourth live call is where that showed.
+    """
+    recorder = CallRecorder(
+        session_id="abc123",
+        settings=settings,
+        state=FinancialState(today=today),
+        carried=[("rent", "11,000"), ("income", "0")],
+    )
+
+    assert recorder.transcript()["carried"] == [["rent", "11,000"], ["income", "0"]]
+
+
+def test_a_first_time_caller_still_has_the_key(recorder):
+    """Always present, so a reader never has to tell "nothing carried" from "an older file"."""
+    assert recorder.transcript()["carried"] == []
+
+
+# -- the conversation, as spans -------------------------------------------------
+
+
+class SpyExchanges:
+    """Stands in for the tracer: records the calls, in order."""
+
+    def __init__(self):
+        self.calls = []
+
+    def begin_exchange(self, user_text):
+        self.calls.append(("begin", user_text))
+
+    def end_exchange(self, bot_text):
+        self.calls.append(("end", bot_text))
+
+
+@pytest.fixture
+def traced(settings, today):
+    spans = SpyExchanges()
+    recorder = CallRecorder(
+        session_id="abc123",
+        settings=settings,
+        state=FinancialState(today=today),
+        spans=spans,
+    )
+    return recorder, spans
+
+
+async def test_each_turn_opens_and_closes_one_exchange(traced):
+    recorder, spans = traced
+
+    await a_full_turn(recorder, "My rent is eleven thousand.", "When is it due?")
+    await a_full_turn(recorder, "The fifth.", "Noted, the fifth.")
+    recorder.close()
+    # What write() does in the session's finally, and what flushes the last turn.
+    recorder.transcript()
+
+    assert spans.calls == [
+        ("begin", "My rent is eleven thousand."),
+        ("end", "When is it due?"),
+        ("begin", "The fifth."),
+        ("end", "Noted, the fifth."),
+    ]
+
+
+async def test_a_recorder_with_no_tracer_records_exactly_as_before(recorder):
+    """Tracing off must change nothing about the transcript, and cost nothing to skip."""
+    await a_full_turn(recorder, "Yes.", "Understood.")
+    recorder.close()
+
+    assert [t["role"] for t in recorder.transcript()["turns"]] == ["user", "assistant"]

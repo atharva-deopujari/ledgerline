@@ -60,14 +60,6 @@ async def test_the_next_turn_gets_its_own():
     assert len(spoken(filler)) == 2
 
 
-async def test_end_call_is_never_filled():
-    """The model says one goodbye and calls end_call in the same reply; a filler on top would
-    be a second farewell."""
-    filler = Recording()
-    await push(filler, in_progress(name="end_call"))
-    assert spoken(filler) == []
-
-
 async def test_end_call_alongside_another_tool_still_gets_the_other_one():
     filler = Recording()
     await push(filler, in_progress(name="upsert_item", tool_call_id="a"))
@@ -91,4 +83,13 @@ async def test_fillers_rotate_so_the_bot_does_not_say_okay_every_time():
 async def test_a_transcript_alone_says_nothing():
     filler = Recording()
     await push(filler, TranscriptionFrame(user_id="u", timestamp="t", text="rent is 11,000"))
+    assert spoken(filler) == []
+
+
+async def test_the_v2_goodbye_tool_gets_no_filler():
+    """`done` folds in `end_call`, so it owns the goodbye the way `end_call` did."""
+    filler = Recording()
+
+    await push(filler, UserStoppedSpeakingFrame(), in_progress(name="done"))
+
     assert spoken(filler) == []
