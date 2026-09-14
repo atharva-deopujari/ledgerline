@@ -1,0 +1,410 @@
+{
+ "scenario": "garbage_opener",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi. I\u2019m here to help you get through the next thirty days, from 11 September to 10 October. What money do you expect to come in during that time, and when will it arrive?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Your WhatsApp."
+  },
+  {
+   "role": "assistant",
+   "text": "I can help here, but I don\u2019t have a WhatsApp number to share. We can continue in this call. What money do you expect to come in between 11 September and 10 October, and when will it arrive?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My salary is fifty-two thousand rupees, and it comes on the first of next month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your salary as fifty-two thousand rupees. Which date in October does it arrive?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "my salary",
+      "amount": 52000,
+      "when": "the first of next month",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted my salary 52,000\nrecorded: money coming in\nnot mentioned yet: money in the account, bills, loans or cards, everyday spending\nno date yet: 'the first of next month' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It arrives on the first of October."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted that your salary arrives on 1 October. How much money is in your account today, on 11 September?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "my salary",
+      "amount": 52000,
+      "when": "1 October",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted my salary on 1 Oct\nrecorded: money coming in\nnot mentioned yet: money in the account, bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "There are nine thousand rupees in my account today."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted nine thousand rupees in your account today. What bills or regular payments are due before 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "money in my account today",
+      "amount": 9000,
+      "when": "today, 11 September",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 9,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account, money coming in\nnot mentioned yet: bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent is sixteen thousand rupees, due on the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted rent of sixteen thousand rupees, due on 5 October. What other bills or regular payments do you have?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 16000,
+      "when": "the 5th",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent 16,000 on 5 Oct\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My credit card payment is four thousand rupees, due on the twenty-second."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your credit card payment of four thousand rupees, due on 22 September. Do you have any other loans, cards, or regular payments?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "my credit card payment",
+      "amount": 4000,
+      "when": "the 22nd",
+      "kind": "loan or card",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted my credit card payment 4,000 on 22 Sep\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have electricity of nineteen hundred rupees, due on the twenty-second."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted electricity of nineteen hundred rupees, due on 22 September. What do you usually spend on food, transport, phone, and other day-to-day needs before 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "electricity",
+      "amount": 1900,
+      "when": "the 22nd",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted electricity 1,900 on 22 Sep\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I spend about eight thousand rupees on groceries over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted groceries of about eight thousand rupees, spread through the month. Is there anything unusual this month, such as an overdue payment, a medical cost, travel, or a large one-off expense?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "groceries",
+      "amount": 8000,
+      "when": "spread through the month",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted groceries 8,000\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I don\u2019t have any unusual expenses to add."
+  },
+  {
+   "role": "assistant",
+   "text": "Here\u2019s the picture. You have nine thousand rupees now, and fifty-two thousand rupees arriving on 1 October. Your electricity of nineteen hundred rupees and credit card payment of four thousand rupees are due on 22 September. Rent of sixteen thousand rupees is due on 5 October, and groceries are about eight thousand rupees across the month.\n\nThe dates don\u2019t line up for the credit card payment. If you pay it on 22 September, you would be fifteen thousand eight hundred and twenty-six rupees short for rent later in the month. The money arrives on 1 October. The month ends with thirty-five thousand one hundred rupees after the listed costs.\n\nPlease contact the card issuer before 22 September. You could ask to move the statement date or request that a late fee be waived this once. If the minimum payment is more than three days late, they may charge a late fee and report the account as past due. Would you like to use that approach?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "changes",
+      "about": "unusual expenses"
+     },
+     "result": "none: \nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 9,000\nmoney coming in: my salary 52,000 on 1 October\nbills: rent 16,000 on 5 October; electricity 1,900 on 22 September\nloans or cards: my credit card payment 4,000 on 22 September\neveryday spending: groceries 8,000\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 25,900, in minus out 26,100\nopening 9,000, closing 35,100\nsurplus 35,100, shortfall 0\nunpaid total 4,000\nlow point 1,780 on 30 September: opening 9,000, electricity -1,900 on 22 September, groceries -5,320 by 30 September = 1,780\nafter that: my salary +52,000 on 1 October, rent -16,000 on 5 October, groceries -2,680 on 10 October = closing 35,100\nwhat they could do: On 22 September paying the 4,000 my credit card payment would leave you 15,826 short for rent later in the month. The money is not there until 1 October. You could ask the issuer to move your statement date or to waive the late fee this once (If the minimum due is more than three days late, the issuer can charge a late fee and report the account past due to the credit bureaus)\nunpaid my credit card payment 4,000 due 22 September, If the minimum due is more than three days late, the issuer can charge a late fee and report the account past due to the credit bureaus"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, that makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "show_month",
+     "args": {
+      "final": true
+     },
+     "result": "plan final\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 9,000\nmoney coming in: my salary 52,000 on 1 October\nbills: rent 16,000 on 5 October; electricity 1,900 on 22 September\nloans or cards: my credit card payment 4,000 on 22 September\neveryday spending: groceries 8,000\ntiming shortfall, the money is there but the dates do not line up\nin 52,000, out 25,900, in minus out 26,100\nopening 9,000, closing 35,100\nsurplus 35,100, shortfall 0\nunpaid total 4,000\nlow point 1,780 on 30 September: opening 9,000, electricity -1,900 on 22 September, groceries -5,320 by 30 September = 1,780\nafter that: my salary +52,000 on 1 October, rent -16,000 on 5 October, groceries -2,680 on 10 October = closing 35,100\nwhat they could do: On 22 September paying the 4,000 my credit card payment would leave you 15,826 short for rent later in the month. The money is not there until 1 October. You could ask the issuer to move your statement date or to waive the late fee this once (If the minimum due is more than three days late, the issuer can charge a late fee and report the account past due to the credit bureaus)\nunpaid my credit card payment 4,000 due 22 September, If the minimum due is more than three days late, the issuer can charge a late fee and report the account past due to the credit bureaus"
+    },
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "plan agreed"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "9000.00",
+  "incomes": [
+   {
+    "name": "my salary",
+    "notes": "",
+    "carried": false,
+    "amount": "52000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "my credit card payment",
+    "notes": "",
+    "carried": false,
+    "kind": "credit_card",
+    "amount_due": "4000.00",
+    "min_due": null,
+    "due_date": "2026-09-22",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "16000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "electricity",
+    "notes": "",
+    "carried": false,
+    "amount": "1900.00",
+    "due_date": "2026-09-22",
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "groceries",
+    "notes": "",
+    "carried": false,
+    "amount": "8000.00",
+    "date": null,
+    "flexible": false
+   }
+  ],
+  "unknowns": [],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 11
+ },
+ "hidden_facts": {
+  "opening_balance": "9000",
+  "incomes": [
+   {
+    "name": "salary",
+    "amount": "52000",
+    "day": 1
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "16000",
+    "day": 5
+   },
+   {
+    "name": "groceries",
+    "amount": "8000"
+   },
+   {
+    "name": "electricity",
+    "amount": "1900",
+    "day": 22
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card",
+    "amount": "4000",
+    "day": 22,
+    "debt_kind": "credit_card",
+    "min_due": "1200"
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming",
+    "amount": "500"
+   }
+  ],
+  "notes": [
+   "The salary comes on the first of next month, after the card is due."
+  ]
+ },
+ "carried": [],
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11
+ ],
+ "usage": {
+  "input_tokens": 52494,
+  "output_tokens": 1151
+ }
+}

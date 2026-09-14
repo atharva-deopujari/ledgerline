@@ -1,0 +1,347 @@
+{
+  "scenario": "voice-9876500042-20260913T183230Z",
+  "source": "voice",
+  "session_id": "9876500042-20260913T183230Z",
+  "prompt_version": "1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-14",
+  "turns": [
+    {
+      "role": "user",
+      "text": "I have",
+      "finalisations": [
+        "I have"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "20,000 in cash and",
+      "finalisations": [
+        "20,000 in cash and"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "20,000 in bank balance.",
+      "finalisations": [
+        "20,000 in bank balance."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "You have 20,000 rupees in the bank balance. What income do you expect between today and the thirteenth of October?",
+      "tool_calls": [
+        {
+          "id": "call_OANSwjDtI9Ljstf6Zmr9yvvD",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "opening balance",
+            "amount": 20000
+          },
+          "result": "recorded opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nblocked: income"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 4,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:33:03.816458+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 4.399,
+        "first_token_from_turn_start": 4.399,
+        "first_audio": 2.351,
+        "first_audio_from_turn_start": 2.351
+      }
+    },
+    {
+      "role": "user",
+      "text": "Is",
+      "finalisations": [
+        "Is"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "September 18.",
+      "finalisations": [
+        "September 18."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "September 18. How much will that income be?",
+      "tool_calls": [
+        {
+          "id": "call_DD6RqhZgqs4f96oxSA6d3FeU",
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "income",
+            "day_of_month": 18,
+            "certainty": "confirmed"
+          },
+          "result": "recorded income on 18 Sep; say this back, then ask\nblocked: income\nmissing: income amount"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 3,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:33:21.352785+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.436,
+        "first_token_from_turn_start": 3.436,
+        "first_audio": 1.777,
+        "first_audio_from_turn_start": 1.777
+      }
+    },
+    {
+      "role": "user",
+      "text": "Yes.",
+      "finalisations": [
+        "Yes."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "What amount will you receive on the eighteenth of September?",
+      "tool_calls": [],
+      "event_order": [
+        "message"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:33:21.352785+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 13.748,
+        "first_token_from_turn_start": 13.748,
+        "first_audio": 14.234,
+        "first_audio_from_turn_start": 14.234
+      }
+    },
+    {
+      "role": "user",
+      "text": "Nothing.",
+      "finalisations": [
+        "Nothing."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Just to confirm, you expect no income on the eighteenth of September, is that right?",
+      "tool_calls": [
+        {
+          "id": "call_HsztJRB9FRFpRQahZNpPBB2d",
+          "name": "upsert_item",
+          "args": {
+            "kind": "income",
+            "name": "income",
+            "amount": 0,
+            "day_of_month": 18,
+            "certainty": "confirmed"
+          },
+          "result": "recorded income 0; income looks small, confirm it before moving on\nin 0, out 0, lowest 20,000 on 14 September\nsurplus 20,000, shortfall 0\nready to plan; if you have not yet asked whether anything else goes out this month, ask once, then finalize_plan"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:33:46.575755+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.714,
+        "first_token_from_turn_start": 3.714,
+        "first_audio": 1.943,
+        "first_audio_from_turn_start": 1.943
+      }
+    },
+    {
+      "role": "user",
+      "text": "My rent is",
+      "finalisations": [
+        "My rent is"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "11,000 rupees.",
+      "finalisations": [
+        "11,000 rupees."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Your rent is 11,000 rupees. What day is it due?",
+      "tool_calls": [
+        {
+          "id": "call_3lN3CB7QWiSTCOkVwZkCvu0H",
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "amount": 11000,
+            "survival": true,
+            "flexible": false
+          },
+          "result": "recorded rent 11,000; say this back, then ask\nin 0, out 11,000, lowest 9,000 on 13 October\nsurplus 9,000, shortfall 0\nmissing: rent due date"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 3,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:34:03.172897+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.894,
+        "first_token_from_turn_start": 3.894,
+        "first_audio": 2.082,
+        "first_audio_from_turn_start": 2.082
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-14",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "incomes": [
+      {
+        "name": "income",
+        "notes": "",
+        "carried": false,
+        "amount": "0.00",
+        "date": "2026-09-18",
+        "latest_date": null,
+        "certainty": "confirmed"
+      }
+    ],
+    "debts": [],
+    "essentials": [
+      {
+        "name": "rent",
+        "notes": "",
+        "carried": false,
+        "amount": "11000.00",
+        "due_date": null,
+        "spread": false,
+        "survival": true
+      }
+    ],
+    "optionals": [],
+    "unknowns": [],
+    "understood": false,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 5
+  },
+  "plan_final": false,
+  "cards_versions": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "ended_by": "client",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  },
+  "verdict": {
+    "session_id": "9876500042-20260913T183230Z",
+    "status": "failed",
+    "summary": 1.0,
+    "deterministic": [
+      {
+        "rule": "numbers_traceable",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "state_matches_facts",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "carried_confirmed_before_plan",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "actions_match_plan",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "changed_value_acknowledged",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "implausible_amount_confirmed",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "one_question_per_turn",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "banned_phrases",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_markdown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "amounts_repeated",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_iso_dates",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "silent_before_acting",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_repeated_sentence",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_question_after_unknown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "one_goodbye_with_the_end_call",
+        "passed": true,
+        "detail": null
+      }
+    ],
+    "intent": [],
+    "judge_model": "gpt-5.6-luna",
+    "trace_url": null
+  }
+}

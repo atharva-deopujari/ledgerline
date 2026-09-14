@@ -1,0 +1,309 @@
+{
+  "scenario": "voice-9876500042-20260913T184932Z",
+  "source": "voice",
+  "session_id": "9876500042-20260913T184932Z",
+  "prompt_version": "1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-14",
+  "turns": [
+    {
+      "role": "user",
+      "text": "Yes.",
+      "finalisations": [
+        "Yes."
+      ]
+    },
+    {
+      "role": "user",
+      "text": "All of that still holds.",
+      "finalisations": [
+        "All of that still holds."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Rent is eleven thousand rupees. Does that",
+      "tool_calls": [],
+      "event_order": [
+        "message"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:50:04.624322+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 0.165,
+        "first_token_from_turn_start": 0.165
+      }
+    },
+    {
+      "role": "user",
+      "text": "But my rent went up to",
+      "finalisations": [
+        "But my rent went up to"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "13,000 rupees.",
+      "finalisations": [
+        "13,000 rupees."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Rent is thirteen thousand rupees, due on the eighteenth of September. Is thirteen thousand the correct rent now?",
+      "tool_calls": [
+        {
+          "id": "call_3UZbPE679ZbPEDjg053tQiIz",
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "amount": 13000,
+            "day_of_month": 18,
+            "survival": false,
+            "spread": false
+          },
+          "result": "carried from last call: rent 11,000; say each back, then ask whether all still hold, confirm or change each before the plan\nrent: 11,000 -> 13,000; confirm which is right before moving on\nrent survival: now ordinary\nblocked: opening balance, income\nmissing: opening balance"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 3,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:50:07.785301+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.856,
+        "first_token_from_turn_start": 3.856,
+        "first_audio": 1.905,
+        "first_audio_from_turn_start": 1.905
+      }
+    },
+    {
+      "role": "user",
+      "text": "I have 20,000 rupees in my account.",
+      "finalisations": [
+        "I have 20,000 rupees in my account."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "You have twenty thousand rupees in your account. Is there any income expected before the thirteenth of October?",
+      "tool_calls": [
+        {
+          "id": "call_s1m37YKORpQAyEDzPywfFz1F",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "opening balance",
+            "amount": 20000
+          },
+          "result": "recorded opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nblocked: income"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:50:24.304594+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 4.21,
+        "first_token_from_turn_start": 4.21,
+        "first_audio": 2.345,
+        "first_audio_from_turn_start": 2.345
+      }
+    },
+    {
+      "role": "user",
+      "text": "Nothing else is going out.",
+      "finalisations": [
+        "Nothing else is going out."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Rent is the only outgoing, at thirteen thousand rupees, due on the eighteenth of September. Shall I prepare your plan?",
+      "tool_calls": [
+        {
+          "id": "call_ZJeTxiOks8yDWORJ2bJEbwYV",
+          "name": "mark_unknown",
+          "args": {
+            "field": "income",
+            "not_applicable": true
+          },
+          "result": "none: income\nin 0, out 13,000, lowest 7,000 on 18 September\nsurplus 7,000, shortfall 0\nready to plan; if you have not yet asked whether anything else goes out this month, ask once, then finalize_plan"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:50:40.564579+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.871,
+        "first_token_from_turn_start": 3.871,
+        "first_audio": 1.532,
+        "first_audio_from_turn_start": 1.532
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-14",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "incomes": [],
+    "debts": [],
+    "essentials": [
+      {
+        "name": "rent",
+        "notes": "",
+        "carried": false,
+        "amount": "13000.00",
+        "due_date": "2026-09-18",
+        "spread": false,
+        "survival": false
+      }
+    ],
+    "optionals": [],
+    "unknowns": [
+      {
+        "field": "income",
+        "reason": "not_applicable"
+      }
+    ],
+    "understood": false,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 4
+  },
+  "plan_final": false,
+  "cards_versions": [
+    1,
+    2,
+    3
+  ],
+  "ended_by": "client",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  },
+  "verdict": {
+    "session_id": "9876500042-20260913T184932Z",
+    "status": "ready",
+    "summary": 0.947,
+    "deterministic": [
+      {
+        "rule": "numbers_traceable",
+        "passed": false,
+        "detail": "not in any tool result: [11000]"
+      },
+      {
+        "rule": "state_matches_facts",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "claimed_values_recorded",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "carried_confirmed_before_plan",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "actions_match_plan",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "changed_value_acknowledged",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "implausible_amount_confirmed",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "one_question_per_turn",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "banned_phrases",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_markdown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "amounts_repeated",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_iso_dates",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "silent_before_acting",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_repeated_sentence",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_question_after_unknown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "one_goodbye_with_the_end_call",
+        "passed": true,
+        "detail": null
+      }
+    ],
+    "intent": [
+      {
+        "criterion": "register_fit",
+        "outcome": "pass",
+        "reason": "The coach stayed calm, plain, and level without mirroring the caller's wording or mood.",
+        "turn": 5
+      },
+      {
+        "criterion": "questions_purposeful",
+        "outcome": "pass",
+        "reason": "Each question followed the immediately preceding information: confirming rent, checking income, and asking whether to prepare the plan.",
+        "turn": 7
+      },
+      {
+        "criterion": "corrections_handled",
+        "outcome": "pass",
+        "reason": "The coach acknowledged the rent change to 13,000 rupees and asked once whether that was correct.",
+        "turn": 5
+      }
+    ],
+    "judge_model": "gpt-5.6-luna",
+    "trace_url": "https://us.cloud.langfuse.com/project/cmtzwzchp05arad0ch8y5vgzw/traces/7b980d347f70baafaa007412bfea7aec"
+  }
+}

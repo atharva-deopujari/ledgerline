@@ -1,0 +1,416 @@
+{
+ "scenario": "stt_implausible_amount",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m here to help you get through the next thirty days, from 11 September to 10 October. What money is in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "There are nine thousand rupees in my account."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted nine thousand rupees in your account today. What money do you expect to come in before 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "money in the account",
+      "amount": 9000,
+      "when": "today, 11 September",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 9,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account\nnot mentioned yet: money coming in, bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent is 12."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted rent of twelve thousand rupees. Which day is it due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 12000,
+      "when": "not mentioned yet",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent 12,000\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending\nno date yet: 'not mentioned yet' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Twelve thousand, sorry. Twelve thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "Yes, I\u2019ve noted rent as twelve thousand rupees. What day is it due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 12000,
+      "when": "not mentioned yet",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "unchanged rent\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending\nno date yet: 'not mentioned yet' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Salary forty-five."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your salary as forty-five thousand rupees. When does it arrive? And what day is the rent due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "salary",
+      "amount": 45000,
+      "when": "not mentioned yet",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted salary 45,000\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending\nno date yet: 'not mentioned yet' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Forty-five thousand a month."
+  },
+  {
+   "role": "assistant",
+   "text": "Understood. Your salary is forty-five thousand rupees each month. Which day does it arrive? And which day is your rent due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "salary",
+      "amount": 45000,
+      "when": "monthly, arrival day not mentioned",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "unchanged salary\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending\nno date yet: 'monthly, arrival day not mentioned' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The salary arrives on the first."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your salary of forty-five thousand rupees arriving on 1 October. When is the twelve-thousand-rupee rent due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "salary",
+      "amount": 45000,
+      "when": "the 1st of each month",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted salary on 1 Oct\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent is due on the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your rent of twelve thousand rupees due on 5 October. Do you have any loans or credit cards, and what payments are due on them before 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 12000,
+      "when": "the 5th of each month",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent on 5 Oct\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have a scooter EMI of three thousand four hundred rupees, due on the twelfth."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted the scooter EMI of three thousand four hundred rupees due on 12 September. What do you spend on essentials like food, transport, medicines, and utilities during this period?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "scooter EMI",
+      "amount": 3400,
+      "when": "the 12th of each month",
+      "kind": "loan or card",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted scooter emi 3,400 on 12 Sep\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Groceries cost eight thousand rupees spread through the month."
+  },
+  {
+   "role": "assistant",
+   "text": "You have nine thousand rupees now. Your scooter EMI of three thousand four hundred rupees is due on 12 September. Before your salary arrives, groceries leave two hundred eighty rupees at the low point on 30 September.\n\nYour salary of forty-five thousand rupees arrives on 1 October. Then rent of twelve thousand rupees is due on 5 October, and the rest of your groceries are covered through 10 October. You finish with thirty thousand six hundred rupees. Nothing needs changing. Does that plan make sense?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "groceries",
+      "amount": 8000,
+      "when": "spread through the month",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted groceries 8,000\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 9,000\nmoney coming in: salary 45,000 on 1 October\nbills: rent 12,000 on 5 October\nloans or cards: scooter emi 3,400 on 12 September\neveryday spending: groceries 8,000\nin 45,000, out 23,400, in minus out 21,600\nopening 9,000, closing 30,600\nsurplus 30,600, shortfall 0\nlow point 280 on 30 September: opening 9,000, scooter emi -3,400 on 12 September, groceries -5,320 by 30 September = 280\nafter that: salary +45,000 on 1 October, rent -12,000 on 5 October, groceries -2,680 on 10 October = closing 30,600\nnothing to do: every payment is covered in full"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, it makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye. Your plan is set.",
+   "tool_calls": [
+    {
+     "name": "show_month",
+     "args": {
+      "final": true
+     },
+     "result": "plan final\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 9,000\nmoney coming in: salary 45,000 on 1 October\nbills: rent 12,000 on 5 October\nloans or cards: scooter emi 3,400 on 12 September\neveryday spending: groceries 8,000\nin 45,000, out 23,400, in minus out 21,600\nopening 9,000, closing 30,600\nsurplus 30,600, shortfall 0\nlow point 280 on 30 September: opening 9,000, scooter emi -3,400 on 12 September, groceries -5,320 by 30 September = 280\nafter that: salary +45,000 on 1 October, rent -12,000 on 5 October, groceries -2,680 on 10 October = closing 30,600\nnothing to do: every payment is covered in full"
+    },
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "plan agreed"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "9000.00",
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "carried": false,
+    "amount": "45000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "scooter emi",
+    "notes": "",
+    "carried": false,
+    "kind": "unsecured_emi",
+    "amount_due": "3400.00",
+    "min_due": null,
+    "due_date": "2026-09-12",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "12000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "groceries",
+    "notes": "",
+    "carried": false,
+    "amount": "8000.00",
+    "date": null,
+    "flexible": false
+   }
+  ],
+  "unknowns": [],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 11
+ },
+ "hidden_facts": {
+  "opening_balance": "9000",
+  "incomes": [
+   {
+    "name": "salary",
+    "amount": "45000",
+    "day": 1
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "12000",
+    "day": 5
+   },
+   {
+    "name": "groceries",
+    "amount": "8000"
+   }
+  ],
+  "debts": [
+   {
+    "name": "scooter emi",
+    "amount": "3400",
+    "day": 12,
+    "debt_kind": "secured_emi"
+   }
+  ],
+  "optionals": [
+   {
+    "name": "streaming",
+    "amount": "300"
+   }
+  ],
+  "notes": [
+   "If the coach asks whether a figure is right, correct it to the real one in full words."
+  ]
+ },
+ "carried": [],
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12
+ ],
+ "usage": {
+  "input_tokens": 52275,
+  "output_tokens": 1034
+ }
+}

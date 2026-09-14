@@ -1,0 +1,410 @@
+{
+ "scenario": "owner_call_1",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hello. I\u2019m here to help you plan the next thirty days, through 10 October. What money do you expect to come in, and when?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Hello. What's up?"
+  },
+  {
+   "role": "assistant",
+   "text": "Hello. I\u2019m well, thank you. Let\u2019s start with your money coming in. Do you expect any salary, benefits, freelance work, or other payments before 10 October?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "That's too straightforward. By the way, I have around 60,000 right now."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted around 60,000 rupees in your account today. What else should I know about the next month\u2014money coming in, bills, loans or cards, or everyday spending?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "money I have right now",
+      "amount": 60000,
+      "when": "today, 11 September",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 60,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account\nnot mentioned yet: money coming in, bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I think I'll get my salary credited, which is, like, around 30,000."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your salary as around 30,000 rupees. When do you expect it to be credited?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "my salary",
+      "amount": 30000,
+      "when": "not specified",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted my salary 30,000\nrecorded: money in the account, money coming in\nnot mentioned yet: bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No. I'm sure it will arrive on"
+  },
+  {
+   "role": "user",
+   "text": "end of this September."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your salary as around 30,000 rupees, arriving at the end of September. What bills or regular payments must go out before 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "my salary",
+      "amount": 30000,
+      "when": "end of September",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted my salary on 30 Sep\nrecorded: money in the account, money coming in\nnot mentioned yet: bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I think at the starting week of October, I'll have to pay my rent, which is, like, around"
+  },
+  {
+   "role": "user",
+   "text": "13,000."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted around 13,000 rupees for rent in the first week of October. Which day is it due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "my rent",
+      "amount": 13000,
+      "when": "starting week of October",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted my rent 13,000\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending\nno date yet: 'starting week of October' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No. There will be other expenses. Nothing is"
+  },
+  {
+   "role": "user",
+   "text": "right now."
+  },
+  {
+   "role": "assistant",
+   "text": "Understood. I\u2019ll plan with no other bills and without an exact rent date. Do you have any loans or credit cards to pay?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "bills",
+      "about": "the other expenses and the exact rent due date"
+     },
+     "result": "none: bills\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yeah. Sure."
+  },
+  {
+   "role": "assistant",
+   "text": "What loans or credit cards do you have, and what payment is due on each before 10 October?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I did not understand."
+  },
+  {
+   "role": "assistant",
+   "text": "I mean, do you have any EMIs or credit card payments? If yes, tell me the amount due and when each one is due. If none, just say none.",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Like, there are many other things as well. Like, there can like,"
+  },
+  {
+   "role": "user",
+   "text": "other expenses such as shopping or, you know,"
+  },
+  {
+   "role": "user",
+   "text": "anything else. I cannot remember right now. Eating out, going out with friends and everything like that."
+  },
+  {
+   "role": "assistant",
+   "text": "That\u2019s okay. I\u2019ll leave everyday spending out rather than guess. Do you have any loans or credit cards, or none?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "everyday spending",
+      "about": "the amount for shopping, eating out, going out, and other discretionary spending"
+     },
+     "result": "none: everyday spending\nrecorded: money in the account, money coming in, bills\nnone: everyday spending\nnot mentioned yet: loans or cards"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Oh, that you can do, like, let's say, 15000"
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted 15,000 rupees for shopping, eating out, going out, and other everyday spending across the month. Do you have any loans or credit cards, or none?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "shopping, eating out, going out with friends and other everyday spending",
+      "amount": 15000,
+      "when": "spread through the month",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": false
+     },
+     "result": "noted shopping eating out going out with friends and other everyday spending 15,000\nrecorded: money in the account, money coming in, bills, everyday spending\nnot mentioned yet: loans or cards"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No. Actually, it's 5,000."
+  },
+  {
+   "role": "user",
+   "text": "Not 15."
+  },
+  {
+   "role": "assistant",
+   "text": "Here\u2019s the picture so far. You have 60,000 rupees now, and 30,000 rupees salary due at the end of September. Your listed outgoings are 13,000 rupees rent and 5,000 rupees for everyday spending. That leaves a projected 72,000 rupees at the end of the window.\n\nThe lowest point is 48,619 rupees on 29 September. That uses 8,227 rupees for rent and 3,154 rupees for everyday spending before then. Your rent date is still not exact, and I have no loan or card payments recorded. Is there anything else to add, or does this plan make sense?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "shopping, eating out, going out with friends and other everyday spending",
+      "amount": 5000,
+      "when": "spread through the month",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": false
+     },
+     "result": "shopping eating out going out with friends and other everyday spending 15,000 before, now 5,000\nrecorded: money in the account, money coming in, bills, everyday spending\nnot mentioned yet: loans or cards"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills, everyday spending\nnot mentioned yet: loans or cards\nin the account now 60,000\nmoney coming in: my salary 30,000 on 30 September\nbills: my rent 13,000\neveryday spending: shopping eating out going out with friends and other everyday spending 5,000\nin 30,000, out 18,000, in minus out 12,000\nopening 60,000 plus in is 90,000 to work with, closing 72,000\nsurplus 72,000, shortfall 0\nwhy the lowest point is 48,619 on 29 September:\nstart with 60,000\nmy rent takes 8,227 by 29 September\nshopping eating out going out with friends and other everyday spending takes 3,154 by 29 September\nthat leaves 48,619, the lowest point\nmy salary adds 30,000 on 30 September\nmy rent takes 4,773 by 10 October\nshopping eating out going out with friends and other everyday spending takes 1,846 by 10 October\nclosing 72,000\nnothing to do: every payment is covered in full\nnote: my rent has no date; spread across the month"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yeah. Sure."
+  },
+  {
+   "role": "assistant",
+   "text": "Thanks. Take care.",
+   "tool_calls": [
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "User confirmed the plan makes sense"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Walk me through."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "60000.00",
+  "incomes": [
+   {
+    "name": "my salary",
+    "notes": "",
+    "carried": false,
+    "amount": "30000.00",
+    "date": "2026-09-30",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [],
+  "essentials": [
+   {
+    "name": "my rent",
+    "notes": "",
+    "carried": false,
+    "amount": "13000.00",
+    "due_date": null,
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "shopping eating out going out with friends and other everyday spending",
+    "notes": "",
+    "carried": false,
+    "amount": "5000.00",
+    "date": null,
+    "flexible": true
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "essential",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "optional",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": false,
+  "call_ended": true,
+  "turn": 13
+ },
+ "hidden_facts": {
+  "opening_balance": "60000",
+  "incomes": [
+   {
+    "name": "salary",
+    "amount": "30000",
+    "day": 30
+   }
+  ],
+  "essentials": [],
+  "debts": [],
+  "optionals": [
+   {
+    "name": "other spending",
+    "amount": "5000"
+   }
+  ],
+  "notes": [
+   "The 5,000 is overall, not one thing: shopping, eating out, going out.",
+   "If the coach's arithmetic looks wrong, say so and push at least twice before letting it go.",
+   "Do not volunteer EMIs, cards, utilities, groceries or transport. Answer if asked."
+  ]
+ },
+ "carried": [],
+ "plan_final": false,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "usage": {
+  "input_tokens": 48462,
+  "output_tokens": 991
+ }
+}

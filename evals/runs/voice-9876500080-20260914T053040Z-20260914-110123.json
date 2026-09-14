@@ -1,0 +1,125 @@
+{
+  "scenario": "voice-9876500080-20260914T053040Z",
+  "source": "voice",
+  "session_id": "9876500080-20260914T053040Z",
+  "prompt_version": "v2@2",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-14",
+  "turns": [
+    {
+      "role": "assistant",
+      "text": "Hi. I\u2019ll help you get through the next thirty days, from 14 September to 13 October. First, how much money is in your bank account and in cash today?",
+      "tool_calls": [],
+      "completions": 1,
+      "timings": {}
+    },
+    {
+      "role": "user",
+      "text": "Hello. Can you hear me?",
+      "finalisations": [
+        "Hello. Can you hear me?"
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Yes, I can hear you. How much money is in your bank account and in cash today?",
+      "tool_calls": [],
+      "completions": 1,
+      "timings": {
+        "vad_stop_at": "2026-09-14T05:31:00.491646+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 1.57,
+        "first_token_from_turn_start": 1.57,
+        "first_audio": 2.099,
+        "first_audio_from_turn_start": 2.099
+      }
+    },
+    {
+      "role": "user",
+      "text": "That is all for now.",
+      "finalisations": [
+        "That is all for now."
+      ]
+    },
+    {
+      "role": "user",
+      "text": "Thank you.",
+      "finalisations": [
+        "Thank you."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "You\u2019re welcome. We\u2019ll stop here.",
+      "tool_calls": [
+        {
+          "id": "call_SUUgTOv3FQVHy13AOcbjbE84",
+          "name": "done",
+          "args": {
+            "understood": false,
+            "reason": "User ended the call"
+          },
+          "result": "call ending, say one short goodbye now and nothing more"
+        }
+      ],
+      "completions": 3,
+      "timings": {
+        "vad_stop_at": "2026-09-14T05:31:15.512729+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 2.497,
+        "first_token_from_turn_start": 2.497,
+        "first_audio": 2.801,
+        "first_audio_from_turn_start": 2.801
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-14",
+    "horizon_days": 30,
+    "opening_balance": null,
+    "incomes": [],
+    "debts": [],
+    "essentials": [],
+    "optionals": [],
+    "unknowns": [],
+    "understood": false,
+    "plan_final": false,
+    "call_ended": true,
+    "turn": 2
+  },
+  "plan_final": false,
+  "carried": [],
+  "cards_versions": [
+    1
+  ],
+  "ended_by": "bot",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  },
+  "verdict": {
+    "session_id": "9876500080-20260914T053040Z",
+    "status": "ready",
+    "summary": 1.0,
+    "deterministic": [
+      {
+        "rule": "money_traceable",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "state_matches_call",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "speakable",
+        "passed": true,
+        "detail": null
+      }
+    ],
+    "intent": [],
+    "judge_model": null,
+    "trace_url": "https://us.cloud.langfuse.com/project/cmtzwzchp05arad0ch8y5vgzw/traces/3f40a8e7e508e601aa78206763687a8e"
+  }
+}

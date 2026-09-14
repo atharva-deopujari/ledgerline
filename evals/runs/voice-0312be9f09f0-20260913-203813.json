@@ -1,0 +1,223 @@
+{
+  "scenario": "voice-0312be9f09f0",
+  "source": "voice",
+  "session_id": "0312be9f09f0",
+  "prompt_version": "v1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-13",
+  "turns": [
+    {
+      "role": "user",
+      "text": "I have",
+      "finalisations": [
+        "I have"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "20,000 in cash and",
+      "finalisations": [
+        "20,000 in cash and"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "20,000 in bank balance.",
+      "finalisations": [
+        "20,000 in bank balance."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Twenty thousand rupees is in your bank balance. What income do you expect between today and the twelfth of October?",
+      "tool_calls": [
+        {
+          "id": "call_JWMMhV8IlplJhE4yQnALOwxS",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "opening balance",
+            "amount": 20000
+          },
+          "result": "recorded opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nblocked: income"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 4,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T15:07:01.585609+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 4.315,
+        "first_token_from_turn_start": 4.315,
+        "first_audio": 2.397,
+        "first_audio_from_turn_start": 2.397
+      }
+    },
+    {
+      "role": "user",
+      "text": "Is",
+      "finalisations": [
+        "Is"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "on",
+      "finalisations": [
+        "on"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "September 18.",
+      "finalisations": [
+        "September 18."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "What income arrives on the eighteenth of September?",
+      "tool_calls": [],
+      "event_order": [
+        "message"
+      ],
+      "completions": 3,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T15:07:19.325820+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 1.891,
+        "first_token_from_turn_start": 1.891,
+        "first_audio": 2.399,
+        "first_audio_from_turn_start": 2.399
+      }
+    },
+    {
+      "role": "user",
+      "text": "Nothing.",
+      "finalisations": [
+        "Nothing."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "There\u2019s no income expected. What expenses or payments will go out before the twelfth of October?",
+      "tool_calls": [
+        {
+          "id": "call_YLeAEetW4I3Gz8TtClLxut2H",
+          "name": "mark_unknown",
+          "args": {
+            "field": "income",
+            "not_applicable": true
+          },
+          "result": "none: income\nin 0, out 0, lowest 20,000 on 13 September\nsurplus 20,000, shortfall 0\nready to plan; if you have not yet asked whether anything else goes out this month, ask once, then finalize_plan"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T15:07:44.927013+00:00",
+        "user_speaking_secs": 12.791,
+        "first_token": 4.038,
+        "first_token_from_turn_start": 16.828,
+        "first_audio": 2.022,
+        "first_audio_from_turn_start": 14.812
+      }
+    },
+    {
+      "role": "user",
+      "text": "My rent is",
+      "finalisations": [
+        "My rent is"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "11,000 rupees.",
+      "finalisations": [
+        "11,000 rupees."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Rent is eleven thousand rupees. What day of the month is it due?",
+      "tool_calls": [
+        {
+          "id": "call_2Z0KoaZYPV3CpcskCSKCOrs1",
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "amount": 11000,
+            "day_of_month": null,
+            "spread": false,
+            "survival": true
+          },
+          "result": "recorded rent 11,000; say this back, then ask\nin 0, out 11,000, lowest 9,000 on 12 October\nsurplus 9,000, shortfall 0\nmissing: rent due date"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 3,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T15:08:01.507036+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 4.503,
+        "first_token_from_turn_start": 4.503,
+        "first_audio": 2.135,
+        "first_audio_from_turn_start": 2.135
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-13",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "incomes": [],
+    "debts": [],
+    "essentials": [
+      {
+        "name": "rent",
+        "notes": "",
+        "carried": false,
+        "amount": "11000.00",
+        "due_date": null,
+        "spread": false,
+        "survival": true
+      }
+    ],
+    "optionals": [],
+    "unknowns": [
+      {
+        "field": "income",
+        "reason": "not_applicable"
+      }
+    ],
+    "understood": false,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 4
+  },
+  "plan_final": false,
+  "cards_versions": [
+    1,
+    2,
+    3
+  ],
+  "ended_by": "client",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  }
+}

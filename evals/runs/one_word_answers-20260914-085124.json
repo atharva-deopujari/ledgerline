@@ -1,0 +1,284 @@
+{
+ "scenario": "one_word_answers",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m here to help you get through the next thirty days. What money do you expect to come in between 11 September and 10 October, and when will it arrive?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "38000 rupees on day 30."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted 38,000 rupees arriving on 30 September. How much money is in your account today?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "salary",
+      "amount": 38000,
+      "when": "day 30",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted salary 38,000 on 30 Sep\nrecorded: money coming in\nnot mentioned yet: money in the account, bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "6000 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted 6,000 rupees in your account today. What bills or payments are due before 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "cash in account",
+      "amount": 6000,
+      "when": "today",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 6,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account, money coming in\nnot mentioned yet: bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "2000 rupees on day 15."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted a 2,000-rupee bill due on 15 September. Do you have any loans or credit cards with payments due in this period?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "bill",
+      "amount": 2000,
+      "when": "day 15",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted bill 2,000 on 15 Sep\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "Understood. What do you expect to spend on everyday needs, such as food, travel, phone, or shopping, before 10 October?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "loans or cards",
+      "about": "loans or card payments"
+     },
+     "result": "none: loans or cards\nrecorded: money in the account, money coming in, bills\nnone: loans or cards\nnot mentioned yet: everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "September."
+  },
+  {
+   "role": "assistant",
+   "text": "Do you mean your everyday spending for September? If so, roughly how much will you need, and on what dates?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Nothing."
+  },
+  {
+   "role": "assistant",
+   "text": "Here\u2019s the month. You have 6,000 rupees now. Your 2,000-rupee bill is due on 15 September, leaving 4,000 rupees at the lowest point. Your salary of 38,000 rupees arrives on 30 September. You finish the period with 42,000 rupees, and every payment is covered in full. Does that plan make sense to you?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "everyday spending",
+      "about": "everyday spending"
+     },
+     "result": "none: everyday spending\nrecorded: money in the account, money coming in, bills\nnone: loans or cards, everyday spending\nevery category has been asked about"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills\nnone: loans or cards, everyday spending\nevery category has been asked about\nin the account now 6,000\nmoney coming in: salary 38,000 on 30 September\nbills: bill 2,000 on 15 September\nin 38,000, out 2,000, in minus out 36,000\nopening 6,000, closing 42,000\nsurplus 42,000, shortfall 0\nlow point 4,000 on 15 September: opening 6,000, bill -2,000 on 15 September = 4,000\nafter that: salary +38,000 on 30 September = closing 42,000\nnothing to do: every payment is covered in full"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It does."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "User confirmed the plan makes sense"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "6000.00",
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "carried": false,
+    "amount": "38000.00",
+    "date": "2026-09-30",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [],
+  "essentials": [
+   {
+    "name": "bill",
+    "notes": "",
+    "carried": false,
+    "amount": "2000.00",
+    "due_date": "2026-09-15",
+    "spread": false,
+    "survival": false
+   }
+  ],
+  "optionals": [],
+  "unknowns": [
+   {
+    "field": "debt",
+    "reason": "not_applicable"
+   },
+   {
+    "field": "optional",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": false,
+  "call_ended": true,
+  "turn": 8
+ },
+ "hidden_facts": {
+  "opening_balance": "6000",
+  "incomes": [
+   {
+    "name": "fares",
+    "amount": "38000",
+    "day": 30
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "9000",
+    "day": 5
+   },
+   {
+    "name": "groceries",
+    "amount": "7000"
+   }
+  ],
+  "debts": [
+   {
+    "name": "phone emi",
+    "amount": "2000",
+    "day": 15,
+    "debt_kind": "unsecured_emi"
+   }
+  ],
+  "optionals": [
+   {
+    "name": "cable tv",
+    "amount": "400"
+   }
+  ],
+  "notes": [
+   "The fares add up and I take them home at the end of the month."
+  ]
+ },
+ "carried": [],
+ "plan_final": false,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7
+ ],
+ "usage": {
+  "input_tokens": 26491,
+  "output_tokens": 587
+ }
+}

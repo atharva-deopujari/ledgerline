@@ -1,0 +1,415 @@
+{
+ "scenario": "fragmented_balance",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m here to help you plan the next thirty days, through 10 October. Let\u2019s start with what money you have available today. How much is in your account or cash in hand?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have"
+  },
+  {
+   "role": "user",
+   "text": "20,000 in cash and"
+  },
+  {
+   "role": "user",
+   "text": "20,000 in bank balance."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted 20,000 rupees in cash and 20,000 rupees in the bank, so 40,000 rupees available today. What money is likely to come in before 10 October, and when?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "cash in hand",
+      "amount": 20000,
+      "when": "today",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account\nnot mentioned yet: money coming in, bills, loans or cards, everyday spending"
+    },
+    {
+     "name": "note",
+     "args": {
+      "item": "bank balance",
+      "amount": 20000,
+      "when": "today",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "opening balance 20,000 before, now 40,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account\nnot mentioned yet: money coming in, bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent is"
+  },
+  {
+   "role": "user",
+   "text": "eleven thousand"
+  },
+  {
+   "role": "user",
+   "text": "rupees, due on the eighteenth."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your rent of 11,000 rupees, due on 18 September. What other fixed bills, loan payments, or credit card dues are due in this period?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 11000,
+      "when": "18 September",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent 11,000 on 18 Sep\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have a credit card payment of 3,000 rupees due on the twentieth."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted the credit card payment of 3,000 rupees, due on 20 September. Is 3,000 rupees the full card balance or the minimum payment? And are there any other bills or payments due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "credit card payment",
+      "amount": 3000,
+      "when": "20 September",
+      "kind": "loan or card",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted credit card payment 3,000 on 20 Sep\nrecorded: money in the account, bills, loans or cards\nnot mentioned yet: money coming in, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The minimum payment is 1,200 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted the minimum payment as 1,200 rupees, with 3,000 rupees due on 20 September. What do you usually need for food, travel, medicines, and other daily spending through 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "credit card payment",
+      "amount": 3000,
+      "when": "20 September",
+      "kind": "loan or card",
+      "might_not_arrive": false,
+      "minimum_due": 1200,
+      "must_pay": true
+     },
+     "result": "noted credit card payment minimum 1,200\nrecorded: money in the account, bills, loans or cards\nnot mentioned yet: money coming in, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I need 6,000 rupees for groceries, spread over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted 6,000 rupees for groceries, spread through the month. What about transport, medicines, phone, utilities, or any other regular spending?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "groceries",
+      "amount": 6000,
+      "when": "spread through the month",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted groceries 6,000\nrecorded: money in the account, bills, loans or cards, everyday spending\nnot mentioned yet: money coming in"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I don\u2019t have those expenses."
+  },
+  {
+   "role": "assistant",
+   "text": "Understood. I\u2019ve noted that you have no other regular spending. Is any money coming in before 10 October, such as salary or other income?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "everyday spending",
+      "about": "transport, medicines, phone, utilities, and other regular spending"
+     },
+     "result": "none: everyday spending\nrecorded: money in the account, bills, loans or cards, everyday spending\nnot mentioned yet: money coming in"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My salary of 45,000 rupees arrives on the first of next month."
+  },
+  {
+   "role": "assistant",
+   "text": "Your month is covered. You have 40,000 rupees now. Your salary of 45,000 rupees arrives on 1 October. Your rent is 11,000 rupees on 18 September, the full card payment is 3,000 rupees on 20 September, and groceries are 6,000 rupees.\n\nThe lowest point is 22,000 rupees on 30 September. After your salary arrives, you finish the period with 65,000 rupees. Every payment is covered in full. Would you like to pay the full 3,000 rupees on the card, or only the 1,200-rupee minimum?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "salary",
+      "amount": 45000,
+      "when": "1 October",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted salary 45,000 on 1 Oct\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 40,000\nmoney coming in: salary 45,000 on 1 October\nbills: rent 11,000 on 18 September\nloans or cards: credit card payment 3,000 on 20 September minimum 1,200\neveryday spending: groceries 6,000\nin 45,000, out 20,000, in minus out 25,000\nopening 40,000, closing 65,000\nsurplus 65,000, shortfall 0\nlow point 22,000 on 30 September: opening 40,000, rent -11,000 on 18 September, credit card payment balance -1,800 on 20 September, credit card payment minimum due -1,200 on 20 September, groceries -4,000 by 30 September = 22,000\nafter that: salary +45,000 on 1 October, groceries -2,000 on 10 October = closing 65,000\nnothing to do: every payment is covered in full"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I\u2019d like to pay the full 3,000 rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ll test paying the credit card in full. It\u2019s already recorded as 3,000 rupees. Does the plan make sense to you: pay the full 3,000 rupees on 20 September, pay 11,000 rupees rent on 18 September, and reserve 6,000 rupees for groceries?",
+   "tool_calls": [
+    {
+     "name": "what_if",
+     "args": {
+      "changes": [
+       "pay the credit card in full, 3,000 rupees"
+      ]
+     },
+     "result": "I can try: 'skip <item>', 'pay <card> in full', 'move <item> to the 10th', '<item> is 4,000'. Send each change in those words."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, it does."
+  },
+  {
+   "role": "assistant",
+   "text": "All set. Your plan is final, and every payment is covered. Goodbye.",
+   "tool_calls": [
+    {
+     "name": "show_month",
+     "args": {
+      "final": true
+     },
+     "result": "plan final\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 40,000\nmoney coming in: salary 45,000 on 1 October\nbills: rent 11,000 on 18 September\nloans or cards: credit card payment 3,000 on 20 September minimum 1,200\neveryday spending: groceries 6,000\nin 45,000, out 20,000, in minus out 25,000\nopening 40,000, closing 65,000\nsurplus 65,000, shortfall 0\nlow point 22,000 on 30 September: opening 40,000, rent -11,000 on 18 September, credit card payment balance -1,800 on 20 September, credit card payment minimum due -1,200 on 20 September, groceries -4,000 by 30 September = 22,000\nafter that: salary +45,000 on 1 October, groceries -2,000 on 10 October = closing 65,000\nnothing to do: every payment is covered in full"
+    },
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "plan agreed and finalised"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "40000.00",
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "carried": false,
+    "amount": "45000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card payment",
+    "notes": "",
+    "carried": false,
+    "kind": "credit_card",
+    "amount_due": "3000.00",
+    "min_due": "1200.00",
+    "due_date": "2026-09-20",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "11000.00",
+    "due_date": "2026-09-18",
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "groceries",
+    "notes": "",
+    "carried": false,
+    "amount": "6000.00",
+    "date": null,
+    "flexible": false
+   }
+  ],
+  "unknowns": [
+   {
+    "field": "optional",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 10
+ },
+ "hidden_facts": {
+  "opening_balance": "40000",
+  "incomes": [
+   {
+    "name": "salary",
+    "amount": "45000",
+    "day": 1
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "11000",
+    "day": 18
+   },
+   {
+    "name": "groceries",
+    "amount": "6000"
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card",
+    "amount": "3000",
+    "day": 20,
+    "debt_kind": "credit_card",
+    "min_due": "1200"
+   }
+  ],
+  "optionals": [
+   {
+    "name": "gym",
+    "amount": "1500"
+   }
+  ],
+  "notes": [
+   "The salary lands on the first of next month."
+  ]
+ },
+ "carried": [],
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11
+ ],
+ "usage": {
+  "input_tokens": 52869,
+  "output_tokens": 1151
+ }
+}

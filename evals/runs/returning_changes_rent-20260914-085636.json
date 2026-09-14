@@ -1,0 +1,266 @@
+{
+ "scenario": "returning_changes_rent",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hello. Let\u2019s get your next thirty days clear. I have your salary of forty-five thousand rupees on the first, rent of twelve thousand rupees on the fifth, and bike EMI of three thousand four hundred rupees on the twelfth.\n\nWhat money do you have in your account today?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Eighteen thousand rupees."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted eighteen thousand rupees in your account today.\n\nWhat do you usually spend on food, travel, and other day-to-day needs?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "money in the account",
+      "amount": 18000,
+      "when": "today, 11 September",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 18,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The rent went up. It is fourteen thousand now."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve updated the rent to fourteen thousand rupees. Is it due on the fifth of each month?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 14000,
+      "when": "the fifth",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "rent 12,000 before, now 14,000\nrent survival: now survival\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending\nno date yet: 'the fifth' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The rest is the same."
+  },
+  {
+   "role": "assistant",
+   "text": "Understood. Everything else is unchanged. What do you usually spend on food, travel, and other day-to-day needs?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "changes",
+      "about": "everything is the same as last time"
+     },
+     "result": "none: \nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I don\u2019t have that one."
+  },
+  {
+   "role": "assistant",
+   "text": "Your next thirty days are covered. You have eighteen thousand rupees now. The bike EMI is three thousand four hundred rupees on 12 September. Your salary is forty-five thousand rupees on 1 October, and rent is fourteen thousand rupees on 5 October.\n\nYour lowest point is fourteen thousand six hundred rupees on 12 September, after the bike EMI. After salary and rent, you finish with forty-five thousand six hundred rupees. Every payment is covered in full.\n\nDoes this plan make sense to you?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "everyday spending",
+      "about": "no everyday spending"
+     },
+     "result": "none: everyday spending\nrecorded: money in the account, money coming in, bills, loans or cards\nnone: everyday spending\nevery category has been asked about"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills, loans or cards\nnone: everyday spending\nevery category has been asked about\nin the account now 18,000\nmoney coming in: salary 45,000 on 1 October\nbills: rent 14,000 on 5 October\nloans or cards: bike emi 3,400 on 12 September\nin 45,000, out 17,400, in minus out 27,600\nopening 18,000, closing 45,600\nsurplus 45,600, shortfall 0\nlow point 14,600 on 12 September: opening 18,000, bike emi -3,400 on 12 September = 14,600\nafter that: salary +45,000 on 1 October, rent -14,000 on 5 October = closing 45,600\nnothing to do: every payment is covered in full"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, it does."
+  },
+  {
+   "role": "assistant",
+   "text": "You\u2019re all set. Goodbye.",
+   "tool_calls": [
+    {
+     "name": "show_month",
+     "args": {
+      "final": true
+     },
+     "result": "plan final\nrecorded: money in the account, money coming in, bills, loans or cards\nnone: everyday spending\nevery category has been asked about\nin the account now 18,000\nmoney coming in: salary 45,000 on 1 October\nbills: rent 14,000 on 5 October\nloans or cards: bike emi 3,400 on 12 September\nin 45,000, out 17,400, in minus out 27,600\nopening 18,000, closing 45,600\nsurplus 45,600, shortfall 0\nlow point 14,600 on 12 September: opening 18,000, bike emi -3,400 on 12 September = 14,600\nafter that: salary +45,000 on 1 October, rent -14,000 on 5 October = closing 45,600\nnothing to do: every payment is covered in full"
+    },
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "plan agreed and understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "18000.00",
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "carried": false,
+    "amount": "45000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike emi",
+    "notes": "",
+    "carried": false,
+    "kind": "secured_emi",
+    "amount_due": "3400.00",
+    "min_due": null,
+    "due_date": "2026-09-12",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "14000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [],
+  "unknowns": [
+   {
+    "field": "optional",
+    "reason": "not_applicable"
+   }
+  ],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 6
+ },
+ "hidden_facts": {
+  "opening_balance": "18000",
+  "incomes": [
+   {
+    "name": "salary",
+    "amount": "45000",
+    "day": 1
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "14000",
+    "day": 5
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike emi",
+    "amount": "3400",
+    "day": 12,
+    "debt_kind": "secured_emi"
+   }
+  ],
+  "optionals": [],
+  "notes": [
+   "The rent went up to fourteen thousand this month; everything else is unchanged."
+  ]
+ },
+ "carried": [
+  [
+   "rent",
+   "12,000 on the 5th"
+  ],
+  [
+   "salary",
+   "45,000 on the 1st"
+  ],
+  [
+   "bike emi",
+   "3,400 on the 12th"
+  ]
+ ],
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7
+ ],
+ "usage": {
+  "input_tokens": 24077,
+  "output_tokens": 529
+ }
+}

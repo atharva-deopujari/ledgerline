@@ -1,0 +1,453 @@
+{
+ "scenario": "correction_and_conflict",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m here to help you plan the next thirty days. Let\u2019s start with money you have today. How much is in your account or cash in hand?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have fifteen thousand rupees in the account right now."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted fifteen thousand rupees in the account today. What money, if any, do you expect to come in before 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "money in the account",
+      "amount": 15000,
+      "when": "today, 11 September",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 15,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account\nnot mentioned yet: money coming in, bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My rent is twelve thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted your rent as twelve thousand rupees. Which day is it due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 12000,
+      "when": "not mentioned yet",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent 12,000\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending\nno date yet: 'not mentioned yet' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Actually, the rent is fourteen thousand, not twelve."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve updated the rent to fourteen thousand rupees. Which day is it due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 14000,
+      "when": "not mentioned yet",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "rent 12,000 before, now 14,000\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending\nno date yet: 'not mentioned yet' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It\u2019s due on the fifth of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted rent of fourteen thousand rupees, due on 5 October. Do you expect any money to come in before then?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 14000,
+      "when": "the 5th of the month",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent on 5 Oct\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My electricity bill is two thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted the electricity bill as two thousand rupees. When is it due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "electricity bill",
+      "amount": 2000,
+      "when": "not mentioned yet",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted electricity bill 2,000\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending\nno date yet: 'not mentioned yet' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The electricity is three thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve updated the electricity bill to three thousand rupees. When is it due?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "electricity bill",
+      "amount": 3000,
+      "when": "not mentioned yet",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "electricity bill 2,000 before, now 3,000\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending\nno date yet: 'not mentioned yet' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I do not know."
+  },
+  {
+   "role": "assistant",
+   "text": "Okay, I\u2019ll leave the electricity due date unknown. Do you have any loans or credit cards with payments due?",
+   "tool_calls": [
+    {
+     "name": "nothing_more",
+     "args": {
+      "of": "changes",
+      "about": "the electricity bill due date"
+     },
+     "result": "none: \nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I have a machine loan payment of six thousand rupees due on the twelfth."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted the machine loan payment of six thousand rupees, due on 12 September. What money do you expect to come in during this period?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "machine loan payment",
+      "amount": 6000,
+      "when": "the 12th of the month",
+      "kind": "loan or card",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted machine loan payment 6,000 on 12 Sep\nrecorded: money in the account, bills, loans or cards\nnot mentioned yet: money coming in, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The shop brings in fifty thousand rupees on the tenth of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted fifty thousand rupees from the shop, due on 10 October. What do you usually spend on everyday things like food, travel, and medicines?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "shop income",
+      "amount": 50000,
+      "when": "the 10th of the month",
+      "kind": "money coming in",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted shop income 50,000 on 10 Oct\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Groceries are about seven thousand rupees spread over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Here\u2019s where the month stands. You have fifteen thousand rupees now. The shop brings in fifty thousand rupees on 10 October.\n\nYour machine loan of six thousand rupees is due on 12 September. Rent is fourteen thousand rupees on 5 October. Electricity is three thousand rupees, with no due date, and groceries are seven thousand rupees spread through the month.\n\nThe timing is tight. The lowest point is negative four hundred and fifty-seven rupees on 9 October. Rent is short by twelve thousand nine hundred and ninety-two rupees on 5 October. Electricity is short by two hundred rupees from 8 October. The shop money arrives on 10 October.\n\nYou could ask the landlord for a few extra days or split the rent, and ask the electricity provider for a few days or a split payment. Would you like to use that plan?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "groceries",
+      "amount": 7000,
+      "when": "spread through the month",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted groceries 7,000\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 15,000\nmoney coming in: shop income 50,000 on 10 October\nbills: rent 14,000 on 5 October; electricity bill 3,000\nloans or cards: machine loan payment 6,000 on 12 September\neveryday spending: groceries 7,000\ntiming shortfall, the money is there but the dates do not line up\nin 50,000, out 15,800, in minus out 34,200\nopening 15,000, closing 49,200\nsurplus 49,200, shortfall 0\nunpaid total 14,200\n2 days below zero\nlow point -457 on 9 October: opening 15,000, machine loan payment -6,000 on 12 September, electricity bill -2,700 by 7 October, groceries -6,757 by 9 October = -457\nafter that: electricity bill -100 on 10 October, groceries -243 on 10 October, shop income +50,000 on 10 October = closing 49,200\nwhat they could do: On 5 October you are 12,992 short for rent. The money is not there until 10 October. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nFrom 8 October there is not enough for electricity bill; 200 of 3,000 is not covered this month. The money is not there until 10 October. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nunpaid rent 14,000 due 5 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nunpaid electricity bill 200 due 8 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nnote: electricity bill has no date; spread across the month"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, that makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye. Take care.",
+   "tool_calls": [
+    {
+     "name": "show_month",
+     "args": {
+      "final": true
+     },
+     "result": "plan final\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 15,000\nmoney coming in: shop income 50,000 on 10 October\nbills: rent 14,000 on 5 October; electricity bill 3,000\nloans or cards: machine loan payment 6,000 on 12 September\neveryday spending: groceries 7,000\ntiming shortfall, the money is there but the dates do not line up\nin 50,000, out 15,800, in minus out 34,200\nopening 15,000, closing 49,200\nsurplus 49,200, shortfall 0\nunpaid total 14,200\n2 days below zero\nlow point -457 on 9 October: opening 15,000, machine loan payment -6,000 on 12 September, electricity bill -2,700 by 7 October, groceries -6,757 by 9 October = -457\nafter that: electricity bill -100 on 10 October, groceries -243 on 10 October, shop income +50,000 on 10 October = closing 49,200\nwhat they could do: On 5 October you are 12,992 short for rent. The money is not there until 10 October. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nFrom 8 October there is not enough for electricity bill; 200 of 3,000 is not covered this month. The money is not there until 10 October. You could ask the provider for a few more days or to split the bill, and buy only what you need until the money lands (Skip this and the food or the power goes, and getting reconnected costs more than the bill did)\nunpaid rent 14,000 due 5 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nunpaid electricity bill 200 due 8 October, Skip this and the food or the power goes, and getting reconnected costs more than the bill did\nnote: electricity bill has no date; spread across the month"
+    },
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "plan agreed"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "15000.00",
+  "incomes": [
+   {
+    "name": "shop income",
+    "notes": "",
+    "carried": false,
+    "amount": "50000.00",
+    "date": "2026-10-10",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "machine loan payment",
+    "notes": "",
+    "carried": false,
+    "kind": "unsecured_emi",
+    "amount_due": "6000.00",
+    "min_due": null,
+    "due_date": "2026-09-12",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "14000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   },
+   {
+    "name": "electricity bill",
+    "notes": "",
+    "carried": false,
+    "amount": "3000.00",
+    "due_date": null,
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "groceries",
+    "notes": "",
+    "carried": false,
+    "amount": "7000.00",
+    "date": null,
+    "flexible": false
+   }
+  ],
+  "unknowns": [],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 12
+ },
+ "hidden_facts": {
+  "opening_balance": "15000",
+  "incomes": [
+   {
+    "name": "shop income",
+    "amount": "50000",
+    "day": 10
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "14000",
+    "day": 5
+   },
+   {
+    "name": "electricity",
+    "amount": "3000",
+    "day": 20
+   },
+   {
+    "name": "groceries",
+    "amount": "7000"
+   }
+  ],
+  "debts": [
+   {
+    "name": "machine loan",
+    "amount": "6000",
+    "day": 12,
+    "debt_kind": "secured_emi"
+   }
+  ],
+  "optionals": [
+   {
+    "name": "newspaper",
+    "amount": "300"
+   }
+  ],
+  "notes": [
+   "The shop money comes in around the tenth of the month."
+  ]
+ },
+ "carried": [],
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13
+ ],
+ "usage": {
+  "input_tokens": 59995,
+  "output_tokens": 1139
+ }
+}

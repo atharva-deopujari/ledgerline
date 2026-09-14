@@ -1,0 +1,295 @@
+{
+ "scenario": "returning_changes_rent",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline. Does the rent of twelve thousand rupees on the fifth, salary of forty-five thousand rupees on the first, and bike EMI of three thousand four hundred rupees on the twelfth all still hold?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The rent is now fourteen thousand rupees on the fifth. My salary and bike EMI are unchanged."
+  },
+  {
+   "role": "assistant",
+   "text": "Rent: fourteen thousand rupees on the fifth. Is that the correct rent, or is twelve thousand rupees correct?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 14000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "carried from last call: rent 12,000 on the 5th, salary 45,000 on the 1st, bike emi 3,400 on the 12th; say each back, then ask whether all still hold, confirm or change each before the plan\nrent: 12,000 -> 14,000; confirm which is right before moving on\nblocked: opening balance\nmissing: opening balance"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The rent went up. It is fourteen thousand now."
+  },
+  {
+   "role": "assistant",
+   "text": "What\u2019s your balance today, in rupees?",
+   "tool_calls": [
+    {
+     "name": "confirm_carried",
+     "args": {
+      "names": "salary, bike EMI"
+     },
+     "result": "not known: \nblocked: opening balance\nmissing: opening balance"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The rest is the same."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ll plan without today\u2019s balance. Are there any other essential costs in the next thirty days, such as food, utilities, or medicine?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "opening_balance",
+      "not_applicable": false
+     },
+     "result": "not known: opening balance\nblocked: opening balance\nparked, do not ask again: opening balance"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I do not have those details."
+  },
+  {
+   "role": "assistant",
+   "text": "That\u2019s okay; I\u2019ll leave other essentials unknown. Are there any optional expenses you want included?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential costs: amounts and due dates",
+      "not_applicable": false
+     },
+     "result": "'essential costs: amounts and due dates' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "essential:other.amount",
+      "not_applicable": false
+     },
+     "result": "not known: other amount\nblocked: opening balance\nparked, do not ask again: opening balance"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "No, I don\u2019t have any optional expenses to include."
+  },
+  {
+   "role": "assistant",
+   "text": "I can\u2019t complete the plan without your balance today. Would you like to continue without a plan, or end the call?",
+   "tool_calls": [
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "optional expenses",
+      "not_applicable": true
+     },
+     "result": "'optional expenses' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "mark_unknown",
+     "args": {
+      "field": "optional:none",
+      "not_applicable": true
+     },
+     "result": "'optional:none' is not a field. Name the field as kind:name.attribute, like essential:rent.amount or essential:rent.due_date, or opening_balance. Fix that argument and call the tool again."
+    },
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "blocked: opening balance"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Continue without a plan."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye.",
+   "tool_calls": [
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "person chose to continue without a plan"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": null,
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "carried": false,
+    "amount": "45000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike emi",
+    "notes": "",
+    "carried": false,
+    "kind": "secured_emi",
+    "amount_due": "3400.00",
+    "min_due": null,
+    "due_date": "2026-09-12",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "14000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": false
+   }
+  ],
+  "optionals": [],
+  "unknowns": [
+   {
+    "field": "opening_balance",
+    "reason": "unknown"
+   },
+   {
+    "field": "essential:other.amount",
+    "reason": "unknown"
+   }
+  ],
+  "understood": false,
+  "plan_final": false,
+  "call_ended": true,
+  "turn": 7
+ },
+ "hidden_facts": {
+  "opening_balance": "18000",
+  "incomes": [
+   {
+    "name": "salary",
+    "amount": "45000",
+    "day": 1
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "14000",
+    "day": 5
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike emi",
+    "amount": "3400",
+    "day": 12,
+    "debt_kind": "secured_emi"
+   }
+  ],
+  "optionals": [],
+  "notes": [
+   "The rent went up to fourteen thousand this month; everything else is unchanged."
+  ]
+ },
+ "carried": [
+  [
+   "rent",
+   "12,000 on the 5th"
+  ],
+  [
+   "salary",
+   "45,000 on the 1st"
+  ],
+  [
+   "bike emi",
+   "3,400 on the 12th"
+  ]
+ ],
+ "plan_final": false,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "usage": {
+  "input_tokens": 37083,
+  "output_tokens": 517
+ }
+}

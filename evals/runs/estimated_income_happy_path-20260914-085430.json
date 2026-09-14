@@ -1,0 +1,394 @@
+{
+ "scenario": "estimated_income_happy_path",
+ "prompt_version": "v2",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m here to help you get through the next thirty days. What money do you expect to come in between 11 September and 10 October, and when?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I expect around forty thousand rupees from a client, usually around the twentieth of September. It isn\u2019t certain."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted the client payment as around forty thousand rupees, and uncertain. When it does arrive, is it usually on one particular day, or spread through the month?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "client payment",
+      "amount": 40000,
+      "when": "around the twentieth of September",
+      "kind": "money coming in",
+      "might_not_arrive": true,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted client payment 40,000\nrecorded: money coming in\nnot mentioned yet: money in the account, bills, loans or cards, everyday spending\nno date yet: 'around the twentieth of September' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It's around forty thousand, I think. Nothing is confirmed."
+  },
+  {
+   "role": "assistant",
+   "text": "Understood. I\u2019ll treat it as uncertain. Is there any money already in your account today that you\u2019ll use during this period?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "client payment",
+      "amount": 40000,
+      "when": "around the twentieth of September",
+      "kind": "money coming in",
+      "might_not_arrive": true,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "unchanged client payment\nrecorded: money coming in\nnot mentioned yet: money in the account, bills, loans or cards, everyday spending\nno date yet: 'around the twentieth of September' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, there\u2019s eighteen thousand rupees in my account right now."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted eighteen thousand rupees in your account today. What bills or payments must go out before 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "money in account",
+      "amount": 18000,
+      "when": "today, 11 September",
+      "kind": "balance",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": null
+     },
+     "result": "noted opening balance 18,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account, money coming in\nnot mentioned yet: bills, loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Rent of thirteen thousand rupees is due on the fifth."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted rent of thirteen thousand rupees as essential. Is that the fifth of October, or another month?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 13000,
+      "when": "the fifth",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent 13,000\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending\nno date yet: 'the fifth' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It\u2019s due on the fifth of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted rent of thirteen thousand rupees due on 5 October. Do you have any loans or credit cards, including payments or minimum dues, during this period?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "rent",
+      "amount": 13000,
+      "when": "the fifth of each month, next due 5 October",
+      "kind": "bill",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted rent on 5 Oct\nrecorded: money in the account, money coming in, bills\nnot mentioned yet: loans or cards, everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, I have a credit card payment of five thousand rupees due on the fifteenth, with a minimum due of fifteen hundred."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted the card payment as five thousand rupees, with a minimum of fifteen hundred rupees. Is that due on 15 September or 15 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "credit card payment",
+      "amount": 5000,
+      "when": "the fifteenth",
+      "kind": "loan or card",
+      "might_not_arrive": false,
+      "minimum_due": 1500,
+      "must_pay": false
+     },
+     "result": "noted credit card payment 5,000 minimum 1,500\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending\nno date yet: 'the fifteenth' could be several days and a day moves money. Ask which day of the month it is, or whether it is spread through the month."
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "It\u2019s due on the fifteenth of the month."
+  },
+  {
+   "role": "assistant",
+   "text": "I\u2019ve noted the card payment of five thousand rupees due on 15 September, with a minimum of fifteen hundred. What do you expect to spend on everyday needs such as food, transport, and medicines through 10 October?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "credit card payment",
+      "amount": 5000,
+      "when": "the fifteenth of each month, next due 15 September",
+      "kind": "loan or card",
+      "might_not_arrive": false,
+      "minimum_due": 1500,
+      "must_pay": false
+     },
+     "result": "noted credit card payment on 15 Sep\nrecorded: money in the account, money coming in, bills, loans or cards\nnot mentioned yet: everyday spending"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I expect groceries to cost around six thousand rupees over the month."
+  },
+  {
+   "role": "assistant",
+   "text": "Here\u2019s where you stand without relying on the uncertain client payment. You have eighteen thousand rupees now. The card payment is five thousand rupees on 15 September, rent is thirteen thousand rupees on 5 October, and groceries are about six thousand rupees through 10 October.\n\nPaying the card in full and rent would use all eighteen thousand rupees, leaving nothing for groceries. Paying only the card\u2019s minimum of fifteen hundred rupees leaves three thousand five hundred rupees after that payment, but rent still uses thirteen thousand rupees, so groceries remain uncovered.\n\nThe safest option is to pay the card minimum, protect rent, and only buy groceries as money allows. The client payment could change this, but it is not confirmed. Does that plan make sense to you?",
+   "tool_calls": [
+    {
+     "name": "note",
+     "args": {
+      "item": "groceries",
+      "amount": 6000,
+      "when": "over the month through 10 October",
+      "kind": "everyday spending",
+      "might_not_arrive": false,
+      "minimum_due": null,
+      "must_pay": true
+     },
+     "result": "noted groceries 6,000 on 10 Oct\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about"
+    },
+    {
+     "name": "show_month",
+     "args": {
+      "final": false
+     },
+     "result": "recorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 18,000\nmoney coming in: client payment 40,000 uncertain, not counted as money until it arrives\nbills: rent 13,000 on 5 October\nloans or cards: credit card payment 5,000 on 15 September minimum 1,500\neveryday spending: groceries 6,000 on 10 October\nstructural shortfall, more goes out than comes in\nin 0, out 18,000, in minus out -18,000\nopening 18,000, closing 0\nsurplus 0, shortfall 0\nlow point 0 on 5 October: opening 18,000, credit card payment balance -3,500 on 15 September, credit card payment minimum due -1,500 on 15 September, rent -13,000 on 5 October = 0\nwhat they could do: Drop groceries this month; that keeps 6,000 in the account\nnote: client payment may not arrive, so it is left out of the plan\nleft out of these figures: client payment (40,000 known)"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, that makes sense."
+  },
+  {
+   "role": "assistant",
+   "text": "Goodbye. Take care.",
+   "tool_calls": [
+    {
+     "name": "show_month",
+     "args": {
+      "final": true
+     },
+     "result": "plan final\nrecorded: money in the account, money coming in, bills, loans or cards, everyday spending\nevery category has been asked about\nin the account now 18,000\nmoney coming in: client payment 40,000 uncertain, not counted as money until it arrives\nbills: rent 13,000 on 5 October\nloans or cards: credit card payment 5,000 on 15 September minimum 1,500\neveryday spending: groceries 6,000 on 10 October\nstructural shortfall, more goes out than comes in\nin 0, out 18,000, in minus out -18,000\nopening 18,000, closing 0\nsurplus 0, shortfall 0\nlow point 0 on 5 October: opening 18,000, credit card payment balance -3,500 on 15 September, credit card payment minimum due -1,500 on 15 September, rent -13,000 on 5 October = 0\nwhat they could do: Drop groceries this month; that keeps 6,000 in the account\nnote: client payment may not arrive, so it is left out of the plan\nleft out of these figures: client payment (40,000 known)"
+    },
+    {
+     "name": "done",
+     "args": {
+      "understood": true,
+      "reason": "plan agreed"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye, take care."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "18000.00",
+  "incomes": [
+   {
+    "name": "client payment",
+    "notes": "",
+    "carried": false,
+    "amount": "40000.00",
+    "date": null,
+    "latest_date": null,
+    "certainty": "uncertain"
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card payment",
+    "notes": "",
+    "carried": false,
+    "kind": "credit_card",
+    "amount_due": "5000.00",
+    "min_due": "1500.00",
+    "due_date": "2026-09-15",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "13000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [
+   {
+    "name": "groceries",
+    "notes": "",
+    "carried": false,
+    "amount": "6000.00",
+    "date": "2026-10-10",
+    "flexible": false
+   }
+  ],
+  "unknowns": [],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 10
+ },
+ "hidden_facts": {
+  "opening_balance": "18000",
+  "incomes": [
+   {
+    "name": "client payments",
+    "amount": "40000",
+    "day": 20
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "13000",
+    "day": 5
+   },
+   {
+    "name": "groceries",
+    "amount": "6000"
+   },
+   {
+    "name": "internet",
+    "amount": "1200",
+    "day": 8
+   }
+  ],
+  "debts": [
+   {
+    "name": "credit card",
+    "amount": "5000",
+    "day": 15,
+    "debt_kind": "credit_card",
+    "min_due": "1500"
+   }
+  ],
+  "optionals": [
+   {
+    "name": "yoga class",
+    "amount": "900"
+   }
+  ],
+  "notes": [
+   "The client payments are not certain; they usually land around the twentieth."
+  ]
+ },
+ "carried": [],
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11
+ ],
+ "usage": {
+  "input_tokens": 50153,
+  "output_tokens": 1117
+ }
+}

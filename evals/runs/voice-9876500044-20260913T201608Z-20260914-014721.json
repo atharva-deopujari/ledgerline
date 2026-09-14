@@ -1,0 +1,284 @@
+{
+  "scenario": "voice-9876500044-20260913T201608Z",
+  "source": "voice",
+  "session_id": "9876500044-20260913T201608Z",
+  "prompt_version": "1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-14",
+  "turns": [
+    {
+      "role": "user",
+      "text": "I have",
+      "finalisations": [
+        "I have"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "20,000 in cash",
+      "finalisations": [
+        "20,000 in cash"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "and",
+      "finalisations": [
+        "and"
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "",
+      "tool_calls": [
+        {
+          "id": "call_B4EHJ0pTYkTJbcAwDtyzGHSq",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "opening balance",
+            "amount": 20000
+          },
+          "result": "recorded opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nblocked: income"
+        }
+      ],
+      "event_order": [
+        "function_call"
+      ],
+      "completions": 4,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T20:16:35.649565+00:00",
+        "user_speaking_secs": 0.0,
+        "first_audio": 1.384,
+        "first_audio_from_turn_start": 1.384
+      }
+    },
+    {
+      "role": "user",
+      "text": "20,000 in bank balance.",
+      "finalisations": [
+        "20,000 in bank balance."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "20,000 rupees in your bank balance. What income do you expect between today and the thirteenth of October?",
+      "tool_calls": [
+        {
+          "id": "call_phQPSmliQVefPGKdHpzd9KxY",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "opening balance",
+            "amount": 20000
+          },
+          "result": "unchanged opening balance\nblocked: income"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T20:16:39.109037+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.74,
+        "first_token_from_turn_start": 3.74,
+        "first_audio": 2.064,
+        "first_audio_from_turn_start": 2.064
+      }
+    },
+    {
+      "role": "user",
+      "text": "It is",
+      "finalisations": [
+        "It is"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "on",
+      "finalisations": [
+        "on"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "September 18.",
+      "finalisations": [
+        "September 18."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Go ahead\u2014what income is due on the eighteenth of September?",
+      "tool_calls": [],
+      "event_order": [
+        "message"
+      ],
+      "completions": 4,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T20:16:56.768489+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 7.464,
+        "first_token_from_turn_start": 7.464,
+        "first_audio": 7.925,
+        "first_audio_from_turn_start": 7.925
+      }
+    },
+    {
+      "role": "user",
+      "text": "Yes.",
+      "finalisations": [
+        "Yes."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Is that income due on the eighteenth of September, and what\u2019s the amount?",
+      "tool_calls": [],
+      "event_order": [
+        "message"
+      ],
+      "completions": 1,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T20:17:09.510285+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 1.531,
+        "first_token_from_turn_start": 1.531,
+        "first_audio": 2.056,
+        "first_audio_from_turn_start": 2.056
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-14",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "incomes": [],
+    "debts": [],
+    "essentials": [],
+    "optionals": [],
+    "unknowns": [],
+    "understood": false,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 4
+  },
+  "plan_final": false,
+  "carried": [],
+  "cards_versions": [
+    1,
+    2
+  ],
+  "ended_by": "client",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  },
+  "verdict": {
+    "session_id": "9876500044-20260913T201608Z",
+    "status": "ready",
+    "summary": 0.944,
+    "deterministic": [
+      {
+        "rule": "numbers_traceable",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "state_matches_facts",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "claimed_values_recorded",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "actions_match_plan",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "banned_phrases",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_iso_dates",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_markdown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_spoken_decimals",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_silent_turn",
+        "passed": false,
+        "detail": "called upsert_item, said nothing"
+      },
+      {
+        "rule": "one_question_per_turn",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "silent_before_acting",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "amounts_repeated",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_question_after_unknown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "one_goodbye_with_the_end_call",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "changed_value_acknowledged",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "implausible_amount_confirmed",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "carried_confirmed_before_plan",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_repeated_sentence",
+        "passed": true,
+        "detail": null
+      }
+    ],
+    "intent": [],
+    "judge_model": null,
+    "trace_url": "https://us.cloud.langfuse.com/project/cmtzwzchp05arad0ch8y5vgzw/traces/de5dd811bb1736401c6f0fbf25c74c56"
+  }
+}

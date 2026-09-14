@@ -1310,3 +1310,622 @@ excludes its fix, which is the honest way to read it and the reason it is quoted
 
 The honest limit: this rule judges proposals that name an item. A proposal naming none — "you
 should hold some of that back" — passes, and no rule here can see it.
+
+### 10.6 The intent judge, first calibration · 13 September
+
+Eleven saved runs through the intent judge, stratified to span the scenarios and to include four
+runs whose dispositions this report already records as defects. Roughly $0.33.
+
+**The judge is the coach's own model family at a higher reasoning effort** — `gpt-5.6-luna` at
+effort `medium`, where the coach runs at effort `none`. The owner has since set the judge to
+effort **low**, so the second table below is not a like-for-like re-run: it changes the
+criterion wording, adds two scenarios AND lowers the effort at once. If the numbers move, the
+effort is one of three candidate causes and the table cannot separate them. Only an OpenAI key exists, so a
+different-vendor judge was not available; that is the named upgrade path, and until it is taken
+the self-preference risk is real and unmeasured. The model id and the effort are both supplied by
+the caller, never baked into the package.
+
+| criterion | pass | fail | n/a |
+|---|---|---|---|
+| register_fit | 11 | 0 | 0 |
+| close_leaves_them_free | 11 | 0 | 0 |
+| explanation_comprehensible | 2 | 9 | 0 |
+| actions_are_the_right_two | 4 | 6 | 1 |
+| questions_purposeful | 8 | 3 | 0 |
+| corrections_handled | 3 | 1 | 2 |
+
+**No criterion is ready to gate anything**, and the table says why in three different ways.
+
+**Two criteria never fired.** `register_fit` and `close_leaves_them_free` passed all eleven. Those
+are the two prompt rules §9 named as the first the judge should take over, precisely because they
+have named failure cases and no possible deterministic check — and this sample contains no run
+where either could fail. A criterion that has not failed once is measuring nothing yet, by the
+same rule this repo applies to every other check. They need the adversarial scenarios §9 already
+asks for: one that forces register mirroring, one that forces a steered close.
+
+**One criterion failed almost everything, including runs read as clean.**
+`explanation_comprehensible` failed 9 of 11, and its reasons are consistent: the coach "did not
+clearly explain what would happen if they did nothing", "omitted the current 9,000-rupee balance",
+"did not explain the full position". Read against the product, that is not a defect report — it is
+the judge marking down a deliberate design decision. The prompt holds replies to one or two short
+sentences, forbids reciting the plan back, and had an explicit rule added after the owner found
+the recite-the-plan design patronising on a real call. The criterion as written asks for a
+completeness the product has chosen not to deliver, so it will fail forever and tell us nothing.
+Either the question encodes the constraint it is judging under, or the criterion goes.
+
+**The judge did not catch the defects it was pointed at.** On the run that spoke an invented
+13,000 shortfall it failed `questions_purposeful`, not anything about the figure. On the run that
+stored 20,000 of the person's 40,000 it failed the explanation and the actions, and said nothing
+about half the money being missing. Only on the invented-actions run did it fail the thing a human
+failed it for. The deterministic layer caught three of those four; the judge caught one as such.
+That is the expected division of labour rather than a surprise — numbers and state are what code
+is for — but it is worth stating plainly, because a judge whose summary score moves on those runs
+could easily be read as having noticed, and it had not.
+
+One thing to be explicit about, because a number invites the wrong reading: **a summary score
+that moves on the 20,000-of-40,000 run must not be read as the judge having noticed.** It had not.
+The deterministic layer is what noticed that one — and in fact did not either, until
+`state_matches_facts` was written; the rules that existed at the time passed it clean. The judge's
+score moved on that run for unrelated reasons.
+
+The eleven, so the re-run is the same sample:
+
+- `correction_and_conflict-20260912-215702` — known defect: spoke an invented 13,000 shortfall
+- `fragmented_balance-20260913-003557` — known defect: invented two actions + 1,800 remainder
+- `one_word_answers-20260912-213637` — known defect: announced two actions the plan never had
+- `fragmented_balance-20260912-220831` — known defect: stored 20,000 of the person's 40,000
+- `fragmented_balance-20260913-004046` — clean after the balance and no-actions fixes
+- `fragmented_balance-20260913-004048` — clean after the fixes
+- `correction_and_conflict-20260912-215646` — clean on every rule
+- `estimated_income_happy_path-20260912-195806`
+- `garbage_opener-20260912-213714` — plan had a real action; explanation correct
+- `one_word_answers-20260912-215522`
+- `stt_implausible_amount-20260912-215844`
+
+What follows: the two never-fired criteria need adversarial scenarios before they mean anything;
+`explanation_comprehensible` needs rewriting against the product's own brevity rule or dropping;
+and a full sweep is not worth its money until those two changes are made, because it would buy
+more of the same 82% failure on one criterion and more unanimous passes on two others.
+
+### 10.7 A pattern worth naming: an obeyed instruction failing an uninformed rule
+
+Three times in this phase a deterministic rule failed a run for doing exactly what a result-carried
+instruction had just told it to do. Each time the instruction was right and the rule was
+incomplete.
+
+| the instruction | the rule it failed | why |
+|---|---|---|
+| `<name> looks small, confirm it before moving on` | `numbers_traceable` | the only useful way to query a figure is to offer the reading the person probably meant — "or did you mean twelve thousand?" — and that figure is in no result |
+| `record any other amount they named before replying, then say the total back` | `changed_value_acknowledged` | the parts adding made the domain report `opening balance: 20,000 -> 40,000`, and the change instruction asked the person to choose between half and all of their own money |
+| `carried from last call: rent 12,000 …; say each back` | `numbers_traceable` | the carried figures reach the model through the greeting's prompt block, where there is no tool result yet to name them |
+
+The shape is the same in all three: **the result-carried lever is strong enough that a correct
+instruction, obeyed, will fail any rule that was not told about it.** That is a property of the
+lever working, not of it misfiring — a model that ignored the instruction would have passed the
+rule. It also means the failures look exactly like defects on first reading, and twice would have
+been "fixed" by weakening the instruction if the transcript had not been opened.
+
+The rule that follows, for anyone adding to this system: **whoever adds an instruction that makes
+a new figure sayable adds its provenance source in the same change.** `provenance.carried_numbers`
+and `checks._offered_readings` are both that rule applied after the fact; there should not be a
+fourth.
+
+### 10.8 The intent judge, second calibration · 13 September
+
+The same eleven runs plus the two adversarial scenarios §9 asked for, at effort `low`. About
+$0.40. Cells are pass/fail/not-applicable.
+
+| criterion | 1: eleven @ medium | 2: same eleven @ low | 2: all thirteen |
+|---|---|---|---|
+| register_fit | 11/0/0 | 11/0/0 | 13/0/0 |
+| close_leaves_them_free | 11/0/0 | 10/1/0 | 12/1/0 |
+| explanation_comprehensible | 2/9/0 | 7/4/0 | 8/4/1 |
+| actions_are_the_right_two | 4/6/1 | 3/6/2 | 3/7/3 |
+| questions_purposeful | 8/3/0 | 8/3/0 | 10/3/0 |
+| corrections_handled | 3/1/2 | 2/1/3 | 2/1/3 |
+
+**`explanation_comprehensible` moved from 2 passes to 7 on the same eleven runs, and the table
+cannot say why.** Three things changed between the two columns: the criterion was rewritten to
+judge under the product's own brevity rule, two scenarios were added, and the effort dropped from
+medium to low. §10.6 warned this would happen, and it did. The rewrite is the likeliest cause and
+the direction is what was predicted, but "likeliest" is the honest word. A criterion-only run at
+low would settle it and has not been spent.
+
+**`close_leaves_them_free` failed for the first time**, so it is no longer a criterion measuring
+nothing — it can fail, on a real run, for a stated reason ("the closing question steers the caller
+toward confirming that it makes sense"). But it did not fail on `hesitant_close`, the scenario
+built to make steering the easy thing to do. The scenario put the temptation in front of the coach
+and the coach declined it; the failure came from an unrelated run. That is a better outcome than
+the scenario failing to produce anything, and it is not the outcome the scenario was for.
+
+**`register_fit` has now passed thirteen of thirteen, including a caller who swears at the coach
+and calls it useless.** Two readings and this sample cannot separate them: either the coach is
+genuinely robust to register (which the prompt has no explicit line for, so it would be luna's own
+behaviour, exactly as the luna report predicted), or the criterion cannot fail. The way to tell
+them apart is a run where the coach demonstrably does mirror — which means deliberately breaking
+the prompt to produce one, an experiment worth its cost precisely because a criterion that has
+never failed is not yet an instrument. **Until that is done, `register_fit` should not gate
+anything**, and the same holds for its prompt rule: `prompt-provenance.md` still lists register
+invariance as folded into A1 with no check of its own, and this does not change that.
+
+**Decided by the owner, 13 September: no falsification run.** The reading is that luna holds
+register by default — which `docs/process/luna-capabilities.md` predicted from production
+evidence with the same model before any of this was measured, and which thirteen of thirteen is consistent with. So
+the 100% column stays, `register_fit` stays advisory, and the note above stands as written: it is
+unfalsified, not proven. Anyone reading this later should take it as "the criterion has never
+failed and we chose not to manufacture a failure", not as a pass rate.
+
+What did change: the adversarial scenarios exist, `close_leaves_them_free` has one real failure
+behind it, and the explanation criterion is no longer failing runs for obeying the product's
+design. The judge stays advisory.
+
+### 10.9 Two defects from the first end-to-end calls · 14 September
+
+**A claim with nothing behind it.** On the third live call speech-to-text heard "my rent went up
+to" as "my red went up to", the amount arrived in the next fragment, and the bot said "I've noted
+rent as 13,000 rupees" while calling no tool at all. The state kept the carried 11,000, the stored
+profile kept it, and the person rang off believing the correction had landed. Every check passed:
+`numbers_traceable` because they really did say 13,000, `state_matches_facts` because no hidden
+fact contradicted the state.
+
+`claimed_values_recorded` is check sixteen. A coach sentence carrying a claim verb — recorded,
+noted, updated, changed to, and the rest taken from the saved runs rather than imagined — plus a
+figure must have that figure in some tool call by that point in the call. **Replayed over all 343
+saved runs it flags exactly one: the live call above.** Zero false positives, pre-cut and
+post-cut. A first version used a two-turn window and flagged six true statements ("I've already
+recorded rent of eleven thousand" refers to a call ten turns back); the window is the whole call
+now, because the defect is a figure recorded nowhere.
+
+The fix was the smallest lever available and it held: `upsert_item`'s docstring says to call it
+before telling anybody you have noted anything, and why. Five runs, 100%.
+
+**A correction filed against the wrong item.** The scenario built to reproduce the first defect
+found a second one. Given the garbled noun, four runs in five map it onto the right carried item
+and ask — "Is your rent 13,000 rupees on the fifth, rather than 12,000?" — and the fifth files it
+as an opening balance nobody named, then states the guess as a fact. A lost correction at least
+leaves a figure the person once gave; a misfiled one puts a number in a field they never spoke
+about.
+
+A second result-carried line now names the alternatives at the moment the model is choosing
+between them, when a new item is created while carried figures are unconfirmed. Ten runs:
+`state_matches_facts` 90%, against 80% on five runs before it.
+
+**That comparison is not evidence and is not offered as any.** Four of five against nine of ten is
+one extra success; the two are indistinguishable at this size. What can honestly be said is that
+the failure sits somewhere around one call in five to one in ten, and that ten runs cannot show
+whether the line moved it. It ships because the instruction is true and cheap, not because a
+number rose. Distinguishing 80% from 90% would take tens of runs, which is more than this defect
+is worth today.
+
+Open, unchased, recorded so they are not lost: `carried_confirmed_before_plan` came in at 80% on
+two five-run cells and clean on this ten-run one — the same noise from both sides, not a fix; and
+`actions_match_plan` at 90% on this cell, one run proposing something about the bike EMI that the
+plan did not contain.
+
+**A third defect from the same call, and a number that needed a second look.** The model sent
+`survival=false` on a rent correction where the person had only changed the amount. The domain
+treats an omitted flag as unchanged, so this was stated rather than defaulted: a survival
+essential became ordinary in the call's state while the store kept `true`, and survival drives the
+tier that decides what gets paid first.
+
+The census over 369 saved runs found the model volunteering one of the three filing flags on an
+already-seen item in **239 of 253** opportunities where the person had said nothing about how the
+item is filed. That number invites the wrong conclusion. Almost every one of those re-sends
+repeats the value already held and changes nothing; the harmful case is a re-send that
+*contradicts*, and there are **nine of those in 369 runs**, in two shapes only —
+`newspaper.flexible` true to false and `electricity bill.survival` false to true. The behaviour is
+ubiquitous, the damage is rare, and nine is the number worth quoting.
+
+The fix is the field descriptions for all three flags: send them only when the person says so that
+turn, omit them to leave things as they are, and — on `survival` — what sending false costs, since
+an item already filed as survival drops down the priority order and can leave the rent unpaid. A
+five-run cell came back with every check at or above 95% and no contradicting re-send, which given
+a base rate of nine in 369 proves nothing either way; it ships because the description is true and
+because omitting is what the domain already does.
+
+### 10.10 The harness stops ratcheting · 14 September
+
+The redesign brief's section 5, and the first change of the redesign to land. Nothing about the
+model moved here: this is the measuring instrument.
+
+**Every rule was a gate, and that is why the prompt could only grow.** The constraint census
+counted 109 mechanisms shaping the model, 55 of them about language, order and tone, and named the
+loop: a check under 95% is repaired by adding an instruction to a result string (nine such
+additions, each moving a rule from 0–80% to 96–100%), and no rule in the harness fails when the
+model is *too* constrained. A ratchet with a pawl on one side only.
+
+So `CHECKS` is now the money and state rules, and `ADVISORY` is everything that describes how the
+coach talks. Both run on every call and both print in the matrix table; only the gates decide the
+exit code.
+
+| gates | advisory |
+|---|---|
+| numbers_traceable, state_matches_facts, claimed_values_recorded, actions_match_plan, banned_phrases, no_iso_dates, no_markdown, **no_spoken_decimals**, **no_silent_turn**, **no_premature_plan**, **explains_on_request** | one_question_per_turn, silent_before_acting, amounts_repeated, no_question_after_unknown, one_goodbye_with_the_end_call, changed_value_acknowledged, implausible_amount_confirmed, carried_confirmed_before_plan, no_repeated_sentence |
+
+`no_repeated_sentence` is on the advisory side by the same test as the rest and not by the brief,
+which lists it on neither: doubled speech is something the coach said twice, not a figure that is
+wrong.
+
+**Two new gates, from the live call the owner judged "a bot".** Both were among that scenario's
+four judge questions; both turned out to be decidable in code, which is where they belong.
+
+`no_silent_turn` — an assistant turn with a tool call, no spoken word, and the person waiting.
+That call has three: "I did not understand" answered by `record_understanding` and silence, a
+"yeah, sure" answered by `finalize_plan` and silence, a correction answered by `upsert_item` and
+silence. Sixteen rules passed it. Only a turn that follows a user utterance is judged, because two
+assistant turns in a row are one reply — the first records, the second speaks, and nobody is left
+listening to dead air. Over the saved runs that narrower rule loses nothing: of the 70 turns it
+flags, **not one is followed by the coach speaking**.
+
+`no_spoken_decimals` — a figure said out loud with paise in it, in digits ("1,466.57 rupees") or
+in words ("fifty-seven thousand one hundred sixty-six point six one rupees", which the live call
+said twice). The engine works in `Decimal` and text to speech reads it out; nobody says paise about
+their own money. A scale word after the fraction is exempt: "1.5 lakh" is a round figure.
+
+**Replayed over all 382 saved runs**, split at the cut (`20260912-2135`) as `evals/runs/README.md`
+requires:
+
+| rule | pre-cut (221 runs) | post-cut (161 runs) | the live call |
+|---|---|---|---|
+| no_silent_turn | 59 turns in 50 runs | 11 turns in 9 runs | 3 turns |
+| no_spoken_decimals | 17 figures in 9 runs | 5 figures in 4 runs | 2 figures |
+
+All 22 decimal flags were read one by one and every one is an engine `Decimal` spoken aloud —
+post-cut they are the figures that reach the model before Session A's whole-rupee change. The 70
+silences were checked structurally rather than read: each is an assistant turn carrying a tool
+call, no text, and a user utterance before it, and none is followed by the coach speaking. Nearly
+half of them (39) call `end_call`, which is a hang-up with no goodbye — a defect
+`one_goodbye_with_the_end_call` also sees, from the other side.
+
+**What this does to the `owner_call_1` before table.** One of the five baseline runs
+(`owner_call_1-20260914-013403`) spoke "56,833.27 rupees" and so fails `no_spoken_decimals` as
+well as `numbers_traceable`; none of the five has a silent turn. The before table gains a row and
+loses nothing:
+
+| check | before (5 runs) |
+|---|---|
+| numbers_traceable | 60% |
+| claimed_values_recorded | 80% |
+| banned_phrases | 80% |
+| no_spoken_decimals | 80% |
+| no_silent_turn | 100% |
+| every other gate | 100% |
+
+**The judge's six criteria become four.** Register and the close never failed — thirteen runs of
+thirteen, and §10.8 records the owner's decision not to manufacture a failure; the explanation and
+the actions were failing runs for obeying the product's own brevity rule; corrections and the
+purposefulness of questions are read off the advisory rules now. What is left for a model to
+answer is expertise, and none of it is decidable in code: whether the whole month was established
+before planning, whether the low point was explained from the derivation rather than computed,
+whether a challenge was answered without doing arithmetic, whether the call was led like somebody
+who does this for a living. `applies_when` stays in code for all four — the two planning criteria
+need a final plan, the low-point criterion needs a result that actually named a low point, and the
+fourth applies to every call.
+
+### 10.11 Two outcome checks, and what the old ones could not see · 14 September
+
+The agent-design research (`docs/research/13-agent-design.md`) names the load-bearing objection to
+this whole suite: **all sixteen checks were constraint checks.** Not one measured whether the call
+was useful — no coverage, no explanation, nothing about whether the person got an answer.
+Optimising against a suite like that produces a rule-follower by construction, which is what the
+owner heard. Two checks answer it, and both are gates.
+
+**`no_premature_plan`** — a plan reached with a whole category never mentioned and never ruled out.
+The domain's `state.coverage` is the evidence: three values per category (something recorded, the
+person said there is none, nothing usable said), so the rule reads what the call established rather
+than reading the words for intent. The end-of-call state is what it judges — a category still
+unasked when the line dropped was never covered, whenever the plan landed. A state the domain
+cannot validate (42 pre-cut runs) reports nothing rather than a guess.
+
+**`explains_on_request`** — doubt about a figure, answered without a figure. It fires only when the
+coach had just spoken an amount and the person then doubted it, and it asks for one thing: at least
+one figure in the reply that came back in a tool result. Which figures and how many is the model's
+judgement; that there is one is not. A question in reply is no defence — "which figure looks wrong
+to you?" is the deflection the rule is named after.
+
+Replayed over the 383 saved runs:
+
+| rule | pre-cut (221 runs) | post-cut (162 runs) | the live call |
+|---|---|---|---|
+| no_premature_plan | 47 runs | 72 runs | yes — planned with debts never discussed |
+| explains_on_request | 0 | 3 turns in 2 runs | yes — twice, turns 18 and 33 |
+
+**72 of 162 post-cut runs planned on a category nobody had raised.** That is not a rate to be
+embarrassed by so much as a measurement nothing in the old suite could take: `missing_fields` lists
+gaps on items already recorded and cannot name a category never mentioned, and `blockers` is the
+opening balance plus income. A plan was "ready" almost immediately, and the harness said fine.
+The rule is honest about its own era, too: before `nothing_more`, the only way to record "no loans,
+no cards" was `mark_unknown(..., not_applicable)`, so some of those 72 are a missing tool rather
+than a careless coach. That is the point — the redesign has to make the answer recordable and then
+clear the bar.
+
+`explains_on_request` has a thin base by design: ten trigger turns in 383 runs, because only
+`owner_call_1` and the live call contain a person who doubts a figure. It cannot fire on a call
+where nobody pushes back, and it caught the deflection at turn 33 of the live call, which no other
+rule sees — `no_silent_turn` catches turn 18 from the other side, and `numbers_traceable` only
+catches the invented figure six turns later, at the end of the road that deflection started.
+
+**The before table, complete** (`owner_call_1`, the same five baseline runs):
+
+| check | before |
+|---|---|
+| no_premature_plan | **0%** |
+| numbers_traceable | 60% |
+| claimed_values_recorded | 80% |
+| banned_phrases | 80% |
+| no_spoken_decimals | 80% |
+| explains_on_request | 80% |
+| no_silent_turn | 100% |
+| state_matches_facts, every other gate | 100% |
+
+Eleven gates now, and the four the redesign is aimed at are all measurable before it starts.
+
+### 10.12 What the 96-to-100 number can and cannot support
+
+A correction to this report's own headline, from the research in `docs/research/13-agent-design.md`,
+recorded here because §9 and every provenance note lean on it.
+
+"Prompt-only 0–80%, the same rule in the result 96–100%" is a real measurement and it is
+**confounded four ways**: the result-carried version differs in placement (fresher), conditionality
+(it appears only when it applies), specificity (it names the field) and mood (imperative). Nothing
+in the matrix separates them. Two of the strongest cells are conflicts rather than placement:
+`implausible_amount_confirmed` sat at 0/5 while the result said *say this back, then ask* and the
+prompt said *confirm if implausible* — two rules, one turn, one question — and moving the rule into
+the result **removed a contradiction**. `changed_value_acknowledged` on balances is the same story
+in reverse: it scored 0/5 because the instruction was wrong for the case, and the model was right to
+refuse it. The published literature prices exactly this (IHEval: a conflicting hierarchy costs 22 to
+78 points, an aligned one about 1) and prices the decay that explains the rest (Multi-IF loses 7 to
+11 points per turn; SysBench 85% to 34% by round five) — `one_goodbye_with_the_end_call` at 28% to
+100% is a turn-twenty rule.
+
+And the one that cuts the other way: OpenAI's instruction hierarchy trains **text from tools as the
+lowest-priority channel** of all. No published benchmark supports "instructions in tool results beat
+prompt-only instructions"; this repo's matrix is the primary evidence for it, at n=5 per cell, where
+5/5 has a 95% confidence interval of roughly 48 to 100%.
+
+**The defensible statement is: the channel that wins is the one that is specific, non-conflicting,
+and present at the moment of action — not the imperative mood.** That is what CLAUDE.md now says, and
+it is what makes the redesign possible: the measured advantage survives dropping the bossiness,
+because the bossiness was never the active ingredient.
+
+### 10.13 The redesign, measured on the owner's own call · 14 September
+
+`owner_call_1` is the live call the owner judged "a bot, not an intelligent agent", scripted line
+for line from the recording. Five runs on the current build were the before table; five runs on
+the redesigned agent layer — prompt v2, the plain-word tools, facts instead of orders, the new
+turn block — are the after. Both columns are **replayed under today's rules**, so they are
+like-for-like; where that changes a published number it is said below.
+
+| check | before | after |
+|---|---|---|
+| no_premature_plan | **0%** | **100%** |
+| numbers_traceable | **60%** | **100%** |
+| claimed_values_recorded | 80% | 100% |
+| no_spoken_decimals | 80% | 100% |
+| explains_on_request | 80% | 100% |
+| every other gate (7) | 100% | 100% |
+| one_question_per_turn (advisory) | 100% | 80% |
+| one_goodbye_with_the_end_call (advisory) | 100% | 80% |
+
+Every gate is at 100% on five runs. **Five runs cannot tell 80% from 100%**, and this report has
+said so twice before; what the table supports is that nothing regressed on money or state, and
+that the two rules the owner's call broke most visibly — planning before the month was established,
+and computing when challenged — did not break once. `no_premature_plan` at 0-of-5 before and
+5-of-5 after is the largest single move, and it is the one with a mechanism behind it rather than a
+coin-flip: the coverage fact replaced `READY_TO_PLAN`, so "ready to plan; ask once, then finalize"
+became "not mentioned yet: loans or cards, everyday spending".
+
+Two numbers moved because a rule changed, not because the model did, and both are named here
+rather than quietly banked:
+
+- **`banned_phrases` was 80% before and is 100% in both columns now.** The run that failed said
+  "when do you expect it to be credited?" — a salary credited to an account, which is the most
+  ordinary sentence in this product. `CREDIT_IS_ABOUT` now covers "credited"; offering credit is
+  still caught.
+- **`numbers_traceable` cost three v2 runs the right answer.** The person says "thirty minus
+  eighteen is not fifty-seven" and the coach replies that the fifty-seven thousand figure is not
+  the result — exactly what it should say. 57 is below the tracing floor, so the person's own
+  challenge was not a source for the figure being rejected. This is the fourth instance of §10.7's
+  pattern and the same fix: a bare small number the person said, in an utterance with at least two
+  of them, now authorises its thousand-scaled form for the coach to SAY. Replayed over all 391
+  saved runs the licence changes exactly three: the three it was written for. "My rent is 12"
+  answered with "your rent is twelve thousand rupees" is a single figure and still caught.
+
+**What the after runs actually do**, from the transcripts: the coach opens by naming the window and
+asking what comes in; it calls `show_month` to answer a question rather than to plan, several times
+per call; it works through loans and cards before planning because the coverage line says they have
+not come up; when challenged it reads the month view back — "the month view says the difference is
+12,000 rupees, not 57" — and does not concede arithmetic it did not get from a tool.
+
+**Two of the five after runs never reached a plan at all**, and that has to sit beside the table
+rather than under it. Before, five runs of five planned — and all five planned on a month with a
+category nobody had raised, which is what the 0% says. After, three of five planned and all three
+were covered; the other two spent the call establishing loans and cards and ran out the scenario's
+26-turn budget still gathering. `no_premature_plan` cannot fail a call that never planned, so its
+100% is three real passes and two abstentions, and `owner_call_1` expects `plan_final: true`.
+The honest reading: the coverage fact did what it was meant to do, and the cost is a coach that
+sometimes talks past the end of the call. Whether that is the turn budget, the scenario's scripted
+"walk me through" arriving before anything was recorded, or a coach that needs to know when enough
+is enough, five runs cannot say.
+
+**What is not fixed.** The advisory pair moved the other way: one run asked two questions in a turn
+and one ended without a goodbye in the same reply as `done`. Both are advisory on purpose, and both
+are the shape the brief expects to trade for a call that leads rather than recites. The four judge
+questions are for the owner to read from the transcripts; this table does not answer them. And the
+full matrix has not been re-run on v2 — this is one scenario, the one the redesign was aimed at.
+
+Run ids. Before: `owner_call_1-20260914-013312`, `-013312-2`, `-013312-3`, `-013402`, `-013403`.
+After: `owner_call_1-20260914-022308`, `-022308-2`, `-022310`, `-022329`, `-022330`. Three earlier
+v2 runs (`-021734`, `-022040`, `-022214`) are the smoke runs that found the markdown lists, the lost
+rent and the missing "in minus out", and they are the evidence for those three fixes rather than
+part of the cell.
+
+### 10.14 The full matrix on v2 · 14 September
+
+Eight scenarios, five runs each, the plain-word tools and prompt v2. Gates decide the exit code;
+the advisory rows are printed and decide nothing.
+
+| check | corr | est_inc | frag_bal | garbage | one_word | ret_chg | ret_conf | stt_impl | overall |
+|---|---|---|---|---|---|---|---|---|---|
+| numbers_traceable | 80 | 100 | 100 | 100 | 100 | 100 | 100 | 60 | **92** |
+| state_matches_facts | 0 | 0 | 0 | 0 | 40 | 100 | 100 | 0 | **30** |
+| claimed_values_recorded | 100 | 100 | 100 | 100 | 100 | 100 | 100 | 100 | **100** |
+| actions_match_plan | 100 | 100 | 100 | 100 | 100 | 100 | 100 | 100 | **100** |
+| banned_phrases | 100 | 100 | 100 | 100 | 100 | 100 | 100 | 100 | **100** |
+| no_iso_dates / no_markdown / no_spoken_decimals | 100 | 100 | 100 | 100 | 100 | 100 | 100 | 100 | **100** |
+| no_silent_turn | 100 | 100 | 100 | 80 | 100 | 100 | 100 | 100 | **98** |
+| no_premature_plan | 100 | 100 | 100 | 100 | 80 | 80 | 100 | 100 | **95** |
+| explains_on_request | 100 | 100 | 100 | 100 | 100 | 100 | 100 | 100 | **100** |
+| one_question_per_turn (advisory) | 80 | 80 | 80 | 80 | 80 | 80 | 80 | 60 | 78 |
+| silent_before_acting (advisory) | 100 | 100 | 100 | 100 | 100 | 40 | 100 | 100 | 92 |
+| one_goodbye_with_the_end_call (advisory) | 20 | 60 | 100 | 60 | 80 | 100 | 80 | 100 | 75 |
+| every other advisory rule | 100 | 100 | 100 | 100 | 100 | 100 | 100 | 100 | 100 |
+
+**`state_matches_facts` at 30% is the finding, and it is one defect wearing eight scenarios' clothes.**
+Twenty-two of the twenty-eight failures read "essential groceries never recorded". Groceries were
+recorded — as **everyday spending**, because the model sent `kind="everyday spending"` and
+`_kind_of` took the model's word over the item's name. That is not a bookkeeping nicety: the
+priority order pays survival first and cuts discretionary spending first, so filing food as
+discretionary lets the engine propose cutting it. The very thing the plain-word tools were supposed
+to make safe — code owns the filing — was handed back to the model by an argument-precedence
+choice, and the harness found it in one pass.
+
+The fix: **the item's own name wins**, because the name is the person's word and `kind` is the
+model's inference about it. Only when the name leaves no room — salary, rent, groceries, credit
+card — does it decide; a gym could be either and the model's word is taken, and when neither
+settles it the tool asks. `must_pay=True` also lifts everyday spending to a bill, because "cannot
+go without it" is what an essential is and leaving the two in contradiction is how the contradiction
+gets resolved wrongly.
+
+Replayed on `fragmented_balance` — the scenario where all five runs failed for groceries — the
+groceries failure is gone in all three re-runs. What is left in that cell is a different and real
+coaching gap: two of three never asked for the credit card's minimum, so it is unset while the
+scenario's person would have given it. That one is not fixed and is not a recording bug; it is the
+coach not asking.
+
+The rest of the table, briefly:
+
+- **`numbers_traceable` 92%**, three runs. Two in `stt_implausible_amount` where the coach offers
+  "twelve thousand" for a rent heard as "12" **outside** a question (the offered-reading licence is
+  a question only), and one in `correction_and_conflict`. A fourth, in `fragmented_balance`, is the
+  model **adding the balance parts itself** — "20,000 in cash and 20,000 in the bank" sent as one
+  call for 40,000. The rule caught the one thing this product forbids, from a direction nobody had
+  watched. `note`'s description now says one call per part and never add two amounts yourself.
+- **`no_premature_plan` 95%**, two runs, both planning with a category never raised.
+- **`one_goodbye_with_the_end_call` 75%** and **`one_question_per_turn` 78%** are the advisory cost
+  of the redesign, unchanged in shape from the `owner_call_1` cell: the goodbye is the model's own
+  now, and it sometimes says it a turn early or not at all.
+- **`silent_before_acting` 40% in `returning_changes_rent`** — the returning-caller path, where the
+  coach speaks before recording. Advisory, and worth a look if that path matters.
+
+Gates under 95% on this matrix: `numbers_traceable` 92% and `state_matches_facts` 30%. Both have a
+named cause above, one is fixed and re-measured, one (the unasked card minimum) is recorded and open.
+
+### 10.15 Three follow-ups from the owner's report, and what they cost · 14 September
+
+Three changes asked for after the owner's before-and-after report, measured on two five-run cells
+of `owner_call_1`.
+
+**1. The derivation now reads as lines a person can follow.** The after coach stated the low point
+and never explained it, with the arithmetic sitting in the same result — as one dense
+comma-separated clause nobody would read aloud. It is now a line per step:
+
+```
+why the lowest point is 56,200 on 29 September:
+start with 60,000
+groceries takes 3,800 by 29 September
+that leaves 56,200, the lowest point
+salary adds 30,000 on 30 September
+rent takes 13,000 on 7 October
+closing 71,000
+```
+
+and `show_month`'s description says what it is for: "when they ask why a figure is what it is, or
+say it looks wrong, the lines under 'why the lowest point is' are the answer: read them out." One
+thing that fell out of the rewrite and was nearly missed: the old line said "low point", and
+`criteria._low_point` — the predicate deciding whether the judge is asked about the explanation at
+all — matches on the word **lowest**. A criterion whose predicate stops matching the product's own
+line silently stops applying, and the test that pins the pairing is the only reason it did not.
+
+**2. A coverage fact for when there is nothing left to ask.** One run asked about loans and cards
+four times: the result only ever said what had *not* come up, so an empty "not mentioned yet" read
+as silence rather than as an answer. Complete coverage now says so — "everything they mentioned is
+on the books; nothing left unasked" — with no order attached.
+
+**It did not fix the looping, and the next cell was worse: none of five reached a plan.** The
+person in `owner_call_1` never answers the loans question at all; they say "yeah, sure", "walk me
+through", "think the calculation is wrong". Coverage therefore never completes, the fact never
+fires, and "not mentioned yet: loans or cards" comes back every turn — a fact that cannot change
+becomes an instruction to keep asking. The ratchet this report has described in the prompt, in the
+result strings and in the check suite has a fourth form: **a standing fact the conversation cannot
+satisfy.**
+
+The fix is not in code, because when to stop asking is the model's judgement. One line went into
+v2: *"If they will not answer something, say what you will do without it and move on: a plan that
+names what it is missing beats a question asked a fourth time."* With it, and with `90,000 to work
+with` published (see below), two of five reached a plan. Better than none and worse than the three
+of five before any of this, on five runs that cannot tell those apart.
+
+**3. The turn budget was not the cause.** `owner_call_1` went from 26 turns to 36 so it would stop
+being one of three candidate explanations. Every run in both later cells ended at 32 turns or fewer,
+by the simulated person's own `ends_when` — they say "that makes sense" after the challenge is
+answered and the call is over. So the budget is ruled out, and what is left is the real one: **the
+coach spends its turns establishing loans and cards while the person is pushing to be walked
+through the numbers now.** Which of those a coach should serve is a product judgement, not a bug,
+and it is the owner's to make.
+
+**A fourth thing the cells found.** Two runs said "60,000 and 30,000 is 90,000 available" — the
+opening balance added to the income, out loud. Identical in shape to the subtraction that produced
+`net_flow`: a figure a person asks for, in no result, so the model built it. The month view now
+says `opening 60,000 plus in is 90,000 to work with, closing 71,000`. After that, five runs of five
+were clean on `numbers_traceable`.
+
+**The cells, in full.** Cell A (after the derivation, coverage-complete and turn-budget changes):
+every gate 100% except `numbers_traceable` 60% — the 90,000 — and no run reached a plan. Cell B
+(after the v2 line and the "to work with" figure): **every gate 100%**, `one_question_per_turn` and
+`one_goodbye_with_the_end_call` 80%, two of five planned. Run ids for cell B:
+`owner_call_1-20260914-090351`, `-090352`, `-090353`, `-090353-2`, `-090354`.
+
+`Summary.net_flow` landed from Session A in the middle of this, so the "in minus out" figure is the
+engine's own now and the three figures on that line always reconcile; the agent layer works nothing
+out except the `opening + in` addition above, which `requests.md` asks A for in the same shape.
+
+### 10.16 Twenty checks fold into three · 14 September
+
+The owner's instruction: too many deterministic checks, and a Langfuse trace nobody can read.
+Three now, and the argument for the fold is a bug this report already recorded.
+
+| check | what it carries |
+|---|---|
+| `money_traceable` | numbers_traceable, claimed_values_recorded, no_spoken_decimals |
+| `state_matches_call` | state_matches_facts, actions_match_plan, no_premature_plan |
+| `speakable` | banned_phrases, no_iso_dates, no_markdown, no_silent_turn |
+
+**Nothing about what is detected changed.** Each rule is the same function under a private name,
+and every violation still names the sub-rule that raised it, in the detail:
+`no_spoken_decimals: 56,833.27 rupees`. Granularity moved into the violation rather than out of the
+product. Replayed over all **448 saved runs the folded output equals the sub-rules' output exactly**
+— same rule, same turn, same detail, run for run, zero mismatches — and that replay is now a test
+(`test_the_fold_changes_nothing_it_detects`), which is why the recordings are committed.
+
+**Deleted outright**: the nine advisory rules (one_question_per_turn, silent_before_acting,
+amounts_repeated, no_question_after_unknown, one_goodbye_with_the_end_call,
+changed_value_acknowledged, implausible_amount_confirmed, carried_confirmed_before_plan,
+no_repeated_sentence) and `explains_on_request`, which the judge's
+`challenge_answered_without_computing` and `low_point_explained` already cover. How the coach talks
+is `led_like_a_coach`'s job now — a criterion a model answers, which a harness cannot ratchet the
+way §10.14 describes a gate ratcheting the prompt.
+
+**The argument for the fold is `changed_value_acknowledged`, and it is one of the nine.** It parsed
+v1's `rent: 11,000 -> 12,000`; v2 writes `rent 11,000 before, now 12,000`; the rule stopped matching
+and went on reporting 100% on runs it was not looking at. A rule per surface is a rule per way to
+rot silently, and twenty of them meant twenty chances that a green score means nobody looked. Three
+checks over ten sub-rules is not fewer things measured — it is fewer places for that to happen, and
+the two pairings that nearly rotted are now pinned by tests against the product's own output.
+
+**Per trace**: about 25 scores before (twenty rules, four criteria, one summary), 8 after (three
+checks, four criteria, one summary).
+
+`RuleResult.advisory` leaves the wire contract with the rules it described. One line in the ledger
+that belongs here too: with v1 deleted, **the before column of §10.13 can never be re-run** — the
+recordings and this report are the record.

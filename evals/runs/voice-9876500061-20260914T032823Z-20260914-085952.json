@@ -1,0 +1,393 @@
+{
+  "scenario": "voice-9876500061-20260914T032823Z",
+  "source": "voice",
+  "session_id": "9876500061-20260914T032823Z",
+  "prompt_version": "1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-14",
+  "turns": [
+    {
+      "role": "user",
+      "text": "My rent is 11,000 rupees.",
+      "finalisations": [
+        "My rent is 11,000 rupees."
+      ]
+    },
+    {
+      "role": "user",
+      "text": "And it is due on the 5th.",
+      "finalisations": [
+        "And it is due on the 5th."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "I\u2019ve noted rent of 11,000 rupees due on 5 October. How much money is in your account today?",
+      "tool_calls": [
+        {
+          "id": "call_qVbZZRcRqmfwLj6uMgxEuUxi",
+          "name": "note",
+          "args": {
+            "item": "rent",
+            "amount": 11000,
+            "kind": "bill",
+            "must_pay": true
+          },
+          "result": "noted rent 11,000\nrecorded: bills\nnot mentioned yet: money in the account, money coming in, loans or cards, everyday spending"
+        },
+        {
+          "id": "call_Sjij24UnQzPgfjklj480z4By",
+          "name": "note",
+          "args": {
+            "item": "rent",
+            "amount": 11000,
+            "when": "the 5th",
+            "kind": "bill",
+            "must_pay": true
+          },
+          "result": "noted rent on 5 Oct\nrecorded: bills\nnot mentioned yet: money in the account, money coming in, loans or cards, everyday spending"
+        },
+        {
+          "id": "call_x6tA1BRVAjDovPz3B4BDnQRi",
+          "name": "note",
+          "args": {
+            "item": "rent",
+            "when": "the 5th"
+          },
+          "result": "unchanged rent\nrecorded: bills\nnot mentioned yet: money in the account, money coming in, loans or cards, everyday spending"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "function_call",
+        "function_call",
+        "message"
+      ],
+      "completions": 6,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-14T03:28:50.260456+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 6.467,
+        "first_token_from_turn_start": 6.467,
+        "first_audio": 2.271,
+        "first_audio_from_turn_start": 2.271
+      }
+    },
+    {
+      "role": "user",
+      "text": "I keep about 20,000 rupees in my account.",
+      "finalisations": [
+        "I keep about 20,000 rupees in my account."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "I\u2019ve noted 20,000 rupees in your account today. What money will come in between 14 September and 13 October?",
+      "tool_calls": [
+        {
+          "id": "call_5vK5Me0Afw3oA55ZQmJhD03c",
+          "name": "note",
+          "args": {
+            "item": "money in the account",
+            "amount": 20000,
+            "kind": "balance",
+            "when": "today"
+          },
+          "result": "noted opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-14T03:29:06.961367+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.717,
+        "first_token_from_turn_start": 3.717,
+        "first_audio": 1.856,
+        "first_audio_from_turn_start": 1.856
+      }
+    },
+    {
+      "role": "user",
+      "text": "Show me the month so far.",
+      "finalisations": [
+        "Show me the month so far."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "I can\u2019t show the full month yet. I still need your income, loans or cards, and everyday spending. What income will arrive between 14 September and 13 October?",
+      "tool_calls": [
+        {
+          "id": "call_R3mYqvwpHmwp8XVEO2TZqlXi",
+          "name": "show_month",
+          "args": {},
+          "result": "recorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending\nblocked: income"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 2,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-14T03:29:22.680279+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.275,
+        "first_token_from_turn_start": 3.275,
+        "first_audio": 1.469,
+        "first_audio_from_turn_start": 1.469
+      }
+    },
+    {
+      "role": "user",
+      "text": "Nothing else is going out.",
+      "finalisations": [
+        "Nothing else is going out."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Understood. Is any money coming in between 14 September and 13 October?",
+      "tool_calls": [
+        {
+          "id": "call_mrTWbqaSMWQb5GjOECCVC7nk",
+          "name": "nothing_more",
+          "args": {
+            "of": "bills"
+          },
+          "result": "none: bills\nrecorded: money in the account, bills\nnot mentioned yet: money coming in, loans or cards, everyday spending"
+        },
+        {
+          "id": "call_2TbUSACLaLLx8yjHvCMO0057",
+          "name": "nothing_more",
+          "args": {
+            "of": "loans and cards"
+          },
+          "result": "none: loans or cards\nrecorded: money in the account, bills\nnone: loans or cards\nnot mentioned yet: money coming in, everyday spending"
+        },
+        {
+          "id": "call_quAAih9AXtwe1n636ukPRVKM",
+          "name": "nothing_more",
+          "args": {
+            "of": "everyday spending"
+          },
+          "result": "none: everyday spending\nrecorded: money in the account, bills\nnone: loans or cards, everyday spending\nnot mentioned yet: money coming in"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "function_call",
+        "function_call",
+        "message"
+      ],
+      "completions": 4,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-14T03:29:38.199854+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 5.439,
+        "first_token_from_turn_start": 5.439,
+        "first_audio": 1.575,
+        "first_audio_from_turn_start": 1.575
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-14",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "incomes": [],
+    "debts": [],
+    "essentials": [
+      {
+        "name": "rent",
+        "notes": "",
+        "carried": false,
+        "amount": "11000.00",
+        "due_date": "2026-10-05",
+        "spread": false,
+        "survival": true
+      }
+    ],
+    "optionals": [],
+    "unknowns": [
+      {
+        "field": "essential",
+        "reason": "not_applicable"
+      },
+      {
+        "field": "debt",
+        "reason": "not_applicable"
+      },
+      {
+        "field": "optional",
+        "reason": "not_applicable"
+      }
+    ],
+    "understood": false,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 4
+  },
+  "plan_final": false,
+  "carried": [],
+  "cards_versions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "ended_by": "client",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  },
+  "verdict": {
+    "session_id": "9876500061-20260914T032823Z",
+    "status": "ready",
+    "summary": 1.0,
+    "deterministic": [
+      {
+        "rule": "numbers_traceable",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "state_matches_facts",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "claimed_values_recorded",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "actions_match_plan",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "banned_phrases",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "no_iso_dates",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "no_markdown",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "no_spoken_decimals",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "no_silent_turn",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "no_premature_plan",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "explains_on_request",
+        "passed": true,
+        "detail": null,
+        "advisory": false
+      },
+      {
+        "rule": "one_question_per_turn",
+        "passed": true,
+        "detail": null,
+        "advisory": true
+      },
+      {
+        "rule": "silent_before_acting",
+        "passed": true,
+        "detail": null,
+        "advisory": true
+      },
+      {
+        "rule": "amounts_repeated",
+        "passed": true,
+        "detail": null,
+        "advisory": true
+      },
+      {
+        "rule": "no_question_after_unknown",
+        "passed": true,
+        "detail": null,
+        "advisory": true
+      },
+      {
+        "rule": "one_goodbye_with_the_end_call",
+        "passed": true,
+        "detail": null,
+        "advisory": true
+      },
+      {
+        "rule": "changed_value_acknowledged",
+        "passed": true,
+        "detail": null,
+        "advisory": true
+      },
+      {
+        "rule": "implausible_amount_confirmed",
+        "passed": true,
+        "detail": null,
+        "advisory": true
+      },
+      {
+        "rule": "carried_confirmed_before_plan",
+        "passed": true,
+        "detail": null,
+        "advisory": true
+      },
+      {
+        "rule": "no_repeated_sentence",
+        "passed": true,
+        "detail": null,
+        "advisory": true
+      }
+    ],
+    "intent": [
+      {
+        "criterion": "led_like_a_coach",
+        "outcome": "pass",
+        "reason": "The coach tracked the amounts and dates, acknowledged what was provided, and adapted when the person asked to see the month by explaining what information was still needed.",
+        "turn": 8
+      }
+    ],
+    "judge_model": "gpt-5.6-luna",
+    "trace_url": "https://us.cloud.langfuse.com/project/cmtzwzchp05arad0ch8y5vgzw/traces/f616613e5eae588af5dfbad63dc2b43c"
+  }
+}

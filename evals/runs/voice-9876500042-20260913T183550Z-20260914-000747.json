@@ -1,0 +1,351 @@
+{
+  "scenario": "voice-9876500042-20260913T183550Z",
+  "source": "voice",
+  "session_id": "9876500042-20260913T183550Z",
+  "prompt_version": "1",
+  "model": "gpt-5.6-luna",
+  "today": "2026-09-14",
+  "turns": [
+    {
+      "role": "user",
+      "text": "I have",
+      "finalisations": [
+        "I have"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "20,000 in cash and",
+      "finalisations": [
+        "20,000 in cash and"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "20000 in bank balance.",
+      "finalisations": [
+        "20000 in bank balance."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "You have 20,000 rupees in your bank balance. Last time, income was zero and rent was 11,000 rupees; do those still hold?",
+      "tool_calls": [
+        {
+          "id": "call_SMZYOpB8eHnn54cKWglz7PGX",
+          "name": "upsert_item",
+          "args": {
+            "kind": "balance",
+            "name": "bank balance",
+            "amount": 20000
+          },
+          "result": "carried from last call: income 0, rent 11,000; say each back, then ask whether all still hold, confirm or change each before the plan\nrecorded opening balance 20,000; record any other amount they named before replying, then say the total back and ask\nin 0, out 11,000, lowest 9,000 on 13 October\nsurplus 9,000, shortfall 0\nthese totals already leave out something not known yet\nmissing: rent due date"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 4,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:36:35.498330+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.691,
+        "first_token_from_turn_start": 3.691,
+        "first_audio": 1.905,
+        "first_audio_from_turn_start": 1.906
+      }
+    },
+    {
+      "role": "user",
+      "text": "Is",
+      "finalisations": [
+        "Is"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "on",
+      "finalisations": [
+        "on"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "September 18.",
+      "finalisations": [
+        "September 18."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Rent is 11,000 rupees due on the eighteenth of September. Does your income still stand at zero?",
+      "tool_calls": [
+        {
+          "id": "call_mpwgkcukRFdSDiD67Eozasyc",
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "amount": 11000,
+            "day_of_month": 18,
+            "spread": false,
+            "survival": true
+          },
+          "result": "recorded rent due date 18 Sep; say this back, then ask\nin 0, out 11,000, lowest 9,000 on 18 September\nsurplus 9,000, shortfall 0\nthese totals already leave out something not known yet"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 4,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:36:53.201271+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.297,
+        "first_token_from_turn_start": 3.297,
+        "first_audio": 1.699,
+        "first_audio_from_turn_start": 1.699
+      }
+    },
+    {
+      "role": "user",
+      "text": "Yes.",
+      "finalisations": [
+        "Yes."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Income is still zero, and rent is 11,000 rupees due on the eighteenth of September. Does anything else go out this month?",
+      "tool_calls": [
+        {
+          "id": "call_Ey0aFYOALAeBHQJ44aVVfyV1",
+          "name": "confirm_carried",
+          "args": {
+            "names": "income, rent"
+          },
+          "result": "rent is not carried from the last call; carried: income. Fix that argument and call the tool again."
+        },
+        {
+          "id": "call_lnrC1b1SyO8hEDFMeHeNEfbc",
+          "name": "confirm_carried",
+          "args": {
+            "names": "income"
+          },
+          "result": "not known: \nin 0, out 11,000, lowest 9,000 on 18 September\nsurplus 9,000, shortfall 0\nready to plan; if you have not yet asked whether anything else goes out this month, ask once, then finalize_plan"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "function_call",
+        "message"
+      ],
+      "completions": 3,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:36:53.201271+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 17.98,
+        "first_token_from_turn_start": 17.98,
+        "first_audio": 14.307,
+        "first_audio_from_turn_start": 14.307
+      }
+    },
+    {
+      "role": "user",
+      "text": "Nothing. My rent is",
+      "finalisations": [
+        "Nothing.",
+        "My rent is"
+      ]
+    },
+    {
+      "role": "user",
+      "text": "11,000 rupees.",
+      "finalisations": [
+        "11,000 rupees."
+      ]
+    },
+    {
+      "role": "assistant",
+      "text": "Is there anything else going out this month?",
+      "tool_calls": [
+        {
+          "id": "call_iOhe55QNXhXxJmVctXGIW02U",
+          "name": "upsert_item",
+          "args": {
+            "kind": "essential",
+            "name": "rent",
+            "amount": 11000,
+            "day_of_month": 18,
+            "spread": false,
+            "survival": true
+          },
+          "result": "unchanged rent\nin 0, out 11,000, lowest 9,000 on 18 September\nsurplus 9,000, shortfall 0\nready to plan; if you have not yet asked whether anything else goes out this month, ask once, then finalize_plan"
+        }
+      ],
+      "event_order": [
+        "function_call",
+        "message"
+      ],
+      "completions": 3,
+      "spoke_before_acting": false,
+      "timings": {
+        "vad_stop_at": "2026-09-13T18:37:34.899792+00:00",
+        "user_speaking_secs": 0.0,
+        "first_token": 3.777,
+        "first_token_from_turn_start": 3.777,
+        "first_audio": 1.96,
+        "first_audio_from_turn_start": 1.96
+      }
+    }
+  ],
+  "state": {
+    "today": "2026-09-14",
+    "horizon_days": 30,
+    "opening_balance": "20000.00",
+    "incomes": [
+      {
+        "name": "income",
+        "notes": "",
+        "carried": false,
+        "amount": "0.00",
+        "date": "2026-09-18",
+        "latest_date": null,
+        "certainty": "confirmed"
+      }
+    ],
+    "debts": [],
+    "essentials": [
+      {
+        "name": "rent",
+        "notes": "",
+        "carried": false,
+        "amount": "11000.00",
+        "due_date": "2026-09-18",
+        "spread": false,
+        "survival": true
+      }
+    ],
+    "optionals": [],
+    "unknowns": [],
+    "understood": false,
+    "plan_final": false,
+    "call_ended": false,
+    "turn": 4
+  },
+  "plan_final": false,
+  "cards_versions": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "ended_by": "client",
+  "llm_warnings": {
+    "previous_response_not_found": 0,
+    "drain_failed": 0
+  },
+  "verdict": {
+    "session_id": "9876500042-20260913T183550Z",
+    "status": "ready",
+    "summary": 0.941,
+    "deterministic": [
+      {
+        "rule": "numbers_traceable",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "state_matches_facts",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "carried_confirmed_before_plan",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "actions_match_plan",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "changed_value_acknowledged",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "implausible_amount_confirmed",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "one_question_per_turn",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "banned_phrases",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_markdown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "amounts_repeated",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_iso_dates",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "silent_before_acting",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_repeated_sentence",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "no_question_after_unknown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "rule": "one_goodbye_with_the_end_call",
+        "passed": true,
+        "detail": null
+      }
+    ],
+    "intent": [
+      {
+        "criterion": "register_fit",
+        "outcome": "pass",
+        "reason": "The coach used calm, plain, and level wording throughout without mirroring the caller's mood or style.",
+        "turn": 3
+      },
+      {
+        "criterion": "questions_purposeful",
+        "outcome": "fail",
+        "reason": "The coach repeated the question about other outgoings after the caller had already said nothing else was due.",
+        "turn": 12
+      }
+    ],
+    "judge_model": "gpt-5.6-luna",
+    "trace_url": null
+  }
+}

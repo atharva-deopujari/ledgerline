@@ -1,0 +1,259 @@
+{
+ "scenario": "fragmented_correction",
+ "prompt_version": "v1",
+ "model": "gpt-5.6-luna",
+ "today": "2026-09-11",
+ "turns": [
+  {
+   "role": "assistant",
+   "text": "Hi, I\u2019m Ledgerline, and I\u2019ll help you plan the next thirty days; does the rent of twelve thousand rupees due on the fifth, salary of forty-five thousand rupees arriving on the first, and bike EMI of three thousand four hundred rupees due on the twelfth all still hold?",
+   "tool_calls": [],
+   "event_order": [
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The rent went up to thirteen thousand, due on the fifth. Salary and bike EMI are as you said."
+  },
+  {
+   "role": "assistant",
+   "text": "Thirteen thousand rupees rent due on the fifth is recorded. Is your opening balance for today known?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "essential",
+      "name": "rent",
+      "amount": 13000,
+      "day_of_month": 5,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": false,
+      "survival": true,
+      "flexible": true,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "carried from last call: rent 12,000 on the 5th, salary 45,000 on the 1st, bike emi 3,400 on the 12th; say each back, then ask whether all still hold, confirm or change each before the plan\nrent: 12,000 -> 13,000; confirm which is right before moving on\nrent survival: now survival\nblocked: opening balance\nmissing: opening balance"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "My red went up to"
+  },
+  {
+   "role": "user",
+   "text": "thirteen thousand."
+  },
+  {
+   "role": "assistant",
+   "text": "Your opening balance is thirteen thousand rupees. What other essential costs do you have in the next thirty days?",
+   "tool_calls": [
+    {
+     "name": "upsert_item",
+     "args": {
+      "kind": "balance",
+      "name": "opening balance",
+      "amount": 13000,
+      "day_of_month": null,
+      "debt_kind": null,
+      "min_due": null,
+      "spread": null,
+      "survival": null,
+      "flexible": null,
+      "certainty": null,
+      "latest_day_of_month": null
+     },
+     "result": "recorded opening balance 13,000; record any other amount they named before replying, then say the total back and ask\nin 45,000, out 16,400, lowest 9,600 on 12 September\nsurplus 41,600, shortfall 0\nthese totals already leave out something not known yet"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "The rest is the same."
+  },
+  {
+   "role": "assistant",
+   "text": "Everything else still holds. Is there anything else going out this month?",
+   "tool_calls": [
+    {
+     "name": "confirm_carried",
+     "args": {
+      "names": ""
+     },
+     "result": "not known: \nin 45,000, out 16,400, lowest 9,600 on 12 September\nsurplus 41,600, shortfall 0\nready to plan; if you have not yet asked whether anything else goes out this month, ask once, then finalize_plan"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "I don\u2019t have any other costs listed."
+  },
+  {
+   "role": "assistant",
+   "text": "Your listed payments are covered in full, and your lowest balance is nine thousand six hundred rupees on the twelfth of September. There\u2019s no action to agree today; does that make sense?",
+   "tool_calls": [
+    {
+     "name": "finalize_plan",
+     "args": {},
+     "result": "plan final\nin 45,000, out 16,400, lowest 9,600 on 12 September\nsurplus 41,600, shortfall 0\nno actions needed: every payment is covered in full; explain the lowest point and propose nothing"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Yes, it does."
+  },
+  {
+   "role": "assistant",
+   "text": "Thanks for your time. Goodbye.",
+   "tool_calls": [
+    {
+     "name": "record_understanding",
+     "args": {
+      "confirmed": true
+     },
+     "result": "understood, say one goodbye and call end_call in this reply"
+    },
+    {
+     "name": "end_call",
+     "args": {
+      "reason": "plan understood"
+     },
+     "result": "call ending, say one short goodbye now and nothing more"
+    }
+   ],
+   "event_order": [
+    "function_call",
+    "function_call",
+    "message"
+   ]
+  },
+  {
+   "role": "user",
+   "text": "Goodbye."
+  }
+ ],
+ "state": {
+  "today": "2026-09-11",
+  "horizon_days": 30,
+  "opening_balance": "13000.00",
+  "incomes": [
+   {
+    "name": "salary",
+    "notes": "",
+    "carried": false,
+    "amount": "45000.00",
+    "date": "2026-10-01",
+    "latest_date": null,
+    "certainty": "confirmed"
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike emi",
+    "notes": "",
+    "carried": false,
+    "kind": "secured_emi",
+    "amount_due": "3400.00",
+    "min_due": null,
+    "due_date": "2026-09-12",
+    "late_fee": null,
+    "autodebit": false,
+    "lender": null
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "notes": "",
+    "carried": false,
+    "amount": "13000.00",
+    "due_date": "2026-10-05",
+    "spread": false,
+    "survival": true
+   }
+  ],
+  "optionals": [],
+  "unknowns": [],
+  "understood": true,
+  "plan_final": true,
+  "call_ended": true,
+  "turn": 6
+ },
+ "hidden_facts": {
+  "opening_balance": "18000",
+  "incomes": [
+   {
+    "name": "salary",
+    "amount": "45000",
+    "day": 1
+   }
+  ],
+  "essentials": [
+   {
+    "name": "rent",
+    "amount": "13000",
+    "day": 5
+   }
+  ],
+  "debts": [
+   {
+    "name": "bike emi",
+    "amount": "3400",
+    "day": 12,
+    "debt_kind": "secured_emi"
+   }
+  ],
+  "optionals": [],
+  "notes": [
+   "The rent went up to thirteen thousand; the first word came out garbled, say it again if asked."
+  ]
+ },
+ "carried": [
+  [
+   "rent",
+   "12,000 on the 5th"
+  ],
+  [
+   "salary",
+   "45,000 on the 1st"
+  ],
+  [
+   "bike emi",
+   "3,400 on the 12th"
+  ]
+ ],
+ "plan_final": true,
+ "call_ended": true,
+ "cards_versions": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6
+ ],
+ "usage": {
+  "input_tokens": 26692,
+  "output_tokens": 457
+ }
+}
