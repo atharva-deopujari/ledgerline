@@ -1,0 +1,52 @@
+name: demo_call_1
+tags: [voice, demo, scripted]
+# The owner's demo script, call 1 (docs/process/demo-script.md, steps 1 to 15), the person's lines
+# verbatim, one step per turn, in the order the script reads them regardless of what the coach asks.
+# Not in run_suite's SUITE: this is a rehearsal, run by hand before the recording, so the coach's
+# likely lines can be read against the bracketed notes in the script.
+persona:
+  description: >
+    A first-time caller reading a prepared script: calm, full sentences, amounts in thousands.
+    Answers a question the script did not plan for briefly and truthfully from the facts below.
+  hidden_facts:
+    opening_balance: "10000"
+    incomes:
+      - {name: salary, amount: "45000", day: 30}
+    essentials:
+      - {name: rent, amount: "16000", day: 5}
+      - {name: electricity, amount: "1800", day: 22}
+      - {name: groceries, amount: "6000"}
+    debts:
+      - {name: credit card, amount: "6000", day: 20, debt_kind: credit_card, min_due: "600"}
+    optionals:
+      - {name: gym membership, amount: "1500", day: 18}
+    notes:
+      - "The balance is 8,000 in the bank and 2,000 in cash, 10,000 together."
+      - "The rent was 15,000 and went up to 16,000 this month; you mention the rise late in the call."
+      - "You have no loans."
+  scripted_behaviours:
+    - turn: 1
+      say: ["Hi. I have around eight thousand in my bank account.", "And about two thousand in cash."]
+    - {turn: 2, say: "My salary is forty-five thousand. I think it comes around the thirtieth, I am not fully sure."}
+    - {turn: 3, say: "No, actually it is fixed. It always comes on the thirtieth."}
+    - {turn: 4, say: "Rent is fifteen thousand on the fifth of next month. Electricity is eighteen hundred on the twenty-second."}
+    - turn: 5
+      say: ["Groceries are about sixteen thousand a month.", "Sorry, I mean six thousand, spread through the month."]
+    - {turn: 6, say: "I have a credit card. Six thousand is due on the thirty-first of September, and the minimum is six hundred."}
+    - {turn: 7, say: "Sorry, the twentieth of September."}
+    - {turn: 8, say: "No loans. And a gym membership, fifteen hundred, on the eighteenth."}
+    - {turn: 9, say: "That is everything. Can you show me how the month looks?"}
+    - {turn: 10, say: "Walk me through the lowest point."}
+    - {turn: 11, say: "That does not sound right. Ten plus forty-five is fifty-five, so how can it go below zero?"}
+    - {turn: 12, say: "What if I pay only the card minimum and skip the gym this month?"}
+    - {turn: 13, say: "And what if my salary comes five days late?"}
+    - turn: 14
+      say: ["Okay, I will pay the minimum and skip the gym.", "Oh, and my rent went up. It is sixteen thousand now, not fifteen."]
+    - {turn: 15, say: "I will pay the card minimum of six hundred on the twentieth, skip the gym, and keep sixteen thousand aside for rent."}
+  ends_when: "the coach has confirmed the plan and said goodbye"
+max_turns: 22
+expect:
+  plan_final: true
+  status: TIMING
+  rules: [money_traceable, state_matches_call, speakable]
+runs: 3

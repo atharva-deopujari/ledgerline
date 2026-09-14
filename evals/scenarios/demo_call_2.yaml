@@ -1,0 +1,47 @@
+name: demo_call_2
+tags: [voice, demo, scripted, memory, carried]
+# The owner's demo script, call 2 (docs/process/demo-script.md, steps 17 to 19): the same person a
+# minute later, greeted with what the first call stored. Modelled on returning_changes_rent. The
+# script has no line for today's balance, which memory does not carry; the facts below answer it
+# if the coach asks. Not in run_suite's SUITE.
+carried:
+  - {kind: essential, name: rent, amount: "16000", day: 5, spoken: "16,000 on 5 October"}
+  - {kind: income, name: salary, amount: "45000", day: 30, spoken: "45,000 on 30 September"}
+  - {kind: debt, name: credit card, amount: "6000", day: 20, debt_kind: credit_card, min_due: "600",
+     spoken: "6,000 on 20 September, minimum 600"}
+  - {kind: essential, name: electricity, amount: "1800", day: 22, spoken: "1,800 on 22 September"}
+  - {kind: essential, name: groceries, amount: "6000", spread: true, spoken: "6,000 spread through the month"}
+persona:
+  description: >
+    The same caller as demo_call_1, a minute later, reading the second half of the script.
+    Brief, confirms what is read back, answers an unplanned question from the facts below.
+  hidden_facts:
+    opening_balance: "10000"
+    incomes:
+      - {name: salary, amount: "50000", day: 30}
+    essentials:
+      - {name: rent, amount: "16000", day: 5}
+      - {name: electricity, amount: "1800", day: 22}
+      - {name: groceries, amount: "6000"}
+    debts:
+      - {name: credit card, amount: "6000", day: 20, debt_kind: credit_card, min_due: "600"}
+    optionals: []
+    notes:
+      - "If asked for today's balance, it is ten thousand."
+      - "The salary went up to fifty thousand; everything else is the same as last time."
+      - "You skipped the gym this month, so it is not a cost now."
+  scripted_behaviours:
+    - {turn: 1, say: "Rent is still sixteen thousand. But my salary is fifty thousand now."}
+    # Not in the script. Memory carries no balance, so the coach asks for today's and, in three
+    # rehearsals of three, could not show the month without it (blocked: opening balance). The
+    # owner needs this line, or one like it, between steps 17 and 18.
+    - {turn: 2, say: "I have ten thousand in the account today."}
+    - {turn: 3, say: "Nothing else changed. Show me the month."}
+    - {turn: 4, say: "That is clear. Thank you."}
+  ends_when: "the coach has closed the call"
+max_turns: 12
+expect:
+  plan_final: true
+  status: OK
+  rules: [money_traceable, state_matches_call, speakable]
+runs: 3
