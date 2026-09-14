@@ -38,6 +38,9 @@ async function startCall() {
 }
 
 beforeEach(() => {
+  // The start screen asks for a phone number; a returning caller's is already in the field,
+  // which is the state every test below is about.
+  localStorage.setItem('ledgerline.phone', '9876543210')
   daily = new FakeDaily()
   vi.stubGlobal('Daily', daily)
   vi.stubGlobal('MediaStream', FakeMediaStream)
@@ -103,7 +106,7 @@ describe('App', () => {
   it('keeps the missing chips out of the focus slot', async () => {
     await startCall()
     send({ ...(sampleJson as unknown as CardsMessage), focus: 'missing' })
-    await screen.findByText('Opening balance')
+    await screen.findByText('Electricity amount')
     expect(screen.getAllByText('Still need')).toHaveLength(1)
   })
 
@@ -115,8 +118,11 @@ describe('App', () => {
     expect(await screen.findByRole('article', { name: 'Income' })).toBeInTheDocument()
     expect(screen.getByRole('article', { name: 'Essentials' })).toBeInTheDocument()
     expect(screen.getByRole('article', { name: 'Loans & cards' })).toBeInTheDocument()
-    expect(screen.getByText('Salary')).toBeInTheDocument()
-    expect(screen.getByText('HDFC card min')).toBeInTheDocument()
+    // Scoped to the card: the low-point working under the chart names the salary too.
+    expect(
+      within(screen.getByRole('article', { name: 'Income' })).getByText('Salary'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('HDFC card')).toBeInTheDocument()
 
     const focused = document.querySelectorAll('[data-focused]')
     expect(focused).toHaveLength(1)

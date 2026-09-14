@@ -1,7 +1,68 @@
 {
-  "gathering": {
+  "returning": {
     "type": "cards",
     "v": 1,
+    "phase": "gathering",
+    "ended": false,
+    "focus": "essentials",
+    "cards": [
+      {
+        "id": "income",
+        "title": "Income",
+        "status": "carried",
+        "rows": [
+          [
+            "Salary",
+            "45,000",
+            "1 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": "From your last call. Confirm or change each."
+      },
+      {
+        "id": "essentials",
+        "title": "Essentials",
+        "status": "carried",
+        "rows": [
+          [
+            "Rent",
+            "12,000",
+            "5 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": "From your last call. Confirm or change each."
+      },
+      {
+        "id": "missing",
+        "title": "Still need",
+        "status": "warn",
+        "rows": [
+          [
+            "Opening balance",
+            "",
+            ""
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "summary",
+        "title": "This month",
+        "status": "blocked",
+        "rows": [],
+        "kv": {},
+        "note": "opening balance"
+      }
+    ],
+    "timeline": [],
+    "low_point": null
+  },
+  "gathering": {
+    "type": "cards",
+    "v": 2,
     "phase": "gathering",
     "ended": false,
     "focus": "essentials",
@@ -15,6 +76,20 @@
             "Salary",
             "45,000",
             "1 Oct"
+          ]
+        ],
+        "kv": {},
+        "note": null
+      },
+      {
+        "id": "debts",
+        "title": "Loans & cards",
+        "status": "ok",
+        "rows": [
+          [
+            "None",
+            "",
+            ""
           ]
         ],
         "kv": {},
@@ -97,11 +172,45 @@
         "b": 32000,
         "e": null
       }
-    ]
+    ],
+    "low_point": {
+      "d": "2026-09-30",
+      "b": 2000,
+      "opening": 8000,
+      "closing": 32000,
+      "before": [
+        {
+          "d": "2026-09-30",
+          "label": "Groceries",
+          "amt": -6000,
+          "spread": true
+        }
+      ],
+      "after": [
+        {
+          "d": "2026-10-01",
+          "label": "Salary",
+          "amt": 45000,
+          "spread": false
+        },
+        {
+          "d": "2026-10-05",
+          "label": "Rent",
+          "amt": -12000,
+          "spread": false
+        },
+        {
+          "d": "2026-10-10",
+          "label": "Groceries",
+          "amt": -3000,
+          "spread": true
+        }
+      ]
+    }
   },
   "ready": {
     "type": "cards",
-    "v": 2,
+    "v": 3,
     "phase": "ready",
     "ended": false,
     "focus": "summary",
@@ -197,11 +306,51 @@
         "b": 52300,
         "e": null
       }
-    ]
+    ],
+    "low_point": {
+      "d": "2026-09-30",
+      "b": 1300,
+      "opening": 8000,
+      "closing": 52300,
+      "before": [
+        {
+          "d": "2026-09-14",
+          "label": "Streaming",
+          "amt": -700,
+          "spread": false
+        },
+        {
+          "d": "2026-09-30",
+          "label": "Groceries",
+          "amt": -6000,
+          "spread": true
+        }
+      ],
+      "after": [
+        {
+          "d": "2026-10-01",
+          "label": "Salary",
+          "amt": 72000,
+          "spread": false
+        },
+        {
+          "d": "2026-10-05",
+          "label": "Rent",
+          "amt": -18000,
+          "spread": false
+        },
+        {
+          "d": "2026-10-10",
+          "label": "Groceries",
+          "amt": -3000,
+          "spread": true
+        }
+      ]
+    }
   },
   "plan": {
     "type": "cards",
-    "v": 3,
+    "v": 4,
     "phase": "plan",
     "ended": false,
     "focus": "plan",
@@ -350,11 +499,51 @@
         "b": 52300,
         "e": null
       }
-    ]
+    ],
+    "low_point": {
+      "d": "2026-09-30",
+      "b": 2000,
+      "opening": 8000,
+      "closing": 52300,
+      "before": [
+        {
+          "d": "2026-09-30",
+          "label": "Groceries",
+          "amt": -6000,
+          "spread": true
+        }
+      ],
+      "after": [
+        {
+          "d": "2026-10-01",
+          "label": "Salary",
+          "amt": 72000,
+          "spread": false
+        },
+        {
+          "d": "2026-10-01",
+          "label": "Streaming",
+          "amt": -700,
+          "spread": false
+        },
+        {
+          "d": "2026-10-05",
+          "label": "Rent",
+          "amt": -18000,
+          "spread": false
+        },
+        {
+          "d": "2026-10-10",
+          "label": "Groceries",
+          "amt": -3000,
+          "spread": true
+        }
+      ]
+    }
   },
   "done": {
     "type": "cards",
-    "v": 4,
+    "v": 5,
     "phase": "done",
     "ended": true,
     "focus": "plan",
@@ -503,6 +692,46 @@
         "b": 52300,
         "e": null
       }
-    ]
+    ],
+    "low_point": {
+      "d": "2026-09-30",
+      "b": 2000,
+      "opening": 8000,
+      "closing": 52300,
+      "before": [
+        {
+          "d": "2026-09-30",
+          "label": "Groceries",
+          "amt": -6000,
+          "spread": true
+        }
+      ],
+      "after": [
+        {
+          "d": "2026-10-01",
+          "label": "Salary",
+          "amt": 72000,
+          "spread": false
+        },
+        {
+          "d": "2026-10-01",
+          "label": "Streaming",
+          "amt": -700,
+          "spread": false
+        },
+        {
+          "d": "2026-10-05",
+          "label": "Rent",
+          "amt": -18000,
+          "spread": false
+        },
+        {
+          "d": "2026-10-10",
+          "label": "Groceries",
+          "amt": -3000,
+          "spread": true
+        }
+      ]
+    }
   }
 }

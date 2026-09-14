@@ -13,6 +13,9 @@ export const UNPAID = 'unpaid'
 /** A value the user said they do not know, or declined to give, kept in the missing card. */
 export const NOT_KNOWN = 'not known'
 
+/** The kind-level answer "there are none of these", written as a label with an empty value. */
+export const NONE = 'none'
+
 /** The timeline point the backend has identified as the month's true lowest day. */
 export const LOWEST = 'lowest'
 
@@ -24,6 +27,11 @@ const whenContains = (row: string[], marker: string): boolean => cell(row, 2).in
 export const isUnpaidRow = (row: string[]): boolean => whenContains(row, UNPAID)
 
 export const isNotKnownRow = (row: string[]): boolean => whenContains(row, NOT_KNOWN)
+
+/** A "None" label with an empty value cell is the kind-level answer "there are none of these";
+ *  an item a person calls "none" with a figure beside it is not swallowed. */
+export const isNoneRow = (row: string[]): boolean =>
+  (row[0] ?? '').trim().toLowerCase() === NONE && !(row[1] ?? '').trim()
 
 /**
  * `e` can name several events comma-joined, so the marker is matched as one of the parts

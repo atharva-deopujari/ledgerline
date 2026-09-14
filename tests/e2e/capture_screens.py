@@ -10,33 +10,16 @@ script reliably reaches, and each shot waits on a DOM condition rather than a cl
 
 from __future__ import annotations
 
-import functools
-import http.server
-import socketserver
-import threading
-from pathlib import Path
-
 from playwright.sync_api import Browser, Page, sync_playwright
+from static_server import DIST, REPO_ROOT, serve
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-DIST = REPO_ROOT / "frontend" / "dist"
 SCREENS = REPO_ROOT / "docs" / "process" / "screens"
+VERDICT = REPO_ROOT / "frontend" / "src" / "protocol" / "verdict.sample.json"
+REVIEW = REPO_ROOT / "frontend" / "src" / "protocol" / "review.sample.json"
 
 PHONE = {"width": 420, "height": 900}
 DESKTOP = {"width": 1280, "height": 900}
 WAIT_MS = 45_000
-
-
-class _Quiet(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, *_args: object) -> None:
-        pass
-
-
-def _serve() -> tuple[socketserver.TCPServer, str]:
-    handler = functools.partial(_Quiet, directory=str(DIST))
-    server = socketserver.TCPServer(("127.0.0.1", 0), handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    return server, f"http://127.0.0.1:{server.server_address[1]}"
 
 
 def _shot(page: Page, name: str) -> None:
@@ -52,6 +35,7 @@ def _open(browser: Browser, url: str, viewport: dict[str, int], dark: bool = Fal
 
 
 def _start(page: Page) -> None:
+    page.get_by_label("phone").fill("9876543210")
     page.get_by_role("button", name="Start the call").click()
 
 
@@ -63,7 +47,7 @@ def main() -> None:
     if not (DIST / "index.html").exists():
         raise SystemExit("frontend/dist is not built; run `npm run build` in frontend/")
     SCREENS.mkdir(parents=True, exist_ok=True)
-    server, url = _serve()
+    server, url = serve()
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -89,6 +73,40 @@ def main() -> None:
                 page.wait_for_selector(".plan", timeout=WAIT_MS)
                 _shot(page, f"5-plan-{theme}.png")
                 page.close()
+
+            # The judge's verdict, with the endpoint answered by this script: it belongs to
+            # the API and the judge model, neither of which has to be up to draw the screen.
+            page = _open(browser, url, PHONE)
+            page.route(
+                "**/api/sessions/*/verdict",
+                lambda route: route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=VERDICT.read_text(),
+                ),
+            )
+            _start(page)
+            page.wait_for_selector(".plan", timeout=WAIT_MS)
+            page.get_by_role("button", name="End call").click()
+            page.wait_for_selector("[aria-label='Call review']", timeout=WAIT_MS)
+            _shot(page, "11-review-phone.png")
+            page.close()
+
+            # The memory page, with its endpoint answered here: it belongs to the API, and
+            # the page is what this session is showing.
+            page = browser.new_page(viewport=PHONE)
+            page.route(
+                "**/api/review/users/*",
+                lambda route: route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=REVIEW.read_text(),
+                ),
+            )
+            page.goto(f"{url}/review/users/9876543210")
+            page.wait_for_selector("[data-testid='review-calls']", timeout=WAIT_MS)
+            _shot(page, "12-memory-phone.png")
+            page.close()
 
             # The failure the user is most likely to meet: no backend behind the page. Loaded
             # without `?mock=1`, so the real fetch runs and the static server has no endpoint.

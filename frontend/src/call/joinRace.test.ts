@@ -76,7 +76,7 @@ describe('a terminal event arrives while join() is still pending', () => {
     const { open } = gatedJoin()
 
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
 
@@ -99,7 +99,7 @@ describe('a terminal event arrives while join() is still pending', () => {
     const { open } = gatedJoin()
 
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
 
@@ -121,7 +121,7 @@ describe('a terminal event arrives while join() is still pending', () => {
     const { open } = gatedJoin()
 
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
 
@@ -142,7 +142,7 @@ describe('a terminal event arrives while join() is still pending', () => {
     const h = hook()
     const { open } = gatedJoin()
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
     await act(async () => {
@@ -162,7 +162,7 @@ describe('a terminal event arrives while join() is still pending', () => {
     const h = hook()
     const { open } = gatedJoin()
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
     await act(async () => {
@@ -180,7 +180,7 @@ describe('a terminal event arrives while join() is still pending', () => {
     const h = hook()
     const { open } = gatedJoin()
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
     await act(async () => {
@@ -194,7 +194,7 @@ describe('a terminal event arrives while join() is still pending', () => {
     // a plain call object for the retry
     daily.createCallObject = FakeDaily.prototype.createCallObject.bind(daily)
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
 
     expect(daily.calls).toHaveLength(2)
@@ -208,7 +208,7 @@ describe('the ordinary case still works', () => {
     const h = hook()
     const { open } = gatedJoin()
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
     await act(async () => {

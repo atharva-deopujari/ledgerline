@@ -73,15 +73,20 @@ describe('LedgerCard', () => {
   })
 
   it('renders a trailing " ?" as a muted question mark beside the value', () => {
-    render(<LedgerCard card={cardById('essentials')} />)
+    // Built here rather than read from the sample: no row in the current sample carries the
+    // provisional suffix, and the rule is about any row that does.
+    const provisional = { ...cardById('essentials'), rows: [['Rent', '12,000 ?', '5 Oct']] }
+    render(<LedgerCard card={provisional} />)
     const value = screen.getByTestId('value-Rent')
-    expect(value).toHaveTextContent('12')
+    expect(value).toHaveTextContent('12,000')
     expect(within(value).getByTitle(/not confirmed/i)).toHaveTextContent('?')
   })
 
   it('shows the note when the card carries one', () => {
-    render(<LedgerCard card={cardById('essentials')} />)
-    expect(screen.getByText(/Did you mean 12,000/)).toBeInTheDocument()
+    // The summary is the card the engine writes a note on; the essentials note the old
+    // sample carried was conflict machinery that has not existed since the cut.
+    render(<LedgerCard card={cardById('summary')} />)
+    expect(screen.getByText(/ask the lender to move it/i)).toBeInTheDocument()
   })
 
   it('marks the card the bot last touched, and leaves the others unmarked', () => {
@@ -91,7 +96,7 @@ describe('LedgerCard', () => {
     expect(container.querySelector('[data-focused]')).not.toBeInTheDocument()
   })
 
-  it.each(['ok', 'warn', 'provisional', 'final', 'blocked'] as const)(
+  it.each(['ok', 'warn', 'provisional', 'final', 'blocked', 'carried'] as const)(
     'carries status %s on the element, and prints the word too, so colour is never the only signal',
     (status) => {
       // Read from the card rather than hard-coding a fixture's status: which status the
@@ -176,12 +181,12 @@ describe('TotalsBar', () => {
     expect(screen.getByText('In')).toBeInTheDocument()
     expect(screen.getByText('42,000')).toBeInTheDocument()
     expect(screen.getByText('Out')).toBeInTheDocument()
-    expect(screen.getByText('25,400')).toBeInTheDocument()
+    expect(screen.getByText('9,412')).toBeInTheDocument()
   })
 
   it('leaves the lowest to the panel rather than printing it twice', () => {
     render(<TotalsBar card={cardById('summary')} />)
-    expect(screen.queryByText(/-1,800/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/on 25 Sep/)).not.toBeInTheDocument()
   })
 
   it('carries the summary status, so a provisional month says so', () => {
@@ -208,8 +213,8 @@ describe('TotalsBar', () => {
 describe('LowestPoint', () => {
   it('splits the delivered sentence into a figure and a day', () => {
     render(<LowestPoint card={cardById('summary')} />)
-    expect(screen.getByText('-1,800')).toBeInTheDocument()
-    expect(screen.getByText('on 5 Oct')).toBeInTheDocument()
+    expect(screen.getByText('0')).toBeInTheDocument()
+    expect(screen.getByText('on 25 Sep')).toBeInTheDocument()
   })
 
   it('says so while the month is still provisional', () => {
@@ -226,8 +231,7 @@ describe('LowestPoint', () => {
 describe('MissingChips', () => {
   it('renders one chip per row of the missing card', () => {
     render(<MissingChips card={cardById('missing')} />)
-    expect(screen.getByText('Opening balance')).toBeInTheDocument()
-    expect(screen.getByText('Electricity')).toBeInTheDocument()
+    expect(screen.getByText('Electricity amount')).toBeInTheDocument()
   })
 
   it('renders nothing without a missing card or with no rows', () => {
@@ -244,7 +248,7 @@ describe('Timeline', () => {
     expect(container.querySelector('polyline')).toBeInTheDocument()
     const low = container.querySelector('[data-testid="timeline-low"]')
     expect(low).toBeInTheDocument()
-    expect(low).toHaveAttribute('data-date', '2026-10-05')
+    expect(low).toHaveAttribute('data-date', '2026-09-25')
   })
 
   it('draws one bar per day of the window, not one per point', () => {
@@ -255,20 +259,22 @@ describe('Timeline', () => {
   })
 
   it('labels the first and last dates, and claims no figure of its own', () => {
-    render(<Timeline points={sample.timeline} />)
+    // `showLow={false}` is how the board renders it whenever the summary carries a lowest:
+    // the panel prints that figure, and two on one screen read as two findings.
+    render(<Timeline points={sample.timeline} showLow={false} />)
     expect(screen.getByText('11 Sep')).toBeInTheDocument()
     expect(screen.getByText('10 Oct')).toBeInTheDocument()
     // The summary card owns the month's lowest; the chart must not print a rival number,
     // because it plots event days only and can miss the real low.
-    expect(screen.queryByText(/-1,800/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/on 25 Sep/)).not.toBeInTheDocument()
   })
 
   it('reads out a day only when that day is pointed at', async () => {
     const { container } = render(<Timeline points={sample.timeline} />)
-    expect(screen.queryByText('3,000')).not.toBeInTheDocument()
+    expect(screen.queryByText('2,800')).not.toBeInTheDocument()
     await userEvent.hover(container.querySelectorAll('.timeline__bar')[0])
     // The figure shown is the balance the backend sent for that day, not a derived one.
-    expect(screen.getByText('3,000')).toBeInTheDocument()
+    expect(screen.getByText('2,800')).toBeInTheDocument()
   })
 
   it('marks the earliest day when the lowest balance repeats', () => {

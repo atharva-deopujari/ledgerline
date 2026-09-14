@@ -84,7 +84,7 @@ describe('while the DELETE is still in flight', () => {
 
     let attempt!: Promise<void>
     act(() => {
-      attempt = h.result.current.start()
+      attempt = h.result.current.start('9876543210')
     })
     await waitFor(() => expect(deleteCalls).toBe(1))
 
@@ -106,7 +106,7 @@ describe('while the DELETE is still in flight', () => {
 
     let attempt!: Promise<void>
     act(() => {
-      attempt = h.result.current.start()
+      attempt = h.result.current.start('9876543210')
     })
     await waitFor(() => expect(deleteCalls).toBe(1))
 
@@ -123,7 +123,7 @@ describe('while the DELETE is still in flight', () => {
 
     // Now the slot is back, and a fresh attempt posts exactly once.
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     expect(posts).toBe(2)
     expect(finalState().call).toBe('live')
@@ -157,7 +157,7 @@ describe('repeat cancellations', () => {
 
     let attempt!: Promise<void>
     act(() => {
-      attempt = h.result.current.start()
+      attempt = h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
 
@@ -191,7 +191,7 @@ describe('the reason is never held hostage to the cleanup', () => {
 
     let attempt!: Promise<void>
     act(() => {
-      attempt = h.result.current.start()
+      attempt = h.result.current.start('9876543210')
     })
 
     await waitFor(() => expect(deleteCalls).toBe(1))
@@ -214,7 +214,7 @@ describe('the reason is never held hostage to the cleanup', () => {
 
     let attempt!: Promise<void>
     act(() => {
-      attempt = h.result.current.start()
+      attempt = h.result.current.start('9876543210')
     })
 
     await waitFor(() => expect(deleteCalls).toBe(1))

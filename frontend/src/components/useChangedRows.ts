@@ -56,8 +56,6 @@ export function useChangedRows(snapshot: CardsMessage | null): Map<string, strin
   return retired
 }
 
-export const rowKey = key
-
 /** The retired figures for `cardId`'s rows, by label, which is what a card hands down. */
 export function changedLabels(retired: Map<string, string>, cardId: string): Map<string, string> {
   const prefix = `${cardId}|`

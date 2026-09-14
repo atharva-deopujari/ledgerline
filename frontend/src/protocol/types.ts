@@ -21,7 +21,7 @@ export type CardId =
   | "actions"
   | "plan";
 
-export type CardStatus = "ok" | "warn" | "provisional" | "final" | "blocked";
+export type CardStatus = "ok" | "warn" | "provisional" | "final" | "blocked" | "carried";
 
 export interface Card {
   id: CardId;
@@ -42,6 +42,34 @@ export interface TimelinePoint {
   e?: string | null;
 }
 
+export interface LowPointLine {
+  /** ISO date; for a spread item, the last day counted in this total */
+  d: string
+  label: string
+  /** whole rupees, signed the way the balance moves: negative out, positive in */
+  amt: number
+  /** a running total up to `d`, not one payment on it */
+  spread: boolean
+}
+
+/**
+ * Why the lowest balance is that number, so the screen and the voice explain it the same way.
+ * Two identities hold, the same ones the domain guarantees:
+ *   opening + sum(before.amt) === b
+ *   b + sum(after.amt) === closing
+ * Every amount is whole rupees, signed the way the balance moves (out negative, in positive).
+ */
+export interface LowPointView {
+  /** ISO date of the lowest day */
+  d: string
+  /** balance in whole rupees on that day */
+  b: number
+  opening: number
+  closing: number
+  before: LowPointLine[]
+  after: LowPointLine[]
+}
+
 export interface CardsMessage {
   type: "cards";
   v: number;
@@ -49,6 +77,8 @@ export interface CardsMessage {
   focus: CardId | null;
   cards: Card[];
   timeline: TimelinePoint[];
+  /** The arithmetic behind the lowest day; null while the plan is blocked. */
+  low_point: LowPointView | null;
   /** True once the call has ended, whoever ended it. Independent of `phase`: `done` means the
    *  person confirmed the plan; `ended` alone means the call stopped before they did. */
   ended?: boolean;

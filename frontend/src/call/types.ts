@@ -14,7 +14,7 @@ export interface DailyCall {
   setLocalAudio(on: boolean): unknown
 }
 
-export interface DailyFactory {
+interface DailyFactory {
   createCallObject(options: Record<string, unknown>): DailyCall
 }
 

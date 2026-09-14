@@ -1,5 +1,5 @@
 /** A hand-rolled stand-in for daily-js, good enough for the handlers the hook registers. */
-export type Handler = (ev: unknown) => void
+type Handler = (ev: unknown) => void
 
 export class FakeCall {
   handlers = new Map<string, Handler[]>()
@@ -16,13 +16,6 @@ export class FakeCall {
     const list = this.handlers.get(event) ?? []
     list.push(handler)
     this.handlers.set(event, list)
-    return this
-  }
-  off(event: string, handler: Handler): this {
-    this.handlers.set(
-      event,
-      (this.handlers.get(event) ?? []).filter((h) => h !== handler),
-    )
     return this
   }
   join(opts: unknown) {

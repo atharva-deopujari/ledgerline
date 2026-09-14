@@ -46,7 +46,7 @@ describe('a late event from the previous call', () => {
 
     // First call joins, and holds its left-meeting back the way real Daily does.
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     const first = daily.last
     first.emitsLeftOnLeave = false
@@ -60,7 +60,7 @@ describe('a late event from the previous call', () => {
 
     // The user starts another call, which joins.
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     const second = daily.last
     expect(daily.calls).toHaveLength(2)
@@ -79,7 +79,7 @@ describe('a late event from the previous call', () => {
   it('ignores every late lifecycle event from a replaced call', async () => {
     const h = hook()
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     const first = daily.last
     first.emitsLeftOnLeave = false
@@ -88,7 +88,7 @@ describe('a late event from the previous call', () => {
     })
     await waitFor(() => expect(first.destroyed).toBe(1))
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     const second = daily.last
     const errorsBefore = count('error')
@@ -107,7 +107,7 @@ describe('a late event from the previous call', () => {
   it('still honours events from the call that is actually current', async () => {
     const h = hook()
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await act(async () => {
       daily.last.emit('error', { errorMsg: 'Meeting has ended' })
@@ -120,7 +120,7 @@ describe('starting while the previous teardown is still running', () => {
   it('waits for it instead of putting two Daily objects in the air', async () => {
     const h = hook()
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     const first = daily.last
     first.emitsLeftOnLeave = false
@@ -139,7 +139,7 @@ describe('starting while the previous teardown is still running', () => {
 
     let started = false
     const pending = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
       started = true
     })
 

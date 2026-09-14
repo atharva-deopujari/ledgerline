@@ -14,7 +14,7 @@ import type {
   TrackEvent,
 } from './types'
 
-export interface DailyHandlers {
+interface DailyHandlers {
   trackStarted(ev: TrackEvent): void
   appMessage(ev: AppMessageEvent): void
   participantLeft(ev: ParticipantEvent): void

@@ -1,0 +1,84 @@
+{
+  "phone": "9876543210",
+  "memory_read": true,
+  "active": [
+    {
+      "kind": "income",
+      "name": "salary",
+      "field": "amount",
+      "value": "45000.00",
+      "certainty": "confirmed",
+      "recorded_at": "2026-08-14T09:02:11Z",
+      "last_confirmed_at": "2026-09-13T14:15:02Z",
+      "source_session_id": "9876543210-20260814T090211Z",
+      "superseded": false,
+      "ended": false
+    },
+    {
+      "kind": "essential",
+      "name": "rent",
+      "field": "amount",
+      "value": "14000.00",
+      "certainty": "confirmed",
+      "recorded_at": "2026-09-13T14:15:02Z",
+      "last_confirmed_at": "2026-09-13T14:15:02Z",
+      "source_session_id": "9876543210-20260913T141502Z",
+      "superseded": false,
+      "ended": false
+    }
+  ],
+  "history": [
+    {
+      "kind": "essential",
+      "name": "rent",
+      "field": "amount",
+      "value": "12000.00",
+      "certainty": "confirmed",
+      "recorded_at": "2026-08-14T09:02:11Z",
+      "last_confirmed_at": "2026-08-14T09:02:11Z",
+      "source_session_id": "9876543210-20260814T090211Z",
+      "superseded": true,
+      "ended": false
+    },
+    {
+      "kind": "optional",
+      "name": "gym",
+      "field": "amount",
+      "value": null,
+      "certainty": null,
+      "recorded_at": "2026-09-13T14:15:02Z",
+      "last_confirmed_at": "2026-09-13T14:15:02Z",
+      "source_session_id": "9876543210-20260913T141502Z",
+      "superseded": false,
+      "ended": true
+    }
+  ],
+  "notes": [
+    {
+      "category": "constraint",
+      "text": "Does not want to ask the landlord for more time.",
+      "evidence_session_id": "9876543210-20260814T090211Z",
+      "evidence_turn": 9,
+      "recorded_at": "2026-08-14T09:02:11Z",
+      "superseded": false
+    }
+  ],
+  "calls": [
+    {
+      "session_id": "9876543210-20260913T141502Z",
+      "started_at": "2026-09-13T14:15:02Z",
+      "ended_at": "2026-09-13T14:21:02Z",
+      "ended_by": "bot",
+      "trace_url": "https://cloud.langfuse.com/project/example/traces/0123456789abcdef0123456789abcdef",
+      "recording_path": "evals/runs/voice-9876543210-20260913T141502Z.json"
+    },
+    {
+      "session_id": "9876543210-20260814T090211Z",
+      "started_at": "2026-08-14T09:02:11Z",
+      "ended_at": "2026-08-14T09:10:11Z",
+      "ended_by": "client",
+      "trace_url": null,
+      "recording_path": null
+    }
+  ]
+}

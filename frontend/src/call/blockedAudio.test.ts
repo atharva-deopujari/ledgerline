@@ -63,7 +63,7 @@ describe('the browser blocks the bot audio', () => {
     const h = hook()
     h.result.current.audioRef.current = blockedAudio()
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
 
     await act(async () => {
@@ -84,7 +84,7 @@ describe('the browser blocks the bot audio', () => {
     const h = hook()
     h.result.current.audioRef.current = blockedAudio()
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     const first = daily.last
 
@@ -102,7 +102,7 @@ describe('the browser blocks the bot audio', () => {
     const h = hook()
     h.result.current.audioRef.current = blockedAudio()
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     const first = daily.last
 
@@ -120,7 +120,7 @@ describe('the browser blocks the bot audio', () => {
     const h = hook()
     h.result.current.audioRef.current = blockedAudio()
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await act(async () => {
       daily.last.emit('track-started', {
@@ -139,7 +139,7 @@ describe('the browser blocks the bot audio', () => {
     } as unknown as HTMLAudioElement
 
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
 
     expect(posts).toBe(2)
@@ -164,7 +164,7 @@ describe('a play() that rejects only after the call has been replaced', () => {
     } as unknown as HTMLAudioElement
 
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     const first = daily.last
 
@@ -186,7 +186,7 @@ describe('a play() that rejects only after the call has been replaced', () => {
       play: vi.fn(async () => {}),
     } as unknown as HTMLAudioElement
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     const second = daily.last
     expect(second).not.toBe(first)
@@ -210,7 +210,7 @@ describe('a play() that rejects only after the call has been replaced', () => {
     const h = hook()
     h.result.current.audioRef.current = blockedAudio()
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await act(async () => {
       daily.last.emit('track-started', {

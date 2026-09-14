@@ -4,7 +4,7 @@
  */
 import type { CardsMessage, SpeakState } from '../protocol/types'
 
-export type CallState = 'idle' | 'connecting' | 'live' | 'ended' | 'error'
+type CallState = 'idle' | 'connecting' | 'live' | 'ended' | 'error'
 
 export interface SessionState {
   call: CallState

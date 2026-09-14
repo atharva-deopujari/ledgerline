@@ -34,6 +34,9 @@ function gateNextJoin() {
 }
 
 beforeEach(() => {
+  // The start screen asks for a phone number; a returning caller's is already in the field,
+  // which is the state every test below is about.
+  localStorage.setItem('ledgerline.phone', '9876543210')
   daily = new FakeDaily()
   vi.stubGlobal('Daily', daily)
   vi.stubGlobal('MediaStream', FakeMediaStream)

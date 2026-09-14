@@ -1,7 +1,8 @@
 /**
  * The review script for `?mock=1`: the whole journey as wire messages, on a timer.
  *
- * The four card snapshots come from `snapshots.json`, which `scripts/dump_mock_snapshots.py`
+ * The four card snapshots this replays come from `snapshots.json`, which
+ * `scripts/dump_mock_snapshots.py`
  * generates from real domain fixtures — that file is the source of truth and is never edited
  * by hand. Everything written here is the conversation around them: the RTVI text cues that
  * make the headline stream and the state pill move.
@@ -23,6 +24,9 @@ const botStarts = { label: 'rtvi-ai', type: 'bot-started-speaking' }
 const botStops = { label: 'rtvi-ai', type: 'bot-stopped-speaking' }
 const userStarts = { label: 'rtvi-ai', type: 'user-started-speaking' }
 
+// `returning` is the fifth frame in the file and is deliberately not replayed here: a
+// returning caller's opening is a different call, not a step in this one. It is the fixture
+// the carried rendering is built and screenshotted against.
 const { gathering, ready, plan, done } = snapshots
 
 export const MOCK_SCRIPT: MockEvent[] = [

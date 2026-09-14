@@ -19,8 +19,10 @@ function stubFetch() {
   starts = 0
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === 'DELETE') return new Response(null, { status: 204 })
+      // The board polls for the judge's verdict once a call is over; that is not a start.
+      if (String(input).endsWith('/verdict')) return new Response('', { status: 202 })
       starts += 1
       return new Response(JSON.stringify(SESSION), { status: 201 })
     }),
@@ -48,6 +50,9 @@ function gateNextJoin() {
 }
 
 beforeEach(() => {
+  // The start screen asks for a phone number; a returning caller's is already in the field,
+  // which is the state every test below is about.
+  localStorage.setItem('ledgerline.phone', '9876543210')
   daily = new FakeDaily()
   vi.stubGlobal('Daily', daily)
   vi.stubGlobal('MediaStream', FakeMediaStream)

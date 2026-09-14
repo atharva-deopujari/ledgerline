@@ -1,27 +1,15 @@
-"""Serves the built frontend for the browser tests.
+"""Fixtures for the browser tests: the built frontend on a local port, and a page.
 
-A thread around `http.server` rather than a subprocess: `frontend/dist` is static, the tests
-only ever fetch `/` and its assets, and this needs nothing beyond the standard library.
+The server itself is `static_server.py`, shared with `capture_screens.py` so both serve the
+app exactly as the deployment does.
 """
 
 from __future__ import annotations
 
-import functools
-import http.server
-import socketserver
-import threading
 from collections.abc import Iterator
-from pathlib import Path
 
 import pytest
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-DIST = REPO_ROOT / "frontend" / "dist"
-
-
-class _QuietHandler(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, *_args: object) -> None:  # noqa: D102 - silence per-request logging
-        pass
+from static_server import DIST, serve
 
 
 @pytest.fixture(scope="session")
@@ -29,15 +17,11 @@ def frontend_url() -> Iterator[str]:
     if not (DIST / "index.html").exists():
         pytest.skip("frontend/dist is not built; run `npm run build` in frontend/")
 
-    handler = functools.partial(_QuietHandler, directory=str(DIST))
-    with socketserver.TCPServer(("127.0.0.1", 0), handler) as server:
-        thread = threading.Thread(target=server.serve_forever, daemon=True)
-        thread.start()
-        try:
-            yield f"http://127.0.0.1:{server.server_address[1]}"
-        finally:
-            server.shutdown()
-            thread.join(timeout=5)
+    server, url = serve()
+    try:
+        yield url
+    finally:
+        server.shutdown()
 
 
 @pytest.fixture

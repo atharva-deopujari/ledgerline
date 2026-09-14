@@ -1,8 +1,10 @@
-import { useCallback, useReducer } from 'react'
+import { useCallback, useReducer, useState } from 'react'
 import { useDailyCall } from './call/useDailyCall'
 import { CardStack } from './components/CardStack'
 import { ErrorBanner } from './components/ErrorBanner'
+import { ForgetButton } from './components/ForgetButton'
 import { LowestPoint } from './components/LowestPoint'
+import { LowPointWorking } from './components/LowPointWorking'
 import { MissingChips } from './components/MissingChips'
 import { PhaseStrip } from './components/PhaseStrip'
 import { PlanPanel } from './components/PlanPanel'
@@ -11,17 +13,23 @@ import { Timeline } from './components/Timeline'
 import { TotalsBar } from './components/TotalsBar'
 import { VoiceBar } from './components/VoiceBar'
 import { useChangedRows } from './components/useChangedRows'
+import { ReviewPage } from './review/ReviewPage'
+import { useRoute } from './route'
+import { VerdictPanel } from './components/VerdictPanel'
+import { forgetRememberedPhone, normalisePhone, readRememberedPhone, rememberPhone } from './phone'
 import { initialSession, sessionReducer } from './state/sessionReducer'
+import { useVerdict } from './verdict/useVerdict'
 
 const OPENING_TITLE = 'Talk through your next thirty days.'
 const OPENING_LINE =
-  'Say what comes in, what goes out, and when. Nothing to type — the page keeps up with you.'
+  'Say what comes in, what goes out, and when. Nothing to type once the call starts — the page keeps up with you.'
+const PHONE_HINT = 'Ten digits, or a plus and the country code.'
 const CONNECTING_LINE =
   'Allow the microphone when your browser asks. Start speaking as soon as you hear the first question.'
 
-export default function App() {
+function CallApp() {
   const [session, dispatch] = useReducer(sessionReducer, initialSession)
-  const { start, starting, stop, toggleMic, micOn, audioRef } = useDailyCall(dispatch)
+  const { start, starting, stop, toggleMic, micOn, sessionId, audioRef } = useDailyCall(dispatch)
 
   const snapshot = session.cards
   // What each corrected row used to say, so the board can show the correction happening.
@@ -54,7 +62,24 @@ export default function App() {
   // for an attempt that never joined at all.
   const started = session.call === 'live' || (!!snapshot && session.call !== 'idle')
 
-  const onStart = useCallback(() => void start(), [start])
+  // The number is the person's id everywhere downstream, so it is checked before a call is
+  // attempted. The server checks it too and answers 422; this is only so they are told first.
+  const [phone, setPhone] = useState(readRememberedPhone)
+  const [refused, setRefused] = useState(false)
+
+  // The judge's verdict on the call that just ended; nothing is asked for until it has.
+  const review = useVerdict(sessionId, callOver)
+
+  const onStart = useCallback(() => {
+    const valid = normalisePhone(phone)
+    if (!valid) {
+      setRefused(true)
+      return
+    }
+    setRefused(false)
+    rememberPhone(valid)
+    void start(valid)
+  }, [phone, start])
 
   return (
     <div className="app" data-call={session.call}>
@@ -73,15 +98,46 @@ export default function App() {
           <p className="opening__kicker">{connecting ? 'connecting' : 'about four minutes'}</p>
           <h1 className="opening__title">{OPENING_TITLE}</h1>
           <p className="opening__line">{connecting ? CONNECTING_LINE : OPENING_LINE}</p>
-          <button
-            type="button"
-            className="opening__button"
-            onClick={onStart}
-            disabled={busy}
-            aria-busy={busy}
+          <form
+            className="opening__form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              onStart()
+            }}
           >
-            {connecting ? 'Starting…' : starting ? 'Finishing the last attempt…' : 'Start the call'}
-          </button>
+            <label className="opening__label" htmlFor="phone">
+              Your phone number
+            </label>
+            <input
+              id="phone"
+              className="opening__field"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value)
+                setRefused(false)
+              }}
+              aria-invalid={refused}
+              aria-describedby={refused ? 'phone-hint' : undefined}
+              disabled={busy}
+            />
+            <button className="opening__button" disabled={busy} aria-busy={busy}>
+              {connecting
+                ? 'Starting…'
+                : starting
+                  ? 'Finishing the last attempt…'
+                  : 'Start the call'}
+            </button>
+          </form>
+          {refused && (
+            <p className="opening__hint" id="phone-hint" role="alert">
+              {PHONE_HINT}
+            </p>
+          )}
+          {/* The person's own delete control, beside the number it deletes. */}
+          <ForgetButton phone={normalisePhone(phone) ?? ''} onForgotten={forgetRememberedPhone} />
         </main>
       ) : (
         <main className="board">
@@ -120,11 +176,16 @@ export default function App() {
             {snapshot && snapshot.timeline.length > 0 && (
               <Timeline points={snapshot.timeline} showLow={!summary?.kv.lowest} />
             )}
+            {/* Under the figure and its chart: why the month gets that low, in the same
+                order the bot says it. */}
+            <LowPointWorking low={snapshot?.low_point ?? null} />
             {hasPlan && snapshot ? (
               <PlanPanel snapshot={snapshot} ended={callOver} />
             ) : (
               summary?.note && <p className="panel__note">{summary.note}</p>
             )}
+            {/* The judge runs after the call, so this is the last thing on the panel. */}
+            <VerdictPanel state={review} />
           </aside>
         </main>
       )}
@@ -157,4 +218,13 @@ export default function App() {
       )}
     </div>
   )
+}
+
+/**
+ * Two pages: the call board, and one person's memory page. The path is read once — nothing
+ * pushes state — and the board's hooks only run when the board is the page.
+ */
+export default function App() {
+  const route = useRoute()
+  return route.name === 'review' ? <ReviewPage phone={route.phone} /> : <CallApp />
 }

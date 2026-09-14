@@ -83,7 +83,7 @@ describe('retrying in the window before the join settles', () => {
     const h = hook()
     const { open } = gateNextJoin()
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
 
@@ -109,7 +109,7 @@ describe('retrying in the window before the join settles', () => {
     // await is flushed and visible on result.current.
     let attempt!: Promise<void>
     act(() => {
-      attempt = h.result.current.start()
+      attempt = h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
     expect(h.result.current.starting).toBe(true)
@@ -133,7 +133,7 @@ describe('retrying in the window before the join settles', () => {
     const h = hook()
     const { open } = gateNextJoin()
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
 
@@ -143,7 +143,7 @@ describe('retrying in the window before the join settles', () => {
 
     // The user presses Try again while join() is still hanging.
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
 
     expect(posts).toBe(1)
@@ -161,7 +161,7 @@ describe('retrying in the window before the join settles', () => {
     const h = hook()
     const { open } = gateNextJoin()
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
     await act(async () => {
@@ -181,7 +181,7 @@ describe('retrying in the window before the join settles', () => {
     const h = hook()
     const { open } = gateNextJoin()
     const starting = act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     await waitFor(() => expect(daily.calls).toHaveLength(1))
     await act(async () => {
@@ -193,7 +193,7 @@ describe('retrying in the window before the join settles', () => {
     await starting
 
     await act(async () => {
-      await h.result.current.start()
+      await h.result.current.start('9876543210')
     })
     expect(posts).toBe(2)
     expect(daily.calls).toHaveLength(2)
@@ -214,7 +214,7 @@ describe('a join that never settles', () => {
     }
 
     let settled = false
-    const starting = h.result.current.start().then(() => {
+    const starting = h.result.current.start('9876543210').then(() => {
       settled = true
     })
 

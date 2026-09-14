@@ -20,26 +20,61 @@ import pytest
 from playwright.sync_api import Page, expect
 
 SNAPSHOTS = Path(__file__).resolve().parents[2] / "frontend" / "src" / "mock" / "snapshots.json"
+REVIEW_SAMPLE = (
+    Path(__file__).resolve().parents[2] / "frontend" / "src" / "protocol" / "review.sample.json"
+)
 
 pytestmark = pytest.mark.e2e
 
 # The scripted call runs about 30 s end to end, and CI machines are slower than that.
 SETTLE_MS = 45_000
 
+PHONE = "9876543210"
+
 
 def _start(page: Page, url: str) -> None:
     page.goto(f"{url}/?mock=1")
     page.wait_for_load_state("networkidle")
+    # The phone number is the only field on the start screen and the person's id everywhere
+    # downstream, so nothing starts without it.
+    page.get_by_label("phone").fill(PHONE)
     page.get_by_role("button", name="Start the call").click()
 
 
-def test_start_screen_offers_one_button(page: Page, frontend_url: str) -> None:
+def test_start_screen_asks_for_one_number_and_nothing_else(page: Page, frontend_url: str) -> None:
     page.goto(f"{frontend_url}/?mock=1")
     page.wait_for_load_state("networkidle")
 
     expect(page.get_by_role("button", name="Start the call")).to_be_visible()
+    expect(page.get_by_label("phone")).to_have_value("")
+    expect(page.locator("input:not([type=hidden])")).to_have_count(1)
     # Nothing from the call is on screen before it starts.
     expect(page.get_by_test_id("state-pill")).to_have_count(0)
+
+
+def test_a_number_the_server_would_refuse_never_starts_a_call(
+    page: Page, frontend_url: str
+) -> None:
+    posted: list[str] = []
+    page.on("request", lambda r: posted.append(r.url) if r.method == "POST" else None)
+
+    page.goto(f"{frontend_url}/?mock=1")
+    page.wait_for_load_state("networkidle")
+    page.get_by_label("phone").fill("98765")
+    page.get_by_role("button", name="Start the call").click()
+
+    expect(page.get_by_role("alert")).to_contain_text("Ten digits")
+    expect(page.get_by_test_id("state-pill")).to_have_count(0)
+    assert not [u for u in posted if "/api/sessions" in u], "an invalid number was still posted"
+
+
+def test_the_number_is_remembered_for_the_next_visit(page: Page, frontend_url: str) -> None:
+    _start(page, frontend_url)
+    expect(page.get_by_test_id("state-pill")).to_be_visible()
+
+    page.goto(f"{frontend_url}/?mock=1")
+    page.wait_for_load_state("networkidle")
+    expect(page.get_by_label("phone")).to_have_value(PHONE)
 
 
 def test_journey_from_first_question_to_final_plan(page: Page, frontend_url: str) -> None:
@@ -267,3 +302,208 @@ def test_the_board_prints_the_low_once_and_only_where_the_backend_named_it(
     else:
         # Neither named it, so nothing on the board may claim a figure for the low.
         expect(page.locator(".timeline__low-label")).to_have_count(0)
+
+
+# The judge's answer, in the shape of HLD section 7. Served by the browser test itself: the
+# endpoint is C's and the model is B's, and neither has to exist for the screen to be proved.
+VERDICT = {
+    "session_id": "mock",
+    "status": "ready",
+    "summary": 0.86,
+    "deterministic": [
+        {"rule": "money_traceable", "passed": True, "detail": None},
+        {
+            "rule": "state_matches_call",
+            "passed": False,
+            # The detail opens with the sub-rule that failed, and renders as any detail does.
+            "detail": (
+                "state_matches_facts: rent recorded as 12,000; the person said 11,000 on turn 14"
+            ),
+        },
+        {"rule": "speakable", "passed": True, "detail": None},
+    ],
+    "intent": [
+        {
+            "criterion": "low_point_explained",
+            "outcome": "pass",
+            "reason": "the lowest day and what it is made of were said in plain figures",
+            "turn": 22,
+        },
+        {
+            "criterion": "challenge_answered_without_computing",
+            "outcome": "not_applicable",
+            "reason": "nothing was challenged in this call",
+            "turn": None,
+        },
+    ],
+    "judge_model": "gpt-5.6-luna",
+    "trace_url": "https://cloud.langfuse.com/project/p1/traces/t1",
+}
+
+
+def test_the_call_is_reviewed_after_it_ends(page: Page, frontend_url: str) -> None:
+    """The judge runs after the call, so the board waits for it rather than refreshing."""
+    asked: list[str] = []
+
+    def answer(route) -> None:  # noqa: ANN001 - playwright's Route type
+        asked.append(route.request.url)
+        # 202 while the judge is still working, exactly as the endpoint answers.
+        if len(asked) == 1:
+            route.fulfill(status=202, body="")
+        else:
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(VERDICT),
+            )
+
+    page.route("**/api/sessions/*/verdict", answer)
+
+    _start(page, frontend_url)
+    expect(page.locator(".plan")).to_be_visible(timeout=SETTLE_MS)
+    # Nothing is asked for while the call is still running.
+    assert not asked
+
+    page.get_by_role("button", name="End call").click()
+
+    review = page.get_by_label("Call review")
+    expect(page.get_by_text("Reviewing this call")).to_be_visible()
+    expect(review).to_be_visible(timeout=SETTLE_MS)
+    expect(review).to_contain_text("0.86")
+    expect(review).to_contain_text("money traceable")
+    expect(review).to_contain_text("state matches call")
+    expect(review).to_contain_text("state_matches_facts: rent recorded as 12,000")
+    expect(review).to_contain_text("not applicable")
+    expect(review).to_contain_text("low point explained")
+    # Three rules, all gating: there is no second list any more.
+    expect(page.get_by_test_id("verdict-rules").get_by_role("listitem")).to_have_count(3)
+    expect(review).to_contain_text("turn 22")
+    expect(page.get_by_role("link", name="Langfuse trace")).to_have_attribute(
+        "href", VERDICT["trace_url"]
+    )
+    # The poll stops once it has an answer.
+    settled = len(asked)
+    page.wait_for_timeout(5000)
+    assert len(asked) == settled, "the poll kept asking after the verdict arrived"
+
+
+def test_a_failed_review_says_so_rather_than_showing_an_empty_panel(
+    page: Page, frontend_url: str
+) -> None:
+    page.route(
+        "**/api/sessions/*/verdict",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps(
+                {
+                    **VERDICT,
+                    "status": "failed",
+                    "summary": None,
+                    "deterministic": [],
+                    "intent": [],
+                    "trace_url": None,
+                }
+            ),
+        ),
+    )
+
+    _start(page, frontend_url)
+    expect(page.locator(".plan")).to_be_visible(timeout=SETTLE_MS)
+    page.get_by_role("button", name="End call").click()
+
+    review = page.get_by_label("Call review")
+    expect(review).to_contain_text("could not be reviewed", timeout=SETTLE_MS)
+    expect(page.get_by_role("link", name="Langfuse trace")).to_have_count(0)
+
+
+def _serve_review(page: Page, body: str | None = None) -> list[str]:
+    """Answer the memory endpoint with the generated sample; C's route is proved on C's side."""
+    deleted: list[str] = []
+    page.route(
+        "**/api/review/users/*",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=body if body is not None else REVIEW_SAMPLE.read_text(),
+        ),
+    )
+
+    def forget(route) -> None:  # noqa: ANN001 - playwright's Route type
+        deleted.append(route.request.url)
+        route.fulfill(status=204, body="")
+
+    page.route("**/api/users/*", forget)
+    return deleted
+
+
+def test_the_memory_page_is_reached_by_its_path(page: Page, frontend_url: str) -> None:
+    """No router: the path is read, and the server serves the app for any path."""
+    _serve_review(page)
+    page.goto(f"{frontend_url}/review/users/9876543210")
+    page.wait_for_load_state("networkidle")
+
+    active = page.get_by_test_id("review-active")
+    expect(active).to_contain_text("salary")
+    expect(active).to_contain_text("45,000")
+    expect(active).to_contain_text("14,000")
+
+    history = page.get_by_test_id("review-history")
+    # The figure that was replaced is struck and dated, never mistakable for the live one.
+    expect(history.locator("s[data-retired='12,000']")).to_be_visible()
+    expect(history).to_contain_text("14 Aug 2026")
+    expect(history).to_contain_text("ended")
+
+    calls = page.get_by_test_id("review-calls")
+    expect(calls.get_by_role("listitem")).to_have_count(2)
+    expect(calls.get_by_role("link", name="Langfuse trace")).to_have_count(1)
+
+
+def test_the_person_can_have_their_memory_deleted(page: Page, frontend_url: str) -> None:
+    deleted = _serve_review(page)
+    page.goto(f"{frontend_url}/review/users/9876543210")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("button", name="Forget this number").click()
+    # It asks first: this cannot be undone.
+    expect(page.get_by_text("cannot be undone")).to_be_visible()
+    assert not deleted
+
+    page.get_by_role("button", name="Yes, forget").click()
+    expect(page.get_by_text("Nothing is kept")).to_be_visible()
+    assert deleted == [f"{frontend_url}/api/users/9876543210"]
+
+
+def test_a_memory_that_could_not_be_read_does_not_read_as_no_memory(
+    page: Page, frontend_url: str
+) -> None:
+    empty = json.loads(REVIEW_SAMPLE.read_text())
+    empty.update(memory_read=False, active=[], history=[], notes=[], calls=[])
+    _serve_review(page, json.dumps(empty))
+
+    page.goto(f"{frontend_url}/review/users/9876543210")
+    page.wait_for_load_state("networkidle")
+
+    expect(page.get_by_text("could not be read")).to_be_visible()
+    expect(page.get_by_test_id("review-calls")).to_be_empty()
+
+
+def test_the_lowest_day_adds_up_on_screen(page: Page, frontend_url: str) -> None:
+    """The figure is explained, not asserted: the movements shown come to the total shown."""
+    _start(page, frontend_url)
+    working = page.get_by_label("How the lowest day is reached")
+    expect(working).to_be_visible(timeout=SETTLE_MS)
+
+    # The sum is computed in the page from the lines beside it, so this is the arithmetic
+    # agreeing with the backend's own low point, not a string comparison.
+    expect(page.get_by_test_id("low-total")).to_have_attribute("data-agrees", "true")
+    expect(page.get_by_test_id("low-opening")).to_be_visible()
+    expect(page.get_by_test_id("low-closing")).to_be_visible()
+
+
+def test_a_kind_with_none_of_it_says_so(page: Page, frontend_url: str) -> None:
+    """ "No loans" and "nobody asked about loans" used to look identical on screen."""
+    _start(page, frontend_url)
+    card = page.locator("[data-card='debts']")
+    expect(card).to_be_visible(timeout=SETTLE_MS)
+    expect(card.locator(".row--none")).to_have_text("None")

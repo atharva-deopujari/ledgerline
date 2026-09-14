@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import sample from './sample.json'
+import snapshots from '../mock/snapshots.json'
+import { isNoneRow } from './markers'
 import { parseIncoming } from './parse'
 import type { CardsMessage } from './types'
 
@@ -53,6 +55,14 @@ describe('parseIncoming: cards', () => {
     ).toBeNull()
   })
 
+  it('keeps a carried card: figures from the last call, not yet confirmed', () => {
+    const parsed = parseIncoming({
+      ...sample,
+      cards: [{ id: 'income', title: 'Income', status: 'carried', rows: [], kv: {}, note: null }],
+    }) as CardsMessage | null
+    expect(parsed?.cards[0]?.status).toBe('carried')
+  })
+
   it('rejects malformed rows, kv and timeline points', () => {
     const base = { id: 'income', title: 'X', status: 'ok', kv: {}, note: null }
     expect(parseIncoming({ ...sample, cards: [{ ...base, rows: [['a', 2, 'c']] }] })).toBeNull()
@@ -72,6 +82,56 @@ describe('parseIncoming: cards', () => {
       ],
     }) as CardsMessage
     expect(got.timeline).toHaveLength(3)
+  })
+})
+
+describe('parseIncoming: low_point', () => {
+  it('accepts a null low_point: the plan is blocked, there is no lowest day yet', () => {
+    const got = parseIncoming({ ...sample, low_point: null }) as CardsMessage | null
+    expect(got).not.toBeNull()
+    expect(got!.low_point).toBeNull()
+  })
+
+  it('treats a message without the key as a message without a low point', () => {
+    const without: Record<string, unknown> = { ...sample }
+    delete without.low_point
+    const got = parseIncoming(without) as CardsMessage | null
+    expect(got).not.toBeNull()
+    expect(got!.low_point).toBeNull()
+  })
+
+  it('keeps the derivation of the plan snapshot, both identities intact', () => {
+    const got = parseIncoming(snapshots.plan) as CardsMessage | null
+    expect(got).not.toBeNull()
+    const low = got!.low_point
+    expect(low).not.toBeNull()
+    const sum = (lines: { amt: number }[]) => lines.reduce((total, l) => total + l.amt, 0)
+    expect(low!.opening + sum(low!.before)).toBe(low!.b)
+    expect(low!.b + sum(low!.after)).toBe(low!.closing)
+    expect(low!.before[0]!.spread).toBe(true)
+  })
+
+  it('rejects the whole message when a low_point field is off contract', () => {
+    const low = snapshots.plan.low_point!
+    for (const broken of [
+      'nope',
+      { ...low, d: 20260930 },
+      { ...low, b: '2,000' },
+      { ...low, opening: 8000.5 },
+      { ...low, before: 'none' },
+      { ...low, before: [{ ...low.before[0], amt: '-6,000' }] },
+      { ...low, after: [{ ...low.after[0], spread: 'no' }] },
+      { ...low, after: [{ d: '2026-10-01', label: 'Salary', amt: 72000 }] },
+    ]) {
+      expect(parseIncoming({ ...sample, low_point: broken })).toBeNull()
+    }
+  })
+})
+
+describe('isNoneRow', () => {
+  it('reads a None label with an empty value as "there are none of these"', () => {
+    expect(isNoneRow(['None', '', ''])).toBe(true)
+    expect(isNoneRow(['none', '1,200', ''])).toBe(false)
   })
 })
 

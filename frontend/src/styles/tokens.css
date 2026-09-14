@@ -18,7 +18,6 @@
   --ground-sunk: #eceef1;
   --ground-raised: #eef1f6;
   --ground-hover: #eaedf1;
-  --ground-pinned: #e4e7ec;
   --ink: #14161a;
   --ink-muted: #545a63;
   --ink-faint: #8a919c;
@@ -53,7 +52,6 @@
   --pending-edge: #c8a52c;
   --pending-wash: #fcf3dc;
   --final: #1f6472;
-  --blocked: #a32f26;
 
   /* Confirmed: the one green ground on the board, and only once the person has agreed. */
   --agreed-bg: #133026;
@@ -118,7 +116,6 @@
     --ground-sunk: #0c0e12;
     --ground-raised: #191d24;
     --ground-hover: #171b21;
-    --ground-pinned: #1d222a;
     --ink: #e8eaee;
     --ink-muted: #a3abb6;
     --ink-faint: #7b838e;
@@ -150,7 +147,6 @@
     --pending-edge: #8a6d16;
     --pending-wash: #2a2211;
     --final: #6fb6c4;
-    --blocked: #ef9d90;
 
     --agreed-bg: #12291f;
     --agreed-fg: #7fd2ad;

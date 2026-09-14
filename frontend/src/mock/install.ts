@@ -57,14 +57,17 @@ class MockCall {
   }
 }
 
-export const isMockMode = (search: string = window.location.search): boolean =>
-  new URLSearchParams(search).get('mock') === '1'
-
 export function installMock(): void {
   const realFetch = globalThis.fetch.bind(globalThis)
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input.toString()
-    if (url.includes('/api/sessions')) {
+    const method = (init?.method ?? 'GET').toUpperCase()
+    // Only the two requests a call makes. Anything else under /api/sessions — the verdict
+    // poll, most of all — must reach the real fetch, or the mock answers a question it was
+    // never asked with a room URL.
+    const isStart = url.endsWith('/api/sessions') && method === 'POST'
+    const isCancel = /\/api\/sessions\/[^/]+$/.test(url) && method === 'DELETE'
+    if (isStart || isCancel) {
       return new Response(
         JSON.stringify({ room_url: 'mock://room', token: 'mock', session_id: 'mock' }),
         { status: 200, headers: { 'content-type': 'application/json' } },

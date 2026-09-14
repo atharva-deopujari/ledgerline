@@ -1,4 +1,4 @@
-import { isMoreRow, isNotKnownRow } from '../protocol/markers'
+import { isMoreRow, isNoneRow, isNotKnownRow } from '../protocol/markers'
 import { splitProvisional } from './format'
 
 interface Props {
@@ -25,6 +25,15 @@ export function CardRows({ rows, retired }: Props) {
     <ul className="rows">
       {rows.map((row, i) => {
         const [label, rawValue = '', when = ''] = row
+        // The person said there is none of this kind. The word is the whole answer; an
+        // empty amount column beside it would read as a figure still to come.
+        if (isNoneRow(row)) {
+          return (
+            <li className="row row--none" key={`none-${i}`}>
+              <span className="row__label">{label}</span>
+            </li>
+          )
+        }
         // A trim marker stands for the rows that did not fit, so it carries no value.
         if (isMoreRow(row)) {
           return (

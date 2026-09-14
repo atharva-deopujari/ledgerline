@@ -36,6 +36,9 @@ export const STATUS_LABEL: Record<CardStatus, string> = {
   provisional: 'not confirmed',
   final: 'settled',
   blocked: 'blocked',
+  // Not an error: nothing on the card is wrong, it is last call's figure waiting to be
+  // confirmed. The word says where it came from rather than what is wrong with it.
+  carried: 'from last call',
 }
 
 /** What the voice bar says the bot is doing. */

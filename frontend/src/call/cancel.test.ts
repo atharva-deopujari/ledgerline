@@ -61,7 +61,7 @@ describe('handing the session back', () => {
     vi.stubGlobal('Daily', undefined)
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
 
     await waitFor(() => expect(deletes(calls)).toHaveLength(1))
@@ -77,7 +77,7 @@ describe('handing the session back', () => {
     }
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
 
     await waitFor(() => expect(deletes(calls)).toHaveLength(1))
@@ -97,7 +97,7 @@ describe('handing the session back', () => {
     }
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
 
     await waitFor(() => expect(deletes(calls)).toHaveLength(1))
@@ -111,7 +111,7 @@ describe('handing the session back', () => {
     const hook = hookWith(impl)
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
 
     expect(deletes(calls)).toHaveLength(0)
@@ -127,7 +127,7 @@ describe('handing the session back', () => {
     const hook = hookWith(impl)
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
 
     expect(deletes(calls)).toHaveLength(0)
@@ -145,7 +145,7 @@ describe('handing the session back', () => {
     vi.stubGlobal('Daily', undefined)
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
 
     expect(errorText()).toMatch(/could not load/i)
@@ -168,12 +168,12 @@ describe('handing the session back', () => {
     }
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     await waitFor(() => expect(deletes(calls)).toHaveLength(1))
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(dispatched.filter((a) => a.type === 'joined')).toHaveLength(1)
   })
@@ -185,7 +185,7 @@ describe('handing the session back', () => {
     vi.stubGlobal('Daily', undefined)
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
 
     expect(deletes(calls)).toHaveLength(0)
@@ -204,7 +204,7 @@ describe("a call that actually went live is the server's to end", () => {
     const { impl, calls } = trackedFetch()
     const hook = hookWith(impl)
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(dispatched.some((a) => a.type === 'joined')).toBe(true)
 
@@ -220,7 +220,7 @@ describe("a call that actually went live is the server's to end", () => {
     const { impl, calls } = trackedFetch()
     const hook = hookWith(impl)
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     await act(async () => {
       daily.last.emit('error', { errorMsg: 'Meeting has ended' })
@@ -234,7 +234,7 @@ describe("a call that actually went live is the server's to end", () => {
     const { impl, calls } = trackedFetch()
     const hook = hookWith(impl)
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     await act(async () => {
       await hook.result.current.stop()
@@ -254,7 +254,7 @@ describe("a call that actually went live is the server's to end", () => {
       return call
     }
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     await waitFor(() => expect(deletes(calls)).toHaveLength(1))
   })

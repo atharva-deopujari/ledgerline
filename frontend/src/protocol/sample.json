@@ -2,6 +2,7 @@
   "type": "cards",
   "v": 7,
   "phase": "gathering",
+  "ended": false,
   "focus": "essentials",
   "cards": [
     {
@@ -26,12 +27,12 @@
         [
           "Bike EMI",
           "4,200",
-          "5 Oct"
+          "25 Sep"
         ],
         [
-          "HDFC card min",
+          "HDFC card",
           "3,200",
-          "12 Oct"
+          "8 Oct"
         ]
       ],
       "kv": {},
@@ -43,14 +44,14 @@
       "status": "ok",
       "rows": [
         [
-          "Rent",
-          "12 ?",
-          "5 Oct"
-        ],
-        [
           "Groceries",
           "6,000",
           "spread"
+        ],
+        [
+          "Rent",
+          "12",
+          "5 Oct"
         ],
         [
           "Electricity",
@@ -59,7 +60,7 @@
         ]
       ],
       "kv": {},
-      "note": "Rent came through as 12. Did you mean 12,000?"
+      "note": null
     },
     {
       "id": "optionals",
@@ -69,7 +70,7 @@
         [
           "Streaming",
           "1,200",
-          "3 Oct"
+          "20 Sep"
         ]
       ],
       "kv": {},
@@ -81,13 +82,8 @@
       "status": "warn",
       "rows": [
         [
-          "Opening balance",
+          "Electricity amount",
           "",
-          ""
-        ],
-        [
-          "Electricity",
-          "amount",
           ""
         ]
       ],
@@ -101,10 +97,11 @@
       "rows": [],
       "kv": {
         "in": "42,000",
-        "out": "25,400",
-        "lowest": "-1,800 on 5 Oct"
+        "out": "9,412",
+        "lowest": "0 on 25 Sep",
+        "unpaid": "5,200"
       },
-      "note": "timing shortfall: money exists, dates do not line up"
+      "note": "the money arrives after the due date; ask the lender to move it"
     },
     {
       "id": "actions",
@@ -112,9 +109,19 @@
       "status": "provisional",
       "rows": [
         [
+          "Ask",
+          "Groceries 1,000",
+          "to 1 Oct"
+        ],
+        [
+          "Ask",
+          "Bike EMI 4,200",
+          "to 1 Oct"
+        ],
+        [
           "Defer",
           "Streaming 1,200",
-          "to 6 Oct"
+          "to 1 Oct"
         ]
       ],
       "kv": {},
@@ -124,34 +131,79 @@
   "timeline": [
     {
       "d": "2026-09-11",
-      "b": 3000,
+      "b": 2800,
       "e": "start"
     },
     {
-      "d": "2026-09-20",
-      "b": 1200,
-      "e": null
+      "d": "2026-09-25",
+      "b": 0,
+      "e": "lowest"
     },
     {
       "d": "2026-10-01",
-      "b": 43200,
-      "e": "salary"
-    },
-    {
-      "d": "2026-10-03",
-      "b": 42000,
-      "e": "streaming"
+      "b": 40600,
+      "e": "salary, streaming"
     },
     {
       "d": "2026-10-05",
-      "b": -1800,
-      "e": "rent, bike EMI"
+      "b": 39788,
+      "e": "rent"
+    },
+    {
+      "d": "2026-10-08",
+      "b": 35988,
+      "e": "hdfc card minimum due"
     },
     {
       "d": "2026-10-10",
-      "b": -1800,
+      "b": 35588,
       "e": null
     }
   ],
-  "ended": false
+  "low_point": {
+    "d": "2026-09-25",
+    "b": 0,
+    "opening": 3000,
+    "closing": 35588,
+    "before": [
+      {
+        "d": "2026-09-25",
+        "label": "Groceries",
+        "amt": -3000,
+        "spread": true
+      }
+    ],
+    "after": [
+      {
+        "d": "2026-10-01",
+        "label": "Salary",
+        "amt": 42000,
+        "spread": false
+      },
+      {
+        "d": "2026-10-01",
+        "label": "Streaming",
+        "amt": -1200,
+        "spread": false
+      },
+      {
+        "d": "2026-10-05",
+        "label": "Rent",
+        "amt": -12,
+        "spread": false
+      },
+      {
+        "d": "2026-10-08",
+        "label": "HDFC card minimum due",
+        "amt": -3200,
+        "spread": false
+      },
+      {
+        "d": "2026-10-10",
+        "label": "Groceries",
+        "amt": -2000,
+        "spread": true
+      }
+    ]
+  }
 }

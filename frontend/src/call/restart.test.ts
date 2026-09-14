@@ -60,9 +60,9 @@ describe('start posts exactly once per gesture', () => {
     const hook = hookWith(fetchImpl)
 
     await act(async () => {
-      void hook.result.current.start()
-      void hook.result.current.start()
-      void hook.result.current.start()
+      void hook.result.current.start('9876543210')
+      void hook.result.current.start('9876543210')
+      void hook.result.current.start('9876543210')
       release(ok())
       await pending
     })
@@ -76,13 +76,38 @@ describe('start posts exactly once per gesture', () => {
     const fetchImpl = vi.fn(async () => ok())
     const hook = hookWith(fetchImpl)
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     await act(async () => {
-      await hook.result.current.start()
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
+      await hook.result.current.start('9876543210')
     })
     expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the phone number', () => {
+  it('rides in the POST body, normalised, and nothing else does', async () => {
+    const fetchImpl = vi.fn(async () => ok())
+    const hook = hookWith(fetchImpl)
+    await act(async () => {
+      await hook.result.current.start('9876543210')
+    })
+    const init = (fetchImpl.mock.calls as unknown[][])[0]?.[1] as RequestInit | undefined
+    expect(JSON.parse(String(init?.body))).toEqual({ phone: '9876543210' })
+  })
+
+  it('says so when the server refuses the number, without blaming the network', async () => {
+    // The client validates first, so a 422 means the two disagree. The status is the whole
+    // contract: C owns the detail string and is free to reword it.
+    const fetchImpl = vi.fn(async () => new Response('{"detail":"anything"}', { status: 422 }))
+    const hook = hookWith(fetchImpl)
+    await act(async () => {
+      await hook.result.current.start('9876543210')
+    })
+    expect(errorText()).toMatch(/number was not accepted/i)
+    expect(errorText()).not.toMatch(/could not reach/i)
+    expect(daily.calls).toHaveLength(0)
   })
 })
 
@@ -91,7 +116,7 @@ describe('a 409 is its own message', () => {
     const fetchImpl = vi.fn(async () => conflict())
     const hook = hookWith(fetchImpl)
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(errorText()).toMatch(/already running/i)
     expect(errorText()).not.toMatch(/could not reach/i)
@@ -102,7 +127,7 @@ describe('a 409 is its own message', () => {
     const fetchImpl = vi.fn(async () => (fetchImpl.mock.calls.length === 1 ? ok() : conflict()))
     const hook = hookWith(fetchImpl)
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(errorText()).toBeUndefined()
 
@@ -111,7 +136,7 @@ describe('a 409 is its own message', () => {
       await hook.result.current.stop()
     })
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(fetchImpl).toHaveBeenCalledTimes(2)
     expect(errorText()).toMatch(/already running/i)
@@ -123,7 +148,7 @@ describe('the call object is released whenever the call is over', () => {
     const fetchImpl = vi.fn(async () => ok())
     const hook = hookWith(fetchImpl)
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     const first = daily.last
 
@@ -133,7 +158,7 @@ describe('the call object is released whenever the call is over', () => {
     await waitFor(() => expect(first.destroyed).toBe(1))
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(posts(fetchImpl)).toBe(2)
     expect(daily.calls).toHaveLength(2)
@@ -143,7 +168,7 @@ describe('the call object is released whenever the call is over', () => {
     const fetchImpl = vi.fn(async () => ok())
     const hook = hookWith(fetchImpl)
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     await act(async () => {
       daily.last.emit('error', { errorMsg: 'Meeting has ended' })
@@ -151,7 +176,7 @@ describe('the call object is released whenever the call is over', () => {
     await waitFor(() => expect(daily.calls[0].destroyed).toBe(1))
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(posts(fetchImpl)).toBe(2)
   })
@@ -160,7 +185,7 @@ describe('the call object is released whenever the call is over', () => {
     const fetchImpl = vi.fn(async () => ok())
     const hook = hookWith(fetchImpl)
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     await act(async () => {
       daily.last.emit('camera-error', { error: { type: 'permissions', blockedBy: 'user' } })
@@ -168,7 +193,7 @@ describe('the call object is released whenever the call is over', () => {
     await waitFor(() => expect(daily.calls[0].destroyed).toBe(1))
 
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(posts(fetchImpl)).toBe(2)
   })

@@ -13,5 +13,8 @@ export const JOIN_TIMEOUT_MS = 20_000
 /** The server answers 409 while a call is already registered. */
 export const HTTP_CONFLICT = 409
 
+/** The server validates the phone number too, and refuses the body when it disagrees. */
+export const HTTP_UNPROCESSABLE = 422
+
 /** Daily is asked for microphone only; the camera is never touched. */
 export const CALL_OPTIONS = { videoSource: false } as const

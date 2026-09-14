@@ -28,7 +28,7 @@ async function startedHook(fetchImpl = okFetch()) {
   const audio = { srcObject: null as unknown, play: vi.fn(async () => {}) }
   hook.result.current.audioRef.current = audio as unknown as HTMLAudioElement
   await act(async () => {
-    await hook.result.current.start()
+    await hook.result.current.start('9876543210')
   })
   return { hook, audio }
 }
@@ -62,7 +62,7 @@ describe('start', () => {
   it('refuses to create a second call object while one is live', async () => {
     const { hook } = await startedHook()
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(daily.calls).toHaveLength(1)
   })
@@ -205,7 +205,7 @@ describe('leaving', () => {
       await hook.result.current.stop()
     })
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(daily.calls).toHaveLength(2)
   })
@@ -261,7 +261,7 @@ describe('errors', () => {
       return call
     }
     await act(async () => {
-      await hook.result.current.start()
+      await hook.result.current.start('9876543210')
     })
     expect(errorText()).toMatch(/could not join/i)
     expect(daily.last.destroyed).toBe(1)

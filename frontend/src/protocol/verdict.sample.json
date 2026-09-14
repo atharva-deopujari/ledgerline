@@ -1,0 +1,44 @@
+{
+  "session_id": "9876543210-20260913T141502Z",
+  "status": "ready",
+  "summary": 0.6,
+  "deterministic": [
+    {
+      "rule": "money_traceable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "rule": "state_matches_call",
+      "passed": false,
+      "detail": "state_matches_facts: rent 12,000 stated on turn 6 was not recorded"
+    },
+    {
+      "rule": "speakable",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "intent": [
+    {
+      "criterion": "led_like_a_coach",
+      "outcome": "pass",
+      "reason": "asked about loans and everyday spending before planning",
+      "turn": null
+    },
+    {
+      "criterion": "low_point_explained",
+      "outcome": "fail",
+      "reason": "the low point was named but not explained from its derivation",
+      "turn": 14
+    },
+    {
+      "criterion": "challenge_answered_without_computing",
+      "outcome": "not_applicable",
+      "reason": "no figure was challenged",
+      "turn": null
+    }
+  ],
+  "judge_model": "gpt-5.6-luna",
+  "trace_url": "https://cloud.langfuse.com/project/example/traces/0123456789abcdef0123456789abcdef"
+}

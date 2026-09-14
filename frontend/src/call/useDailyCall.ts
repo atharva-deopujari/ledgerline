@@ -10,7 +10,13 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type RefObject
 import { parseIncoming } from '../protocol/parse'
 import type { SessionStartResponse } from '../protocol/types'
 import type { SessionAction } from '../state/sessionReducer'
-import { CALL_OPTIONS, HTTP_CONFLICT, JOIN_TIMEOUT_MS, THINKING_DELAY_MS } from './constants'
+import {
+  CALL_OPTIONS,
+  HTTP_CONFLICT,
+  HTTP_UNPROCESSABLE,
+  JOIN_TIMEOUT_MS,
+  THINKING_DELAY_MS,
+} from './constants'
 import { bindDailyHandlers } from './dailyEvents'
 import { CallLifecycle } from './lifecycle'
 import {
@@ -19,14 +25,15 @@ import {
   CALL_OBJECT_FAILED,
   JOIN_FAILED,
   LIBRARY_MISSING,
+  PHONE_REJECTED,
   SERVER_UNREACHABLE,
   callStopped,
   micErrorSentence,
 } from './messages'
 import type { AppMessageEvent, DailyCall, TrackEvent } from './types'
 
-export interface DailyCallApi {
-  start: () => Promise<void>
+interface DailyCallApi {
+  start: (phone: string) => Promise<void>
   /**
    * An attempt is still in flight. It stays true after a terminal event until the pending
    * join settles or times out, because until then `start()` will refuse — and a control the
@@ -36,6 +43,8 @@ export interface DailyCallApi {
   stop: () => Promise<void>
   toggleMic: () => void
   micOn: boolean
+  /** The call the server is running or has just run, for the verdict poll. */
+  sessionId: string | null
   audioRef: RefObject<HTMLAudioElement | null>
 }
 
@@ -76,6 +85,8 @@ export function useDailyCall(dispatch: Dispatch<SessionAction>): DailyCallApi {
   const [micOn, setMicOn] = useState(true)
   // The lifecycle owns the guard; this mirrors it for the UI. Both move together.
   const [starting, setStarting] = useState(false)
+  // Kept after the call ends: the verdict poll asks about the call that just finished.
+  const [sessionId, setSessionId] = useState<string | null>(null)
 
   const clearThinking = useCallback(() => {
     if (thinkingTimer.current !== null) {
@@ -154,146 +165,156 @@ export function useDailyCall(dispatch: Dispatch<SessionAction>): DailyCallApi {
     [clearThinking, life],
   )
 
-  const start = useCallback(async () => {
-    if (!life.begin()) return
-    setStarting(true)
-    try {
-      dispatch({ type: 'connect' })
-
-      // Daily throws on a second call object, so the previous one must be fully destroyed
-      // before this one is created.
-      await life.awaitTeardown()
-      // The server keeps one call at a time and only answers a DELETE once it has finished
-      // tearing the previous one down. Posting before that returns is what gets a 409.
-      await life.awaitCancellations()
-
-      let response: Response
+  const start = useCallback(
+    async (phone: string) => {
+      if (!life.begin()) return
+      setStarting(true)
       try {
-        response = await fetch('/api/sessions', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-        })
-      } catch {
-        fail(SERVER_UNREACHABLE)
-        return
-      }
+        dispatch({ type: 'connect' })
 
-      if (response.status === HTTP_CONFLICT) {
-        fail(CALL_ALREADY_RUNNING)
-        return
-      }
+        // Daily throws on a second call object, so the previous one must be fully destroyed
+        // before this one is created.
+        await life.awaitTeardown()
+        // The server keeps one call at a time and only answers a DELETE once it has finished
+        // tearing the previous one down. Posting before that returns is what gets a 409.
+        await life.awaitCancellations()
 
-      let session: SessionStartResponse
-      try {
-        if (!response.ok) throw new Error(String(response.status))
-        const body: unknown = await response.json()
-        if (!isSessionResponse(body)) throw new Error('malformed session response')
-        session = body
-        life.noteSession(session.session_id)
-      } catch {
-        fail(SERVER_UNREACHABLE)
-        return
-      }
-
-      const factory = globalThis.Daily
-      if (!factory) {
-        // Report first, hand the slot back after: `end()` waits for the DELETE, so the
-        // message must not.
-        fail(LIBRARY_MISSING)
-        void life.cancelSession(session.session_id)
-        return
-      }
-
-      let call: DailyCall
-      try {
-        call = factory.createCallObject({ ...CALL_OPTIONS })
-      } catch {
-        fail(CALL_OBJECT_FAILED)
-        void life.cancelSession(session.session_id)
-        return
-      }
-
-      life.adopt(call)
-      /**
-       * Retire this call.
-       *
-       * The session is cancelled here rather than after `join()` settles, so that the slot
-       * is back before the user can press Start again — but only for an attempt that never
-       * reached a joined call. Once the bot is in the room the session is the server's to
-       * end: its DELETE cancels the asyncio task, and by the time the bot leaves
-       * `run_session` is already in its `finally` writing the transcript, which is the eval
-       * corpus. A CancelledError landing on an await there would lose it.
-       */
-      const retire = () => {
-        if (!life.joined) void life.cancelSession(session.session_id)
-        void retireCall(call)
-      }
-      // Every handler is bound to `call`. Anything arriving from a call that is no longer
-      // current is a straggler from a finished session: it must not reach the reducer and
-      // must not tear down whatever replaced it.
-      bindDailyHandlers(call, {
-        trackStarted: (ev) => {
-          if (life.isCurrent(call)) onTrackStarted(ev, call, retire)
-        },
-        appMessage: (ev) => {
-          if (life.isCurrent(call)) onAppMessage(ev)
-        },
-        participantLeft: (ev) => {
-          if (!life.isCurrent(call) || ev?.participant?.local) return
-          dispatch({ type: 'left' })
-          retire()
-        },
-        leftMeeting: () => {
-          if (!life.isCurrent(call)) return
-          dispatch({ type: 'left' })
-          retire()
-        },
-        cameraError: (ev) => {
-          if (!life.isCurrent(call)) return
-          fail(micErrorSentence(ev?.error))
-          retire()
-        },
-        error: (ev) => {
-          if (!life.isCurrent(call)) return
-          const detail = ev?.error?.msg ?? (typeof ev?.errorMsg === 'string' ? ev.errorMsg : '')
-          fail(callStopped(detail))
-          retire()
-        },
-      })
-
-      try {
-        await withTimeout(
-          call.join({ url: session.room_url, token: session.token }),
-          JOIN_TIMEOUT_MS,
-        )
-      } catch {
-        // A handler may have retired this call while the join was in flight; if so it has
-        // already destroyed it and told the reducer why, and a second sentence on top would
-        // replace the specific reason with a generic one.
-        if (life.forget(call)) {
-          await call.destroy()
-          fail(JOIN_FAILED)
+        let response: Response
+        try {
+          response = await fetch('/api/sessions', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ phone }),
+          })
+        } catch {
+          fail(SERVER_UNREACHABLE)
+          return
         }
-        void life.cancelSession(session.session_id)
-        return
-      }
 
-      // Same race on the success path: a terminal event can land while join() is pending.
-      // The call object is gone and Daily throws on a destroyed instance, so this must not
-      // touch it or report a call that is not there.
-      if (!life.isCurrent(call)) {
-        void life.cancelSession(session.session_id)
-        return
-      }
+        if (response.status === HTTP_CONFLICT) {
+          fail(CALL_ALREADY_RUNNING)
+          return
+        }
 
-      setMicOn(call.localAudio())
-      life.markJoined()
-      dispatch({ type: 'joined' })
-    } finally {
-      await life.end()
-      setStarting(false)
-    }
-  }, [dispatch, fail, life, onAppMessage, onTrackStarted, retireCall])
+        if (response.status === HTTP_UNPROCESSABLE) {
+          fail(PHONE_REJECTED)
+          return
+        }
+
+        let session: SessionStartResponse
+        try {
+          if (!response.ok) throw new Error(String(response.status))
+          const body: unknown = await response.json()
+          if (!isSessionResponse(body)) throw new Error('malformed session response')
+          session = body
+          life.noteSession(session.session_id)
+          setSessionId(session.session_id)
+        } catch {
+          fail(SERVER_UNREACHABLE)
+          return
+        }
+
+        const factory = globalThis.Daily
+        if (!factory) {
+          // Report first, hand the slot back after: `end()` waits for the DELETE, so the
+          // message must not.
+          fail(LIBRARY_MISSING)
+          void life.cancelSession(session.session_id)
+          return
+        }
+
+        let call: DailyCall
+        try {
+          call = factory.createCallObject({ ...CALL_OPTIONS })
+        } catch {
+          fail(CALL_OBJECT_FAILED)
+          void life.cancelSession(session.session_id)
+          return
+        }
+
+        life.adopt(call)
+        /**
+         * Retire this call.
+         *
+         * The session is cancelled here rather than after `join()` settles, so that the slot
+         * is back before the user can press Start again — but only for an attempt that never
+         * reached a joined call. Once the bot is in the room the session is the server's to
+         * end: its DELETE cancels the asyncio task, and by the time the bot leaves
+         * `run_session` is already in its `finally` writing the transcript, which is the eval
+         * corpus. A CancelledError landing on an await there would lose it.
+         */
+        const retire = () => {
+          if (!life.joined) void life.cancelSession(session.session_id)
+          void retireCall(call)
+        }
+        // Every handler is bound to `call`. Anything arriving from a call that is no longer
+        // current is a straggler from a finished session: it must not reach the reducer and
+        // must not tear down whatever replaced it.
+        bindDailyHandlers(call, {
+          trackStarted: (ev) => {
+            if (life.isCurrent(call)) onTrackStarted(ev, call, retire)
+          },
+          appMessage: (ev) => {
+            if (life.isCurrent(call)) onAppMessage(ev)
+          },
+          participantLeft: (ev) => {
+            if (!life.isCurrent(call) || ev?.participant?.local) return
+            dispatch({ type: 'left' })
+            retire()
+          },
+          leftMeeting: () => {
+            if (!life.isCurrent(call)) return
+            dispatch({ type: 'left' })
+            retire()
+          },
+          cameraError: (ev) => {
+            if (!life.isCurrent(call)) return
+            fail(micErrorSentence(ev?.error))
+            retire()
+          },
+          error: (ev) => {
+            if (!life.isCurrent(call)) return
+            const detail = ev?.error?.msg ?? (typeof ev?.errorMsg === 'string' ? ev.errorMsg : '')
+            fail(callStopped(detail))
+            retire()
+          },
+        })
+
+        try {
+          await withTimeout(
+            call.join({ url: session.room_url, token: session.token }),
+            JOIN_TIMEOUT_MS,
+          )
+        } catch {
+          // A handler may have retired this call while the join was in flight; if so it has
+          // already destroyed it and told the reducer why, and a second sentence on top would
+          // replace the specific reason with a generic one.
+          if (life.forget(call)) {
+            await call.destroy()
+            fail(JOIN_FAILED)
+          }
+          void life.cancelSession(session.session_id)
+          return
+        }
+
+        // Same race on the success path: a terminal event can land while join() is pending.
+        // The call object is gone and Daily throws on a destroyed instance, so this must not
+        // touch it or report a call that is not there.
+        if (!life.isCurrent(call)) {
+          void life.cancelSession(session.session_id)
+          return
+        }
+
+        setMicOn(call.localAudio())
+        life.markJoined()
+        dispatch({ type: 'joined' })
+      } finally {
+        await life.end()
+        setStarting(false)
+      }
+    },
+    [dispatch, fail, life, onAppMessage, onTrackStarted, retireCall],
+  )
 
   const stop = useCallback(async () => {
     // Pressing End is the decision itself, so say so rather than waiting for Daily to echo
@@ -314,5 +335,5 @@ export function useDailyCall(dispatch: Dispatch<SessionAction>): DailyCallApi {
   // A closed tab should not leave a room occupied.
   useEffect(() => () => void retireCall(life.call), [life, retireCall])
 
-  return { start, starting, stop, toggleMic, micOn, audioRef }
+  return { start, starting, stop, toggleMic, micOn, sessionId, audioRef }
 }

@@ -13,6 +13,9 @@ export const SERVER_UNREACHABLE =
 /** The server keeps one call at a time and answers 409 while one is still registered. */
 export const CALL_ALREADY_RUNNING = 'A call is already running. End it first, then start a new one.'
 
+/** The client checks the number first, so this is the case where client and server disagree. */
+export const PHONE_REJECTED = 'That number was not accepted. Check it and try again.'
+
 export const LIBRARY_MISSING = 'Could not load the call library. Reload the page and try again.'
 
 /** Daily throws if an earlier call object was never destroyed. */
@@ -27,7 +30,7 @@ export const JOIN_FAILED = 'Could not join the call room. It may have expired â€
  */
 export const AUDIO_BLOCKED = 'The browser blocked audio. Start the call again to hear the plan.'
 
-export const CALL_STOPPED = 'The call stopped unexpectedly.'
+const CALL_STOPPED = 'The call stopped unexpectedly.'
 
 export const callStopped = (detail: string): string =>
   detail ? `The call stopped: ${detail}` : CALL_STOPPED
